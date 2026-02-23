@@ -1,0 +1,23 @@
+version: "3.8"
+services:
+  ai-shield-mongo:
+    image: mongo:7
+    container_name: ai-shield-mongodb
+    ports:
+      - "27018:27017"
+    volumes:
+      - ai_shield_mongo_data:/data/db
+    restart: unless-stopped
+
+  ai-shield-redis:
+    image: redis:7-alpine
+    container_name: ai-shield-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - ai_shield_redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  ai_shield_mongo_data:
+  ai_shield_redis_data:
