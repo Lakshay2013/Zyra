@@ -1,39 +1,38 @@
-const mongoose = require('mongoose');
-const crypto = require('crypto');
+const mongoose = require('mongoose')
+const crypto = require('crypto')
 
 const apiKeySchema = new mongoose.Schema({
-  orgId:{
+  orgId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Organization',
-    required: [true, "Organization ID is required"]
+    required: true
   },
-  name:{
+  name: {
     type: String,
-    required: [true,"API Key name is required"],
-    maxlength: [100,"API Key name cannot exceed 100 characters"],
+    required: [true, 'Key name is required'],
     trim: true
   },
-  prefix:{
+  prefix: {
     type: String,
-    required: true,
+    required: true
   },
-  keyHash:{
+  keyHash: {
     type: String,
-    required: true,
+    required: true
   },
-  isActive:{
+  isActive: {
     type: Boolean,
     default: true
   },
-  lastUsedAt:{
+  lastUsedAt: {
     type: Date,
     default: null
   },
-  createdBy:{
+  createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, "Creator User ID is required"]
-  },
-},{timestamps: true});
+    required: true
+  }
+}, { timestamps: true })
 
-module.exports = mongoose.model('ApiKey', apiKeySchema);
+module.exports = mongoose.model('ApiKey', apiKeySchema)

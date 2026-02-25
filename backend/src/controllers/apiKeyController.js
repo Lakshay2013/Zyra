@@ -1,4 +1,12 @@
 const ApiKey = require('../models/ApiKey')
+const crypto = require('crypto')
+
+const generateKey = () => {
+  const raw = `sk-live-${crypto.randomBytes(24).toString('hex')}`
+  const hash = crypto.createHash('sha256').update(raw).digest('hex')
+  const prefix = raw.substring(0, 16)
+  return { raw, hash, prefix }
+}
 
 // POST /api/keys — generate new key
 exports.createKey = async (req, res) => {
@@ -9,7 +17,7 @@ exports.createKey = async (req, res) => {
       return res.status(400).json({ message: 'Key name is required' })
     }
 
-    const { raw, hash, prefix } = ApiKey.generateKey()
+    const { raw, hash, prefix } = generateKey()
 
     const apiKey = await ApiKey.create({
       orgId: req.user.orgId,
@@ -19,7 +27,6 @@ exports.createKey = async (req, res) => {
       createdBy: req.user.userId
     })
 
-    // Return the raw key ONCE — never stored, never shown again
     res.status(201).json({
       message: 'API key created. Copy it now — it will not be shown again.',
       key: raw,
