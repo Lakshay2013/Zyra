@@ -1,0 +1,11 @@
+{
+  "name": "ai-shield-sdk",
+  "version": "0.1.0",
+  "description": "Official SDK for AI Shield — LLM logging and risk monitoring",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": ["llm", "logging", "monitoring", "ai-shield"],
+  "license": "MIT"
+}
