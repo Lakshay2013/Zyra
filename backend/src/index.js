@@ -16,6 +16,7 @@ app.use('/api/keys', require('./routes/apiKeys'))
 
 // Routes
 app.use('/api/auth', require('./routes/auth'))
+app.use('/api/logs', require('./routes/logs'))
 
 // Health check
 app.get('/health', (req, res) => {
