@@ -1,4 +1,6 @@
 const InteractionLog = require('../models/InteractionLog')
+const mongoose = require('mongoose')
+const { Types } = mongoose
 
 // GET /api/analytics/overview
 exports.getOverview = async (req, res) => {
@@ -9,7 +11,7 @@ exports.getOverview = async (req, res) => {
     const [stats] = await InteractionLog.aggregate([
       {
         $match: {
-          orgId: new require('mongoose').Types.ObjectId(orgId),
+          orgId: new Types.ObjectId(orgId),
           createdAt: { $gte: thirtyDaysAgo }
         }
       },
@@ -49,7 +51,7 @@ exports.getUsage = async (req, res) => {
     const usage = await InteractionLog.aggregate([
       {
         $match: {
-          orgId: new require('mongoose').Types.ObjectId(orgId),
+          orgId: new Types.ObjectId(orgId),
           createdAt: { $gte: startDate }
         }
       },
@@ -81,7 +83,7 @@ exports.getTopUsers = async (req, res) => {
     const topUsers = await InteractionLog.aggregate([
       {
         $match: {
-          orgId: new require('mongoose').Types.ObjectId(orgId)
+          orgId: new Types.ObjectId(orgId)
         }
       },
       {
