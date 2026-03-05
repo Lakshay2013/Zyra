@@ -113,5 +113,99 @@ class AIShield {
     await this._flush()
   }
 }
+class OpenAIShield {
+  constructor(openaiClient, shield) {
+    this.openai = openaiClient
+    this.shield = shield
 
-module.exports = { AIShield }
+    // Proxy the chat.completions.create method
+    this.chat = {
+      completions: {
+        create: this._wrapCreate.bind(this)
+      }
+    }
+  }
+
+  async _wrapCreate(params, options = {}) {
+    const start = Date.now()
+    const userId = options.userId || params.user || 'anonymous'
+
+    // Extract prompt from messages
+    const prompt = params.messages
+      .map(m => `[${m.role}]: ${m.content}`)
+      .join('\n')
+
+    let response
+    let error
+
+    try {
+      response = await this.openai.chat.completions.create(params)
+    } catch (err) {
+      error = err
+    }
+
+    const latency = Date.now() - start
+
+    // Log regardless of success or failure
+    await this.shield.log({
+      userId,
+      model: params.model,
+      prompt,
+      response: response?.choices?.[0]?.message?.content || error?.message || '',
+      tokens: {
+        prompt: response?.usage?.prompt_tokens || 0,
+        completion: response?.usage?.completion_tokens || 0,
+        total: response?.usage?.total_tokens || 0
+      },
+      latency
+    })
+
+    // Re-throw if there was an error
+    if (error) throw error
+
+    return response
+  }
+}
+
+class AIShieldMiddleware {
+  constructor(shield) {
+    this.shield = shield
+  }
+
+  // Drop-in Express middleware
+  // Intercepts responses and looks for LLM data attached to res.locals
+  middleware() {
+    const shield = this.shield
+
+    return function aishieldMiddleware(req, res, next) {
+      const start = Date.now()
+
+      // Patch res.json to intercept the response
+      const originalJson = res.json.bind(res)
+
+      res.json = function(data) {
+        const latency = Date.now() - start
+
+        // Only log if the route attached llm data to res.locals
+        if (res.locals.aishield) {
+          const { userId, model, prompt, response, tokens } = res.locals.aishield
+
+          shield.log({
+            userId: userId || req.user?.id || req.user?._id || 'anonymous',
+            model: model || 'unknown',
+            prompt: prompt || '',
+            response: response || '',
+            tokens: tokens || 0,
+            latency
+          }).catch(err => console.error('[AIShield] Log error:', err.message))
+        }
+
+        return originalJson(data)
+      }
+
+      next()
+    }
+  }
+}
+
+module.exports = { AIShield, OpenAIShield, AIShieldMiddleware }
