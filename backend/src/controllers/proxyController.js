@@ -1,10 +1,9 @@
-const fetch = require('node-fetch')
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args))
 const InteractionLog = require('../models/InteractionLog')
 const Organization = require('../models/Organization')
 const { calculateCost } = require('../utils/costCalculator')
 const { getRiskQueue } = require('../config/queue')
 
-// Supported provider configs
 const PROVIDERS = {
   openai: {
     baseUrl: 'https://api.openai.com',
@@ -20,7 +19,6 @@ const PROVIDERS = {
   }
 }
 
-// Extract prompt text from different provider request formats
 const extractPrompt = (provider, body) => {
   try {
     if (provider === 'openai' || provider === 'anthropic') {
@@ -38,7 +36,6 @@ const extractPrompt = (provider, body) => {
   }
 }
 
-// Extract response text from different provider response formats
 const extractResponse = (provider, responseBody) => {
   try {
     if (provider === 'openai') {
@@ -56,7 +53,6 @@ const extractResponse = (provider, responseBody) => {
   }
 }
 
-// Extract token usage from different provider response formats
 const extractTokens = (provider, responseBody) => {
   try {
     if (provider === 'openai') {
@@ -81,28 +77,25 @@ const extractTokens = (provider, responseBody) => {
 
 exports.proxy = async (req, res) => {
   const start = Date.now()
-  const { provider } = req.params
+
+  // Extract provider and upstream path from URL
+  const urlParts = req.path.split('/').filter(Boolean)
+  const provider = urlParts[0]
+  const upstreamPath = '/' + urlParts.slice(1).join('/')
 
   const providerConfig = PROVIDERS[provider]
   if (!providerConfig) {
     return res.status(400).json({ message: `Unsupported provider: ${provider}. Supported: openai, anthropic, gemini` })
   }
 
-  // req.org is set by authenticateApiKey middleware
   const org = req.org
 
-  // Check log limit
   if (org.currentMonthLogs >= org.monthlyLogLimit) {
     return res.status(429).json({ message: 'Monthly log limit reached. Please upgrade your plan.' })
   }
 
-  // Build the upstream URL
-  // req.params[0] captures everything after /proxy/:provider
-  const upstreamPath = req.params[0] || ''
   const upstreamUrl = `${providerConfig.baseUrl}${upstreamPath}`
 
-  // Get the provider API key from customer's request headers
-  // They pass their own OpenAI/Anthropic key — we just forward it
   const providerApiKey = req.headers[providerConfig.authHeader.toLowerCase()] ||
                          req.headers['authorization'] ||
                          req.headers['x-api-key']
@@ -121,13 +114,11 @@ exports.proxy = async (req, res) => {
   let statusCode
 
   try {
-    // Forward the request to the real provider
     const upstreamResponse = await fetch(upstreamUrl, {
       method: req.method,
       headers: {
         'Content-Type': 'application/json',
         [providerConfig.authHeader]: providerApiKey,
-        // Forward anthropic-specific headers
         ...(provider === 'anthropic' && {
           'anthropic-version': req.headers['anthropic-version'] || '2023-06-01'
         })
@@ -138,7 +129,6 @@ exports.proxy = async (req, res) => {
     statusCode = upstreamResponse.status
     responseBody = await upstreamResponse.json()
 
-    // Return the exact response to the customer
     res.status(statusCode).json(responseBody)
 
   } catch (err) {
@@ -146,7 +136,7 @@ exports.proxy = async (req, res) => {
     return res.status(502).json({ message: 'Failed to reach upstream provider', error: err.message })
   }
 
-  // Log asynchronously after responding — don't slow down the customer
+  // Log after responding — don't block the customer
   try {
     const latency = Date.now() - start
     const prompt = extractPrompt(provider, requestBody)
@@ -174,6 +164,5 @@ exports.proxy = async (req, res) => {
 
   } catch (err) {
     console.error('[Proxy] Logging error:', err.message)
-    // Don't fail — the customer already got their response
   }
 }

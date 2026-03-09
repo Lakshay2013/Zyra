@@ -10,9 +10,15 @@ const app = express()
 app.use(helmet())
 app.use(cors())
 app.use(morgan('dev'))
+
+// Increase limit for proxy (prompts can be large)
+app.use('/proxy', express.json({ limit: '2mb' }))
+app.use('/proxy', require('./routes/proxy'))
 app.use(express.json({ limit: '10kb' }))
 app.use('/api/auth', require('./routes/auth'))
 app.use('/api/keys', require('./routes/apiKeys')) 
+
+
 
 // Routes
 app.use('/api/auth', require('./routes/auth'))

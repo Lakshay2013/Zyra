@@ -37,12 +37,10 @@ exports.authenticateApiKey = async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid or revoked API key' })
     }
 
-    // Attach org info to request
     const org = await Organization.findById(key.orgId)
     req.org = org
     req.apiKey = key
 
-    // Update last used timestamp in background
     ApiKey.findByIdAndUpdate(key._id, { lastUsedAt: new Date() }).exec()
 
     next()
@@ -50,7 +48,6 @@ exports.authenticateApiKey = async (req, res, next) => {
     res.status(500).json({ message: 'Server error', error: err.message })
   }
 }
-
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
