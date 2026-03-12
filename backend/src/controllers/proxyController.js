@@ -1,4 +1,4 @@
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args))
+const axios = require('axios')
 const InteractionLog = require('../models/InteractionLog')
 const Organization = require('../models/Organization')
 const { calculateCost } = require('../utils/costCalculator')
@@ -16,12 +16,16 @@ const PROVIDERS = {
   gemini: {
     baseUrl: 'https://generativelanguage.googleapis.com',
     authHeader: 'Authorization'
+  },
+  groq: {
+    baseUrl: 'https://api.groq.com/openai',
+    authHeader: 'Authorization'
   }
 }
 
 const extractPrompt = (provider, body) => {
   try {
-    if (provider === 'openai' || provider === 'anthropic') {
+    if (provider === 'openai' || provider === 'anthropic' || provider === 'groq') {
       const messages = body.messages || []
       return messages
         .map(m => `[${m.role}]: ${typeof m.content === 'string' ? m.content : JSON.stringify(m.content)}`)
@@ -38,7 +42,7 @@ const extractPrompt = (provider, body) => {
 
 const extractResponse = (provider, responseBody) => {
   try {
-    if (provider === 'openai') {
+    if (provider === 'openai' || provider === 'groq') {
       return responseBody.choices?.[0]?.message?.content || ''
     }
     if (provider === 'anthropic') {
@@ -55,7 +59,7 @@ const extractResponse = (provider, responseBody) => {
 
 const extractTokens = (provider, responseBody) => {
   try {
-    if (provider === 'openai') {
+    if (provider === 'openai' || provider === 'groq') {
       return {
         prompt: responseBody.usage?.prompt_tokens || 0,
         completion: responseBody.usage?.completion_tokens || 0,
@@ -78,14 +82,16 @@ const extractTokens = (provider, responseBody) => {
 exports.proxy = async (req, res) => {
   const start = Date.now()
 
-  // Extract provider and upstream path from URL
   const urlParts = req.path.split('/').filter(Boolean)
   const provider = urlParts[0]
   const upstreamPath = '/' + urlParts.slice(1).join('/')
 
+  console.log('provider:', provider)
+  console.log('upstreamPath:', upstreamPath)
+
   const providerConfig = PROVIDERS[provider]
   if (!providerConfig) {
-    return res.status(400).json({ message: `Unsupported provider: ${provider}. Supported: openai, anthropic, gemini` })
+    return res.status(400).json({ message: `Unsupported provider: ${provider}. Supported: openai, anthropic, gemini, groq` })
   }
 
   const org = req.org
@@ -95,6 +101,7 @@ exports.proxy = async (req, res) => {
   }
 
   const upstreamUrl = `${providerConfig.baseUrl}${upstreamPath}`
+  console.log('upstreamUrl:', upstreamUrl)
 
   const providerApiKey = req.headers[providerConfig.authHeader.toLowerCase()] ||
                          req.headers['authorization'] ||
@@ -114,8 +121,9 @@ exports.proxy = async (req, res) => {
   let statusCode
 
   try {
-    const upstreamResponse = await fetch(upstreamUrl, {
+    const upstreamResponse = await axios({
       method: req.method,
+      url: upstreamUrl,
       headers: {
         'Content-Type': 'application/json',
         [providerConfig.authHeader]: providerApiKey,
@@ -123,20 +131,21 @@ exports.proxy = async (req, res) => {
           'anthropic-version': req.headers['anthropic-version'] || '2023-06-01'
         })
       },
-      body: JSON.stringify(requestBody)
+      data: requestBody
     })
 
     statusCode = upstreamResponse.status
-    responseBody = await upstreamResponse.json()
+    responseBody = upstreamResponse.data
 
     res.status(statusCode).json(responseBody)
 
   } catch (err) {
     console.error('[Proxy] Upstream error:', err.message)
-    return res.status(502).json({ message: 'Failed to reach upstream provider', error: err.message })
+    statusCode = err.response?.status || 502
+    responseBody = err.response?.data || { message: 'Failed to reach upstream provider' }
+    return res.status(statusCode).json(responseBody)
   }
 
-  // Log after responding — don't block the customer
   try {
     const latency = Date.now() - start
     const prompt = extractPrompt(provider, requestBody)
