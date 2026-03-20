@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  --bg: #050d1a;
+  --indigo: #4f46e5;
+  --indigo-light: #818cf8;
+  --violet: #7c3aed;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --risk-low: #16a34a;
+  --risk-mid: #d97706;
+  --risk-high: #dc2626;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: 'Figtree', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: rgba(99,102,241,0.3); color: #fff; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.5); }
