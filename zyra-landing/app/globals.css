@@ -1,32 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Manrope:wght@400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
-:root {
-  --bg: #050d1a;
-  --indigo: #4f46e5;
-  --indigo-light: #818cf8;
-  --violet: #7c3aed;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  --risk-low: #16a34a;
-  --risk-mid: #d97706;
-  --risk-high: #dc2626;
+@theme {
+  --font-headline: "Newsreader", serif;
+  --font-body: "Manrope", sans-serif;
+
+  --color-primary: #032416;
+  --color-secondary: #5e51ad;
+  --color-background: #fdfaea;
+  --color-surface: #fdfaea;
+  --color-ink: #1c1c13;
+
+  --color-primary-container: #1a3a2a;
+  --color-secondary-container: #a99cfe;
+  --color-surface-container: #f1eedf;
+  --color-surface-dim: #dddacc;
+  --color-on-surface-variant: #424843;
+  --color-outline-variant: #c1c8c2;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: 'Figtree', sans-serif;
-  -webkit-font-smoothing: antialiased;
+@layer base {
+  body {
+    @apply bg-background text-ink font-body;
+  }
 }
 
-::selection { background: rgba(99,102,241,0.3); color: #fff; }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.5); }
+.editorial-tension {
+  letter-spacing: -0.02em;
+}
