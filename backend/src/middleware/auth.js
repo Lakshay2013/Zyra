@@ -23,7 +23,7 @@ const crypto = require('crypto')
 
 exports.authenticateApiKey = async (req, res, next) => {
   try {
-    const apiKey = req.headers['x-api-key']
+    const apiKey = req.headers['x-zyra-api-key']
 
     if (!apiKey) {
       return res.status(401).json({ message: 'API key required' })

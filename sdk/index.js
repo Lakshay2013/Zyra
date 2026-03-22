@@ -85,7 +85,7 @@ class AIShield {
         headers: {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(payload),
-          'x-api-key': this.apiKey
+          'x-zyra-api-key': this.apiKey
         }
       }
 
