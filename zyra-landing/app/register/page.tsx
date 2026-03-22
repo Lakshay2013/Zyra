@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import api from '@/lib/api'
 import { setAuth } from '@/lib/auth'
 
@@ -35,48 +34,31 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-950 px-4 relative overflow-hidden py-12">
-      {/* Background decorations */}
-      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-secondary/10 blur-[120px] rounded-full pointer-events-none" />
-
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-md relative z-10"
-      >
-        <Link href="/" className="inline-flex items-center space-x-2 text-stone-400 hover:text-white transition-colors mb-8 group text-sm font-medium">
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span>Back to Home</span>
-        </Link>
-
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#fdfaea] px-4 py-12">
+      {/* Container */}
+      <div className="w-full max-w-[480px]">
         {/* Logo */}
-        <div className="mb-10">
-          <Link href="/" className="text-4xl font-headline italic font-bold text-white tracking-wider">
+        <div className="text-center mb-8">
+          <Link href="/" className="text-4xl font-headline italic text-[#032416] tracking-tight hover:opacity-80 transition-opacity">
             zyra
           </Link>
-          <p className="mt-3 text-stone-400 font-body">
-            Start monitoring your LLM traffic. Free forever on Starter.
-          </p>
         </div>
 
         {/* Card */}
-        <div className="bg-[#0A0A0A]/80 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-stone-800/60">
+        <div className="bg-white rounded-[16px] p-8 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#f1eedf]">
+          <h1 className="text-2xl font-bold font-body text-[#032416] mb-2">Create your account</h1>
+          <p className="text-sm font-body text-[#424843] mb-8">Start monitoring your LLM traffic. Free forever on Starter.</p>
+
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-4 py-3 text-sm font-body"
-              >
+              <div className="bg-red-50 border border-red-100 text-red-600 rounded-xl px-4 py-3 text-sm font-body">
                 {error}
-              </motion.div>
+              </div>
             )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-stone-300 mb-2 font-body">
+                <label className="block text-sm font-semibold text-[#032416] mb-1.5 font-body">
                   Your name
                 </label>
                 <input
@@ -86,11 +68,11 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   required
                   placeholder="Laksh"
-                  className="w-full px-4 py-3 rounded-xl border border-stone-800 bg-stone-900/50 text-white placeholder-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600 focus:border-stone-600 transition-all font-body text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] bg-white text-[#032416] placeholder-[#424843]/60 focus:outline-none focus:border-[#5e51ad] focus:ring-1 focus:ring-[#5e51ad] transition-all font-body text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-stone-300 mb-2 font-body">
+                <label className="block text-sm font-semibold text-[#032416] mb-1.5 font-body">
                   Organization
                 </label>
                 <input
@@ -100,13 +82,13 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   required
                   placeholder="Acme Inc"
-                  className="w-full px-4 py-3 rounded-xl border border-stone-800 bg-stone-900/50 text-white placeholder-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600 focus:border-stone-600 transition-all font-body text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] bg-white text-[#032416] placeholder-[#424843]/60 focus:outline-none focus:border-[#5e51ad] focus:ring-1 focus:ring-[#5e51ad] transition-all font-body text-sm"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-stone-300 mb-2 font-body">
+              <label className="block text-sm font-semibold text-[#032416] mb-1.5 font-body">
                 Email
               </label>
               <input
@@ -116,12 +98,12 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 required
                 placeholder="you@company.com"
-                className="w-full px-4 py-3.5 rounded-xl border border-stone-800 bg-stone-900/50 text-white placeholder-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600 focus:border-stone-600 transition-all font-body text-sm"
+                className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] bg-white text-[#032416] placeholder-[#424843]/60 focus:outline-none focus:border-[#5e51ad] focus:ring-1 focus:ring-[#5e51ad] transition-all font-body text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-stone-300 mb-2 font-body">
+              <label className="block text-sm font-semibold text-[#032416] mb-1.5 font-body">
                 Password
               </label>
               <input
@@ -132,32 +114,32 @@ export default function RegisterPage() {
                 required
                 minLength={6}
                 placeholder="Min 6 characters"
-                className="w-full px-4 py-3.5 rounded-xl border border-stone-800 bg-stone-900/50 text-white placeholder-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600 focus:border-stone-600 transition-all font-body text-sm"
+                className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] bg-white text-[#032416] placeholder-[#424843]/60 focus:outline-none focus:border-[#5e51ad] focus:ring-1 focus:ring-[#5e51ad] transition-all font-body text-sm"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 mt-4 rounded-xl font-bold text-white bg-white/10 hover:bg-white/20 border border-white/10 transition-all disabled:opacity-50 font-body text-sm flex items-center justify-center space-x-2 shadow-lg shadow-black/20"
+              className="w-full py-3.5 mt-4 rounded-[12px] font-bold text-white bg-[#1a3a2a] hover:bg-[#032416] transition-colors disabled:opacity-60 font-body text-sm flex items-center justify-center space-x-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>{loading ? 'Creating account...' : 'Create account'}</span>
             </button>
-
-            <p className="text-center text-xs text-stone-500 font-body mt-4">
+            
+            <p className="text-center mt-4 text-xs text-[#424843] font-body">
               By signing up you agree to our Terms of Service
             </p>
           </form>
         </div>
 
-        <p className="text-center mt-8 text-sm text-stone-500 font-body">
+        <p className="text-center mt-8 text-sm text-[#424843] font-body">
           Already have an account?{' '}
-          <Link href="/login" className="font-bold text-stone-300 hover:text-white transition-colors hover:underline">
+          <Link href="/login" className="font-bold text-[#5e51ad] hover:underline transition-colors">
             Sign in
           </Link>
         </p>
-      </motion.div>
+      </div>
     </div>
   )
 }

@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Copy, Eye, EyeOff, KeyRound, Plus, Trash2, X } from "lucide-react"
+import { Copy, KeyRound, Plus, Trash2, X } from "lucide-react"
 import api from "@/lib/api"
 
 export default function ApiKeys() {
   const [keys, setKeys] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [visibleKey, setVisibleKey] = useState<string | null>(null)
   
   // Modal creation state
   const [showModal, setShowModal] = useState(false)
@@ -37,7 +36,7 @@ export default function ApiKeys() {
       const res = await api.post('/api/keys', { name: newKeyName })
       setGeneratedKey(res.data.key)
       setNewKeyName("")
-      fetchKeys() // Refresh table
+      fetchKeys()
     } catch (err) {
       console.error("Failed to create key", err)
       alert("Failed to create key.")
@@ -60,109 +59,83 @@ export default function ApiKeys() {
   }
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-12 relative">
+    <div className="space-y-8 max-w-7xl mx-auto pb-12 relative flex flex-col font-body">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-headline font-bold text-white mb-2 tracking-tight">API Keys</h1>
-          <p className="text-stone-400 text-sm">Manage proxy keys to authenticate SDK requests to Zyra.</p>
+          <h1 className="text-[32px] font-headline font-bold text-[#032416] mb-2 tracking-tight">API Keys</h1>
+          <p className="text-[#424843] font-medium text-sm">Manage proxy keys to authenticate SDK requests to Zyra.</p>
         </div>
         
         <button 
           onClick={() => setShowModal(true)}
-          className="flex items-center space-x-2 px-5 py-2.5 bg-primary-container hover:bg-white text-on-primary-container hover:text-black rounded-lg text-sm font-bold transition-all shadow-lg shadow-primary/20"
+          className="flex items-center space-x-2 px-5 py-2.5 bg-[#1a3a2a] hover:bg-[#032416] text-white rounded-xl text-sm font-bold transition-all shadow-[0_4px_14px_rgba(26,58,42,0.4)]"
         >
-          <Plus className="w-4 h-4" />
-          <span>Generate New Key</span>
+          <Plus className="w-4 h-4 ml-[-4px]" />
+          <span>Create new key</span>
         </button>
       </div>
 
-      <div className="grid gap-4">
+      <div className="bg-white rounded-[16px] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-[#f1eedf] flex flex-col overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-stone-500 font-mono text-sm">Loading keys...</div>
+          <div className="p-12 text-center text-[#424843] font-body text-sm">Loading keys...</div>
         ) : keys.length === 0 ? (
-          <div className="p-8 text-center text-stone-500 font-mono text-sm bg-[#0A0A0A] border border-stone-800/60 rounded-2xl">
-            You don't have any keys yet. Create one to get started!
-          </div>
+          <div className="p-12 text-center text-[#424843] font-body text-sm">You don't have any keys yet. Create one to get started!</div>
         ) : (
-          keys.map((key, i) => (
-            <motion.div
-              key={key._id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-[#0A0A0A] border border-stone-800/60 rounded-2xl group hover:border-stone-700 transition-colors"
-            >
-              <div className="flex items-start space-x-5 mb-4 md:mb-0">
-                <div className={`p-3 rounded-xl ${key.isActive !== false ? 'bg-stone-900 text-stone-300' : 'bg-red-500/10 text-red-500'}`}>
-                  <KeyRound className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className={`font-medium text-lg ${key.isActive !== false ? 'text-white' : 'text-stone-500 line-through'}`}>
-                    {key.name || "Unnamed Key"}
-                  </h3>
-                  <div className="flex items-center space-x-4 mt-2 text-xs font-mono text-stone-500">
-                    <span>Created {new Date(key.createdAt).toLocaleDateString()}</span>
-                    {key.isActive === false && (
-                      <>
-                        <span className="w-1 h-1 bg-stone-700 rounded-full"></span>
-                        <span className="text-red-400">Revoked</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {key.isActive !== false && (
-                <div className="flex items-center justify-between md:justify-end space-x-4 w-full md:w-auto">
-                  {/* Key Reveal Input */}
-                  <div className="flex items-center bg-stone-950 border border-stone-800 rounded-lg overflow-hidden">
-                    <div className="px-4 py-2 text-sm font-mono text-stone-300 border-r border-stone-800 w-48 truncate select-all">
-                      {visibleKey === key._id ? `${key.prefix}••••••••••••••••` : `${key.prefix}••••••••••••••••`}
+          <table className="w-full text-left font-body text-sm">
+            <thead className="text-[11px] text-[#424843] uppercase bg-[#fdfaea] border-b border-[#f1eedf] font-bold tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Name</th>
+                <th className="px-6 py-4">Prefix</th>
+                <th className="px-6 py-4">Created By</th>
+                <th className="px-6 py-4">Last Used</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f1eedf]">
+              {keys.map((key) => (
+                <tr key={key._id} className="hover:bg-[#fdfaea]/60 transition-colors">
+                  <td className="px-6 py-5 whitespace-nowrap">
+                    <div className="flex items-center space-x-3">
+                      <KeyRound className="w-[18px] h-[18px] text-[#a99cfe]" />
+                      <span className={`font-bold ${key.isActive !== false ? 'text-[#032416]' : 'text-[#424843] line-through'}`}>
+                        {key.name || "Unnamed Key"}
+                      </span>
                     </div>
-                    <button 
-                      onClick={() => setVisibleKey(visibleKey === key._id ? null : key._id)}
-                      className="px-3 py-2 text-stone-400 hover:text-white hover:bg-stone-900 transition-colors"
-                      title={visibleKey === key._id ? "Hide key" : "Show prefix"}
+                  </td>
+                  <td className="px-6 py-5 whitespace-nowrap">
+                    <span className="font-mono text-[13px] bg-[#fdfaea] border border-[#f1eedf] px-2 py-1 rounded-md text-[#032416] font-semibold">
+                      {key.prefix}••••••••••••••••
+                    </span>
+                  </td>
+                  <td className="px-6 py-5 whitespace-nowrap text-[#424843] font-semibold">
+                    {key.createdBy?.name || 'Admin'}
+                  </td>
+                  <td className="px-6 py-5 whitespace-nowrap text-[#424843]">
+                    {new Date(key.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-5 whitespace-nowrap">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold border 
+                      ${key.isActive !== false 
+                        ? 'bg-[#e8f5e9] text-[#2e7d32] border-[#c8e6c9]' 
+                        : 'bg-[#ffebee] text-[#c62828] border-[#ffcdd2]'}`}
                     >
-                      {visibleKey === key._id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                    <button 
-                      onClick={() => copyToClipboard(`${key.prefix}••••••••••••••••`)}
-                      className="px-3 py-2 text-stone-400 hover:text-white hover:bg-stone-900 transition-colors"
-                      title="Copy prefix to clipboard"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Delete */}
-                  <button onClick={() => handleRevokeKey(key._id)} className="p-2 text-stone-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Revoke Key">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          ))
+                      {key.isActive !== false ? 'Active' : 'Revoked'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5 whitespace-nowrap text-right">
+                    {key.isActive !== false && (
+                      <button onClick={() => handleRevokeKey(key._id)} className="text-[#c1c8c2] hover:text-[#d32f2f] hover:bg-red-50 p-2 rounded-lg transition-colors" title="Revoke Key">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
-      
-      {keys.length > 0 && (
-        <div className="p-6 bg-stone-900/30 border border-stone-800/50 rounded-xl mt-8">
-          <h4 className="text-sm font-bold text-white mb-2">Integration Snippet</h4>
-          <p className="text-sm text-stone-400 mb-4">Update your SDK base URL to proxy traffic through Zyra.</p>
-          <pre className="p-4 bg-stone-950 rounded-lg border border-stone-800 overflow-x-auto">
-            <code className="text-xs font-mono text-stone-300">
-              <span className="text-stone-500">// Example using OpenAI Python SDK</span><br/>
-              import openai<br/><br/>
-              client = openai.Client(<br/>
-              &nbsp;&nbsp;api_key="your_openai_key",<br/>
-              &nbsp;&nbsp;<span className="text-green-400">base_url="https://api.zyra.dev/v1/proxy/openai"</span>,<br/>
-              &nbsp;&nbsp;<span className="text-green-400">default_headers={"X-Zyra-Api-Key": "{keys.find(k => k.isActive !== false)?.prefix || 'sk-live-'}••••••••••••••••"}</span><br/>
-              )
-            </code>
-          </pre>
-        </div>
-      )}
 
       {/* Modal for Creating Key */}
       <AnimatePresence>
@@ -173,28 +146,28 @@ export default function ApiKeys() {
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }} 
               onClick={() => !generatedKey && setShowModal(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-[#032416]/40 backdrop-blur-sm"
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-[#0A0A0A] border border-stone-800 shadow-2xl rounded-2xl w-full max-w-md relative z-10 overflow-hidden"
+              className="bg-white border border-[#f1eedf] shadow-[0_20px_60px_rgb(0,0,0,0.08)] rounded-[20px] w-full max-w-md relative z-10 overflow-hidden font-body"
             >
-              <div className="p-6 border-b border-stone-800/60 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white">Generate API Key</h3>
+              <div className="p-6 border-b border-[#f1eedf] flex items-center justify-between bg-[#fdfaea]/50">
+                <h3 className="text-xl font-bold font-headline text-[#032416]">Generate API Key</h3>
                 {!generatedKey && (
-                  <button onClick={() => setShowModal(false)} className="text-stone-400 hover:text-white transition-colors">
+                  <button onClick={() => setShowModal(false)} className="text-[#424843] hover:text-[#032416] transition-colors bg-white rounded-full p-1 border border-[#f1eedf] shadow-sm">
                     <X className="w-5 h-5" />
                   </button>
                 )}
               </div>
               
-              <div className="p-6">
+              <div className="p-8">
                 {!generatedKey ? (
-                  <form onSubmit={handleCreateKey} className="space-y-4">
+                  <form onSubmit={handleCreateKey} className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium text-stone-300 mb-1.5">Key Name</label>
+                      <label className="block text-sm font-bold text-[#032416] mb-2">Key Name</label>
                       <input 
                         type="text" 
                         value={newKeyName}
@@ -202,33 +175,37 @@ export default function ApiKeys() {
                         placeholder="e.g. Production Traffic"
                         required
                         autoFocus
-                        className="w-full bg-stone-900 border border-stone-800 rounded-xl px-4 py-3 text-white placeholder-stone-600 focus:outline-none focus:border-stone-500 focus:ring-1 focus:ring-stone-500 transition-colors"
+                        className="w-full bg-white border border-[#c1c8c2] rounded-xl px-4 py-3.5 text-[#032416] placeholder-[#c1c8c2] focus:outline-none focus:border-[#5e51ad] focus:ring-1 focus:ring-[#5e51ad] transition-all text-sm font-semibold"
                       />
                     </div>
-                    <button type="submit" className="w-full py-3 bg-white text-black font-bold rounded-xl mt-4 hover:bg-stone-200 transition-colors">
-                      Generate
+                    <button type="submit" className="w-full py-3.5 bg-[#1a3a2a] text-white font-bold rounded-xl hover:bg-[#032416] transition-colors shadow-lg">
+                      Create Key
                     </button>
                   </form>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl text-sm leading-relaxed">
+                  <div className="space-y-6">
+                    <div className="p-4 bg-[#e8f5e9] border border-[#c8e6c9] text-[#2e7d32] rounded-xl text-sm leading-relaxed font-medium">
                       <strong>Success!</strong> Your API key has been generated. Please copy it now as you will <strong>never</strong> be able to view it again.
                     </div>
-                    <div className="flex items-center bg-stone-900 border border-stone-800 rounded-lg overflow-hidden p-2">
-                      <code className="flex-1 px-2 text-stone-200 font-mono text-sm break-all">{generatedKey}</code>
+                    
+                    <div className="flex items-center bg-[#fdfaea] border border-[#f1eedf] rounded-xl overflow-hidden p-2">
+                      <code className="flex-1 px-3 py-2 text-[#032416] font-mono text-sm break-all font-bold select-all">
+                        {generatedKey}
+                      </code>
                       <button 
                         onClick={() => copyToClipboard(generatedKey)}
-                        className="p-2 bg-stone-800 hover:bg-stone-700 text-white rounded-md transition-colors shadow-sm"
+                        className="p-3 bg-white border border-[#f1eedf] hover:bg-[#5e51ad]/5 text-[#5e51ad] rounded-lg transition-colors shadow-sm ml-2"
                       >
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-[18px] h-[18px]" strokeWidth={2.5} />
                       </button>
                     </div>
+                    
                     <button 
                       onClick={() => {
                         setGeneratedKey(null)
                         setShowModal(false)
                       }} 
-                      className="w-full py-3 bg-stone-800 text-white font-bold rounded-xl mt-4 hover:bg-stone-700 transition-colors border border-stone-700"
+                      className="w-full py-3.5 bg-white text-[#1a3a2a] border border-[#c1c8c2] font-bold rounded-xl hover:bg-[#f1eedf] transition-colors"
                     >
                       I have saved it
                     </button>
