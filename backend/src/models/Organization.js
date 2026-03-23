@@ -25,6 +25,11 @@ const organizationSchema = new mongoose.Schema({
     anthropic: { type: String, default: null },
     gemini: { type: String, default: null },
     groq: { type: String, default: null }
+  },
+  policies: {
+    blockPII: { type: Boolean, default: false },
+    blockInjection: { type: Boolean, default: true },
+    maxTokensPerRequest: { type: Number, default: 2000 }
   }
 },{timestamps: true});
 

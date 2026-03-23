@@ -24,6 +24,7 @@ app.use('/api/auth', authLimiter, require('./routes/auth'))
 app.use('/api/keys', require('./routes/apiKeys')) 
 app.use('/api/logs', require('./routes/logs'))
 app.use('/api/analytics', require('./routes/analytics'))
+app.use('/api/org', require('./routes/org'))
 
 
 // Health check
