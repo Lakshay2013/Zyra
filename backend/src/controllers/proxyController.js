@@ -3,6 +3,7 @@ const InteractionLog = require('../models/InteractionLog')
 const Organization = require('../models/Organization')
 const { decrypt } = require('../utils/crypto')
 const { calculateCost } = require('../utils/costCalculator')
+const { detectInjection } = require('../utils/injectionDetector')
 const { getRiskQueue, getLogQueue } = require('../config/queue')
 
 const PROVIDERS = {
@@ -127,6 +128,25 @@ exports.proxy = async (req, res) => {
   const requestBody = req.body
   const model = requestBody.model || 'unknown'
   const userId = req.headers['x-user-id'] || requestBody.user || 'anonymous'
+
+  // Apply Policies
+  const maxTokens = org.policies?.maxTokensPerRequest || 2000
+  if (!requestBody.max_tokens || requestBody.max_tokens > maxTokens) {
+    requestBody.max_tokens = maxTokens
+  }
+
+  if (org.policies?.blockInjection) {
+    const promptText = extractPrompt(provider, requestBody)
+    if (promptText) {
+      const injectionResult = detectInjection(promptText)
+      if (injectionResult.hasInjection) {
+        return res.status(403).json({ 
+          error: 'Zyra Firewall blocked this request due to Prompt Injection policy.',
+          matches: injectionResult.matches 
+        })
+      }
+    }
+  }
 
   let responseBody
   let statusCode
