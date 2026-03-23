@@ -19,6 +19,12 @@ const organizationSchema = new mongoose.Schema({
   currentMonthlyLogs:{
     type: Number,
     default: 0
+  },
+  providerKeys: {
+    openai: { type: String, default: null },
+    anthropic: { type: String, default: null },
+    gemini: { type: String, default: null },
+    groq: { type: String, default: null }
   }
 },{timestamps: true});
 

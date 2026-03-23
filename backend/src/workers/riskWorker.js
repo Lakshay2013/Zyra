@@ -8,10 +8,12 @@ require('dotenv').config()
 
 const mongoose = require('mongoose')
 
-// Connect worker to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ Risk worker MongoDB connected'))
-  .catch(err => console.error('❌ Worker MongoDB error:', err.message))
+// Connect worker to MongoDB if not already connected
+if (mongoose.connection.readyState === 0) {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('✅ Risk worker MongoDB connected'))
+    .catch(err => console.error('❌ Worker MongoDB error:', err.message))
+}
 
 const worker = new Worker('risk-analysis', async (job) => {
   const { logId } = job.data

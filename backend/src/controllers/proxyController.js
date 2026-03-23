@@ -1,8 +1,9 @@
 const axios = require('axios')
 const InteractionLog = require('../models/InteractionLog')
 const Organization = require('../models/Organization')
+const { decrypt } = require('../utils/crypto')
 const { calculateCost } = require('../utils/costCalculator')
-const { getRiskQueue } = require('../config/queue')
+const { getRiskQueue, getLogQueue } = require('../config/queue')
 
 const PROVIDERS = {
   openai: {
@@ -103,13 +104,23 @@ exports.proxy = async (req, res) => {
   const upstreamUrl = `${providerConfig.baseUrl}${upstreamPath}`
   console.log('upstreamUrl:', upstreamUrl)
 
-  const providerApiKey = req.headers[providerConfig.authHeader.toLowerCase()] ||
+  let providerApiKey = req.headers[providerConfig.authHeader.toLowerCase()] ||
                          req.headers['authorization'] ||
                          req.headers['x-api-key']
 
   if (!providerApiKey) {
+    const encryptedKey = org.providerKeys?.[provider]
+    if (encryptedKey) {
+      const decrypted = decrypt(encryptedKey)
+      providerApiKey = providerConfig.authHeader === 'Authorization' && !decrypted.startsWith('Bearer ')
+        ? `Bearer ${decrypted}`
+        : decrypted
+    }
+  }
+
+  if (!providerApiKey) {
     return res.status(400).json({
-      message: `Missing provider API key. Pass your ${provider} API key in the ${providerConfig.authHeader} header.`
+      message: `Missing provider API key. Configure your ${provider} key in Organization Settings or pass it in headers.`
     })
   }
 
@@ -153,8 +164,9 @@ exports.proxy = async (req, res) => {
     const tokens = extractTokens(provider, responseBody)
     const cost = calculateCost(model, tokens.prompt, tokens.completion)
 
-    const log = await InteractionLog.create({
-      orgId: org._id,
+    const logQueue = getLogQueue()
+    await logQueue.add('log-interaction', {
+      orgId: org._id.toString(),
       userId,
       model,
       prompt,
@@ -163,13 +175,6 @@ exports.proxy = async (req, res) => {
       cost,
       latency
     })
-
-    await Organization.findByIdAndUpdate(org._id, {
-      $inc: { currentMonthLogs: 1 }
-    })
-
-    const riskQueue = getRiskQueue()
-    await riskQueue.add('analyze', { logId: log._id.toString() })
 
   } catch (err) {
     console.error('[Proxy] Logging error:', err.message)

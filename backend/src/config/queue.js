@@ -6,12 +6,20 @@ const connection={
 }
 
 let riskQueue = null
+let logQueue = null
 
 exports.getRiskQueue = () => {
   if(!riskQueue){
     riskQueue = new Queue('risk-analysis', { connection })
   }
   return riskQueue
+}
+
+exports.getLogQueue = () => {
+  if(!logQueue){
+    logQueue = new Queue('interaction-logs', { connection })
+  }
+  return logQueue
 }
 
 exports.connection = connection
