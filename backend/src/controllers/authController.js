@@ -1,6 +1,11 @@
 const jwt = require('jsonwebtoken')
+const { OAuth2Client } = require('google-auth-library')
 const User = require('../models/User')
 const Organization = require('../models/Organization')
+const { sendOtpEmail } = require('../utils/mailer')
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
 
 const signToken = (userId, orgId, role) => {
   return jwt.sign(
@@ -23,6 +28,9 @@ exports.register = async (req, res) => {
 
     // Create org first
     const org = await Organization.create({ name: orgName })
+    
+    const otpCode = generateOTP()
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000) // 10 mins
 
     // Create admin user
     const user = await User.create({
@@ -30,25 +38,18 @@ exports.register = async (req, res) => {
       name,
       email,
       passwordHash: password,
-      role: 'admin'
+      role: 'admin',
+      isEmailVerified: false,
+      otpCode,
+      otpExpires
     })
 
-    const token = signToken(user._id, org._id, user.role)
+    await sendOtpEmail(email, otpCode)
 
     res.status(201).json({
-      message: 'Account created successfully',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      },
-      org: {
-        id: org._id,
-        name: org.name,
-        plan: org.plan
-      }
+      message: 'Account created. OTP sent to email.',
+      requiresOtp: true,
+      email: user.email
     })
   } catch (err) {
     console.error(err)
@@ -69,6 +70,10 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email }).select('+passwordHash')
     if (!user || !user.isActive) {
       return res.status(401).json({ message: 'Invalid credentials' })
+    }
+    
+    if (!user.isEmailVerified) {
+      return res.status(403).json({ message: 'Email not verified. Please verify your email first.', requiresOtp: true })
     }
 
     // Check password
@@ -112,5 +117,92 @@ exports.getMe = async (req, res) => {
     res.json({ user, org })
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message })
+  }
+}
+
+// POST /api/auth/verify-otp
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body
+    if (!email || !otp) return res.status(400).json({ message: 'Email and OTP required' })
+
+    const user = await User.findOne({ email }).select('+otpCode +otpExpires')
+    
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    if (user.isEmailVerified) return res.status(400).json({ message: 'Email already verified' })
+    
+    if (user.otpCode !== otp || user.otpExpires < new Date()) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' })
+    }
+
+    user.isEmailVerified = true
+    user.otpCode = undefined
+    user.otpExpires = undefined
+    await user.save()
+
+    const org = await Organization.findById(user.orgId)
+    const token = signToken(user._id, org._id, user.role)
+
+    res.json({
+      message: 'Email verified successfully',
+      token,
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      org: { id: org._id, name: org.name, plan: org.plan }
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error', error: err.message })
+  }
+}
+
+// POST /api/auth/google
+exports.googleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body
+    if (!idToken) return res.status(400).json({ message: 'Missing Google ID Token' })
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    })
+    
+    const payload = ticket.getPayload()
+    const { email, name, sub: googleId } = payload
+
+    let user = await User.findOne({ email })
+    let org
+
+    if (!user) {
+      // Create new user and org
+      org = await Organization.create({ name: `${name}'s Organization` })
+      user = await User.create({
+        orgId: org._id,
+        name,
+        email,
+        googleId,
+        role: 'admin',
+        isEmailVerified: true
+      })
+    } else {
+      // Connect Google ID if not present
+      if (!user.googleId) {
+        user.googleId = googleId
+        user.isEmailVerified = true
+        await user.save()
+      }
+      org = await Organization.findById(user.orgId)
+    }
+
+    const token = signToken(user._id, org._id, user.role)
+
+    res.json({
+      message: 'Google login successful',
+      token,
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      org: { id: org._id, name: org.name, plan: org.plan }
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Google authentication failed', error: err.message })
   }
 }

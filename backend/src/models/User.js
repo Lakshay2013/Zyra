@@ -21,7 +21,6 @@ const userSchema = new mongoose.Schema({
   },
   passwordHash: {
     type: String,
-    required: true,
     select: false
   },
   role: {
@@ -32,15 +31,33 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  otpCode: {
+    type: String,
+    select: false
+  },
+  otpExpires: {
+    type: Date,
+    select: false
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true // allows multiple null values if they signed up with email
   }
 }, { timestamps: true })
 
 userSchema.pre('save', async function() {
-  if (!this.isModified('passwordHash')) return
+  if (!this.isModified('passwordHash') || !this.passwordHash) return
   this.passwordHash = await bcrypt.hash(this.passwordHash, 12)
 })
 
 userSchema.methods.comparePassword = async function(candidatePassword) {
+  if (!this.passwordHash) return false
   return await bcrypt.compare(candidatePassword, this.passwordHash)
 }
 
