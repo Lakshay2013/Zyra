@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Zyra | AI Infrastructure Proxy</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Newsreader:ital,wght@0,400;0,500;0,700;1,400&amp;family=Space+Grotesk:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary-fixed": "#190064",
+              "primary": "#c8bfff",
+              "on-tertiary-fixed": "#201c00",
+              "background": "#131313",
+              "primary-container": "#a99cfe",
+              "surface-variant": "#353534",
+              "on-secondary": "#68000b",
+              "outline-variant": "#484551",
+              "inverse-on-surface": "#313030",
+              "surface-container-highest": "#353534",
+              "secondary-fixed-dim": "#ffb3ae",
+              "error": "#ffb4ab",
+              "secondary": "#ffb3ae",
+              "on-secondary-fixed": "#410004",
+              "tertiary-fixed-dim": "#dcc744",
+              "outline": "#928f9d",
+              "tertiary-container": "#bca926",
+              "error-container": "#93000a",
+              "secondary-container": "#a8031a",
+              "primary-fixed-dim": "#c8bfff",
+              "on-surface": "#e5e2e1",
+              "on-primary": "#2f1e7c",
+              "on-tertiary-fixed-variant": "#514700",
+              "on-surface-variant": "#c9c4d3",
+              "on-tertiary-container": "#463d00",
+              "surface-bright": "#393939",
+              "on-tertiary": "#383100",
+              "on-secondary-container": "#ffb3ad",
+              "on-error-container": "#ffdad6",
+              "inverse-primary": "#5e51ad",
+              "on-error": "#690005",
+              "secondary-fixed": "#ffdad7",
+              "surface-container-low": "#1c1b1b",
+              "on-secondary-fixed-variant": "#930014",
+              "surface-tint": "#c8bfff",
+              "on-primary-container": "#3c2e89",
+              "primary-fixed": "#e5deff",
+              "on-primary-fixed-variant": "#463893",
+              "surface-container": "#201f1f",
+              "surface": "#131313",
+              "tertiary": "#dcc744",
+              "surface-container-lowest": "#0e0e0e",
+              "surface-dim": "#131313",
+              "on-background": "#e5e2e1",
+              "surface-container-high": "#2a2a2a",
+              "tertiary-fixed": "#f9e45d",
+              "inverse-surface": "#e5e2e1"
+            },
+            fontFamily: {
+              "headline": ["Newsreader", "serif"],
+              "body": ["Inter", "sans-serif"],
+              "label": ["Space Grotesk", "monospace"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-effect {
+        background: rgba(200, 191, 255, 0.03);
+        backdrop-filter: blur(12px);
+      }
+      .bg-grid {
+        background-image: radial-gradient(circle at 2px 2px, rgba(200, 191, 255, 0.05) 1px, transparent 0);
+        background-size: 40px 40px;
+      }
+      .text-gradient {
+        background: linear-gradient(135deg, #a99cfe 0%, #c8bfff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-[#131313] dark:bg-[#131313] sticky top-0 z-50 w-full">
+<nav class="flex items-center justify-between px-8 py-4 max-w-7xl mx-auto">
+<div class="flex items-center gap-8">
+<span class="font-serif italic text-2xl text-[#c8bfff]">Zyra</span>
+<div class="hidden md:flex gap-6 items-center">
+<a class="text-[#c8bfff] border-b-2 border-[#c8bfff] pb-1 font-medium" href="#">Features</a>
+<a class="text-gray-400 font-medium hover:text-[#c8bfff] transition-colors duration-300" href="#">Pricing</a>
+<a class="text-gray-400 font-medium hover:text-[#c8bfff] transition-colors duration-300" href="#">Docs</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:text-[#c8bfff] transition-colors">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+</button>
+<button class="bg-gradient-to-br from-primary-container to-primary text-on-primary-container px-5 py-2 rounded-sm font-label text-sm font-medium hover:opacity-90 active:scale-95 transition-all">
+                    Get Started
+                </button>
+</div>
+</nav>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="relative min-h-[870px] flex flex-col items-center justify-center text-center px-8 bg-grid pt-20">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background pointer-events-none"></div>
+<div class="relative z-10 max-w-5xl">
+<span class="font-label text-primary text-xs tracking-widest uppercase mb-6 block">Version 2.0 now in public beta</span>
+<h1 class="font-headline text-6xl md:text-8xl text-on-surface leading-tight mb-8">
+                    The <span class="italic font-normal">Intelligence Layer</span> for Your Infrastructure
+                </h1>
+<p class="font-body text-xl text-on-surface-variant max-w-2xl mx-auto mb-10 leading-relaxed">
+                    A unified proxy to intercept, audit, and intelligently route every LLM request. High-performance infrastructure designed for the modern AI enterprise.
+                </p>
+<div class="flex flex-col md:flex-row items-center justify-center gap-4">
+<button class="w-full md:w-auto px-8 py-4 bg-gradient-to-br from-primary-container to-primary text-on-primary-container font-label rounded-sm text-sm font-bold shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all">
+                        Get Started
+                    </button>
+<button class="w-full md:w-auto px-8 py-4 bg-surface-container-high text-on-surface font-label rounded-sm text-sm font-medium hover:bg-surface-container-highest transition-colors">
+                        Read Docs
+                    </button>
+</div>
+</div>
+<!-- Hero Decorative Image -->
+<div class="mt-20 w-full max-w-6xl rounded-lg overflow-hidden glass-effect p-1 border border-outline-variant/20">
+<img alt="Technical UI Preview" class="w-full h-auto rounded-md opacity-80" data-alt="Sleek dark mode software dashboard with abstract neon data visualizations and glowing purple network nodes on a deep black background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC17KAm9r-2e18cozD-CcbkicoGdrrNNabnvyQBfDwzWmH4O7W5tWQVhjdLDuchu-VJXWtW7bXOcRyD32gMADsp6qOVvOgiNulTxdCfMuQClY85_CrCz9KDBxA4PQ3Gu6p_7Wy8wdvntuGcEcSAVZbLtDC4V3xmHGKp6hImJ3L7ELnyQf2quL1GBWlvToEVsMqGgEmEr3BPKHzuVTWM3mI6sJ1yBv10y_9wJx0xSptIJD3SulKdNfTftxlmobEvTlawNqFvm3kihhI"/>
+</div>
+</section>
+<!-- The Problem/Solution: Intercept. Redact. Route. -->
+<section class="py-32 px-8 max-w-7xl mx-auto">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="p-8 bg-surface-container-low rounded-lg group hover:bg-surface-container transition-colors">
+<div class="w-12 h-12 flex items-center justify-center bg-primary/10 text-primary mb-6 rounded-full">
+<span class="material-symbols-outlined" data-icon="shield">shield</span>
+</div>
+<h3 class="font-headline text-3xl mb-4">Intercept</h3>
+<p class="font-body text-on-surface-variant mb-6">Every request flows through Zyra's high-performance proxy layer, creating a single point of truth for your entire AI stack.</p>
+<span class="font-label text-xs text-primary group-hover:underline cursor-pointer">Explore Proxy Specs →</span>
+</div>
+<div class="p-8 bg-surface-container-low rounded-lg group hover:bg-surface-container transition-colors">
+<div class="w-12 h-12 flex items-center justify-center bg-tertiary/10 text-tertiary mb-6 rounded-full">
+<span class="material-symbols-outlined" data-icon="visibility_off">visibility_off</span>
+</div>
+<h3 class="font-headline text-3xl mb-4">Redact</h3>
+<p class="font-body text-on-surface-variant mb-6">Real-time PII detection and masking ensures sensitive data never reaches third-party LLM providers like OpenAI or Anthropic.</p>
+<span class="font-label text-xs text-tertiary group-hover:underline cursor-pointer">Security Protocols →</span>
+</div>
+<div class="p-8 bg-surface-container-low rounded-lg group hover:bg-surface-container transition-colors">
+<div class="w-12 h-12 flex items-center justify-center bg-secondary/10 text-secondary mb-6 rounded-full">
+<span class="material-symbols-outlined" data-icon="alt_route">alt_route</span>
+</div>
+<h3 class="font-headline text-3xl mb-4">Route</h3>
+<p class="font-body text-on-surface-variant mb-6">Intelligently switch between models based on latency, cost, or availability without changing a single line of client code.</p>
+<span class="font-label text-xs text-secondary group-hover:underline cursor-pointer">Routing Engine →</span>
+</div>
+</div>
+</section>
+<!-- Observer Deep Dive -->
+<section class="py-24 bg-surface-container-lowest">
+<div class="max-w-7xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+<div class="order-2 lg:order-1 relative">
+<div class="absolute -top-10 -left-10 w-40 h-40 bg-primary/5 blur-[80px]"></div>
+<div class="glass-effect p-6 rounded-xl border border-outline-variant/10">
+<div class="flex items-center justify-between mb-6">
+<div class="flex gap-2">
+<div class="w-3 h-3 rounded-full bg-error"></div>
+<div class="w-3 h-3 rounded-full bg-tertiary"></div>
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+</div>
+<span class="font-label text-[10px] text-on-surface-variant">OBSERVER_V4.X_LIVE</span>
+</div>
+<img alt="Observer Dashboard Preview" class="rounded-lg border border-outline-variant/20" data-alt="Abstract data dashboard showing real-time traffic pulses, heatmaps, and security logs with glowing purple and soft gray interface elements" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDp515b6EKBryOaDEDEYis3_nZYqyHj7o8Pm-n-Q6Aauvl_WUHByy_cldsNXSU-Abq3CGQiKdgoPdp2Vun-jOGlTWBa-SmgxTUQJpUR1qhF8Qn6Bm2JQCropgWp8vhYUYr1ZXm6SZ6rRW2j--ogn_BTwfOHlI8VqYcJVhHaLWaVH_snQ5_dj96LNQK7zdVXRaq8FevviXs1qndFJXlf77BGGZlYte_HMEzfvATGpbvJrEaKxabQA6i6zVfbJCLaaYGPNtK2ePdOH9A"/>
+</div>
+</div>
+<div class="order-1 lg:order-2">
+<span class="font-label text-primary text-xs uppercase tracking-[0.2em] mb-4 block">Real-time Auditing</span>
+<h2 class="font-headline text-5xl mb-6">The Observer</h2>
+<p class="text-on-surface-variant text-lg mb-8 leading-relaxed">
+                        Complete visibility into every prompt and completion. Identify prompt injections, monitor PII leaks, and audit model behavior with granular precision.
+                    </p>
+<ul class="space-y-4 mb-10">
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="check_circle">check_circle</span>
+<span class="font-body text-on-surface">Automatic PII Redaction across 50+ entities</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="check_circle">check_circle</span>
+<span class="font-body text-on-surface">Vector-based Threat Detection for prompt injections</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="check_circle">check_circle</span>
+<span class="font-body text-on-surface">Latency breakdown by provider and region</span>
+</li>
+</ul>
+</div>
+</div>
+</section>
+<!-- Routing Engine Deep Dive -->
+<section class="py-24">
+<div class="max-w-7xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+<div>
+<span class="font-label text-primary text-xs uppercase tracking-[0.2em] mb-4 block">Elastic Scale</span>
+<h2 class="font-headline text-5xl mb-6">Routing Rules Engine</h2>
+<p class="text-on-surface-variant text-lg mb-8 leading-relaxed">
+                        Never worry about rate limits or outages again. Zyra dynamically balances load across different regions and providers based on real-time availability.
+                    </p>
+<div class="grid grid-cols-2 gap-6 mb-10">
+<div class="p-4 bg-surface-container rounded-sm border-l-2 border-primary">
+<div class="font-label text-[10px] text-primary uppercase mb-2">Cost Optimization</div>
+<div class="font-headline text-xl text-on-surface">Smart Fallback</div>
+</div>
+<div class="p-4 bg-surface-container rounded-sm border-l-2 border-primary">
+<div class="font-label text-[10px] text-primary uppercase mb-2">High Availability</div>
+<div class="font-headline text-xl text-on-surface">Auto-Scaling</div>
+</div>
+</div>
+</div>
+<div class="relative">
+<div class="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/5 blur-[80px]"></div>
+<div class="glass-effect p-2 rounded-xl border border-outline-variant/10">
+<img alt="Routing Engine Visual" class="rounded-lg shadow-2xl" data-alt="Digital network architecture showing glowing connections between server nodes with a focus on high-speed data transmission and routing pathways" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZ-7-1eorBpM0-yVNGUISBIhKeEaVASeOkStjB0RBCM7czVzIeHdqbohLw7ZSpjgDzKt7YpVwcXzKdCxNIMSH-sajSvT0-BfmXk3bnmD7IIg6fYQgBkULUmIOC5pLyly1zN0gMJE_nPZQVAPLuoaYTEUx4oMwwkuCOv4pjV9T3w9N6800f2iMtqbQGuzMbsho4flwUWNFTdc6EhY-Dvjnw8PPT4Octzv6pRbTr5W1GN-RepddR9yMj8szi9F4cTsCRHJNpDWI6sZs"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Social Proof/Stats -->
+<section class="py-32 bg-surface-container-lowest border-y border-outline-variant/10">
+<div class="max-w-7xl mx-auto px-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-16">
+<div class="text-center">
+<div class="font-headline text-7xl text-gradient mb-4">99.9%</div>
+<div class="font-label text-sm uppercase tracking-widest text-on-surface-variant">Guaranteed Uptime</div>
+</div>
+<div class="text-center">
+<div class="font-headline text-7xl text-gradient mb-4">&lt;10ms</div>
+<div class="font-label text-sm uppercase tracking-widest text-on-surface-variant">Proxy Latency</div>
+</div>
+<div class="text-center">
+<div class="font-headline text-7xl text-gradient mb-4">1B+</div>
+<div class="font-label text-sm uppercase tracking-widest text-on-surface-variant">Tokens Proxied</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="py-40 relative overflow-hidden">
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary/5 blur-[120px] rounded-full"></div>
+<div class="max-w-4xl mx-auto px-8 text-center relative z-10">
+<h2 class="font-headline text-5xl md:text-7xl mb-8">Secure your AI infrastructure today.</h2>
+<p class="font-body text-xl text-on-surface-variant mb-12">Join 200+ companies building production-ready AI products with Zyra.</p>
+<div class="flex flex-col sm:flex-row gap-4 justify-center">
+<button class="px-10 py-5 bg-gradient-to-br from-primary-container to-primary text-on-primary-container font-label rounded-sm text-base font-bold shadow-2xl shadow-primary/20 hover:scale-[1.02] transition-all">
+                        Deploy Zyra Now
+                    </button>
+<button class="px-10 py-5 bg-surface-container-high text-on-surface font-label rounded-sm text-base font-medium hover:bg-surface-container-highest transition-colors">
+                        Talk to an Architect
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-[#0e0e0e] dark:bg-[#0e0e0e] w-full py-12 px-8 border-t border-[#484551]/20">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 max-w-7xl mx-auto">
+<div class="col-span-1 md:col-span-1">
+<span class="font-serif text-xl text-white block mb-6">Zyra</span>
+<p class="font-body text-gray-500 text-sm leading-relaxed">
+                    © 2024 Zyra AI Infrastructure. Built for the high-end curator.
+                </p>
+</div>
+<div>
+<h4 class="font-label text-xs uppercase tracking-widest text-white mb-6">Infrastructure</h4>
+<ul class="space-y-3">
+<li><a class="font-label text-sm text-gray-500 hover:text-white transition-colors" href="#">Edge Proxy</a></li>
+<li><a class="font-label text-sm text-gray-500 hover:text-white transition-colors" href="#">Observability</a></li>
+<li><a class="font-label text-sm text-gray-500 hover:text-white transition-colors" href="#">Compliance</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-label text-xs uppercase tracking-widest text-white mb-6">Company</h4>
+<ul class="space-y-3">
+<li><a class="font-label text-sm text-gray-500 hover:text-white transition-colors" href="#">Privacy</a></li>
+<li><a class="font-label text-sm text-gray-500 hover:text-white transition-colors" href="#">Terms</a></li>
+<li><a class="font-label text-sm text-gray-500 hover:text-white transition-colors" href="#">Status</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-label text-xs uppercase tracking-widest text-white mb-6">Connect</h4>
+<div class="flex gap-4">
+<a class="text-gray-500 hover:text-[#c8bfff] transition-colors" href="#"><span class="font-label text-sm">Twitter</span></a>
+<a class="text-gray-500 hover:text-[#c8bfff] transition-colors" href="#"><span class="font-label text-sm">GitHub</span></a>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

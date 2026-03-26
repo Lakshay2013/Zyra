@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { GoogleLogin } from '@react-oauth/google'
 import api from '@/lib/api'
 import { setAuth } from '@/lib/auth'
@@ -48,20 +49,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#fdfaea] px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 font-body text-on-background selection:bg-primary-container selection:text-on-primary-container">
       <div className="w-full max-w-[440px]">
         <div className="text-center mb-8">
-          <Link href="/" className="text-4xl font-headline italic text-[#032416] tracking-tight hover:opacity-80 transition-opacity">
+          <Link href="/" className="text-4xl font-headline italic text-primary tracking-tight hover:opacity-80 transition-opacity">
             zyra
           </Link>
         </div>
 
-        <div className="bg-white rounded-[16px] p-8 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#f1eedf]">
-          <h1 className="text-2xl font-bold font-body text-[#032416] mb-2">Welcome back</h1>
-          <p className="text-sm font-body text-[#424843] mb-8">Sign in to your Zyra dashboard.</p>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="bg-surface-container-low rounded-[16px] p-8 md:p-10 shadow-2xl border border-outline-variant/20"
+        >
+          <h1 className="text-2xl font-bold font-headline text-on-surface mb-2">Welcome back</h1>
+          <p className="text-sm font-body text-on-surface-variant mb-8">Sign in to your Zyra dashboard.</p>
 
           {error && (
-            <div className="bg-red-50 border border-red-100 text-red-600 rounded-xl px-4 py-3 text-sm font-body mb-5">
+            <div className="bg-error-container/20 border border-error/50 text-error rounded-xl px-4 py-3 text-sm font-body mb-5">
               {error}
             </div>
           )}
@@ -80,44 +86,44 @@ export default function LoginPage() {
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#f1eedf]"></div>
+              <div className="w-full border-t border-outline-variant/20"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-[#8b918d] font-body bg-white">or continue with email</span>
+              <span className="px-2 bg-surface-container-low text-outline font-body font-medium">or continue with email</span>
             </div>
           </div>
 
           {/* Standard Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-[#032416] mb-1.5 font-body">Email</label>
+              <label className="block text-sm font-semibold text-on-surface mb-1.5 font-body">Email</label>
               <input
                 type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@company.com"
-                className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] bg-white text-[#032416] placeholder-[#c1c8c2] focus:outline-none focus:border-[#5e51ad] focus:ring-1 focus:ring-[#5e51ad] transition-all font-body text-sm"
+                className="w-full px-4 py-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface placeholder-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-body text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-[#032416] mb-1.5 font-body">Password</label>
+              <label className="block text-sm font-semibold text-on-surface mb-1.5 font-body">Password</label>
               <input
                 type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] bg-white text-[#032416] placeholder-[#c1c8c2] focus:outline-none focus:border-[#5e51ad] focus:ring-1 focus:ring-[#5e51ad] transition-all font-body text-sm"
+                className="w-full px-4 py-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface placeholder-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-body text-sm"
               />
             </div>
 
             <button
               type="submit" disabled={loading}
-              className="w-full py-3.5 mt-2 rounded-[12px] font-bold text-white bg-[#1a3a2a] hover:bg-[#032416] transition-colors disabled:opacity-60 font-body text-sm flex items-center justify-center space-x-2"
+              className="w-full py-3.5 mt-2 rounded-[12px] font-bold bg-gradient-to-br from-primary-container to-primary text-on-primary-container hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 font-body text-sm flex items-center justify-center space-x-2 shadow-lg shadow-primary/10"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>{loading ? 'Signing in...' : 'Sign in'}</span>
             </button>
           </form>
-        </div>
+        </motion.div>
 
-        <p className="text-center mt-8 text-sm text-[#424843] font-body">
+        <p className="text-center mt-8 text-sm text-on-surface-variant font-body">
           Don't have an account?{' '}
-          <Link href="/register" className="font-bold text-[#5e51ad] hover:underline transition-colors">
+          <Link href="/register" className="font-bold text-primary hover:underline transition-colors">
             Create one free
           </Link>
         </p>

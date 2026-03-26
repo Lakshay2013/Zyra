@@ -72,9 +72,9 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' })
     }
     
-    if (!user.isEmailVerified) {
-      return res.status(403).json({ message: 'Email not verified. Please verify your email first.', requiresOtp: true })
-    }
+    // if (!user.isEmailVerified) {
+    //   return res.status(403).json({ message: 'Email not verified. Please verify your email first.', requiresOtp: true })
+    // }
 
     // Check password
     const isMatch = await user.comparePassword(password)
