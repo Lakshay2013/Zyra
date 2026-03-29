@@ -1,114 +1,60 @@
-# Zyra 🛡️
+# Zyra | AI Proxy & Security Mesh
 
-**The Enterprise AI API Gateway & Firewall.**
+Zyra is an enterprise-grade AI Proxy and Security Mesh designed for B2B SaaS architecture. It acts as an intelligent intermediary layer between your client applications (Web, Mobile) and downstream Large Language Model (LLM) providers like OpenAI, Anthropic, and open-source models (Llama-3).
 
-Zyra is a high-performance B2B SaaS platform that sits between your applications and LLM providers (OpenAI, Anthropic, Gemini, Groq). It provides essential observability, cost controls, and security firewalls—ensuring your developers don't accidentally leak PII or rack up massive API bills.
+## 🎯 What Problem Does Zyra Solve?
+As organizations integrate LLMs into production applications, they face critical challenges:
+1. **Security & Data Privacy**: Sending raw user prompts directly to third-party LLMs risks exposing Personally Identifiable Information (PII) or executing malicious Prompt Injections.
+2. **Reliability & Uptime**: Relying on a single AI provider causes application outages if that API goes down or hits rate limits.
+3. **Cost & Observability**: Tracking token usage and precise costs across disparate teams and multiple LLM providers is incredibly difficult without a centralized hub.
 
-![Zyra Dashboard Banner](https://via.placeholder.com/1000x500.png?text=Zyra+Dashboard) *(Replace with actual screenshot)*
+## 🚀 Key Features
 
-## ✨ Key Features
+### 1. Intelligent Routing & Fallbacks
+Zyra automatically load-balances and routes requests based on real-time telemetry. If a primary provider (e.g., `OPENAI_GPT4`) experiences a P99 latency spike or hits a rate limit, the mesh seamlessly falls back to a secondary provider (e.g., `CLAUDE_3_OPUS` or `LLAMA_INST_3`) without dropping the client request.
 
-- **Bring Your Own Key (BYOK)**: Organizations securely encrypt and store their own provider API keys. No more hardcoding keys in client applications.
-- **Prompt Injection Blocking**: Actively scans and blocks adversarial user prompts (like "Ignore previous instructions") before they reach the LLM.
-- **Data Loss Prevention (PII)**: Asynchronously detects and redacts Personally Identifiable Information leaking to third-party AI providers.
-- **Global Rate Limiting & Budgets**: Redis-backed limits ensure no single organization or API Key can exhaust your token budget. Hard limits on `max_tokens` per request.
-- **Cost & Usage Analytics**: Live dashboard tracking exactly how many tokens your team is burning across all models/providers.
-- **High-Performance Architecture**: Synchronous proxying for low latency, combined with **BullMQ background workers** to handle heavy database logging without blocking the HTTP response.
+### 2. Live Intercept & Threat Observer
+Every request passing through Zyra is evaluated in real-time. The system calculates a dynamic **Risk Score** and actively blocks:
+- **Prompt Injections & Jailbreaks**
+- **SQL / Code Injections** (e.g., anomalous payloads encoded in user prompts)
+- **PII Leakage** (Automatically redacting Credit Cards, SSNs, and other sensitive entities before the payload leaves your infrastructure).
 
----
-
-## 🛠️ Tech Stack
-
-**Frontend (Client Dashboard)**
-- **Framework**: Next.js 14 (App Router)
-- **Styling**: Tailwind CSS & Framer Motion for premium animations
-- **Icons**: Lucide React
-
-**Backend (API & Proxy)**
-- **Framework**: Node.js & Express.js
-- **Database**: MongoDB (Mongoose) for Organizations, Users, and Logs
-- **Caching & Queues**: Redis & BullMQ for Rate Limiting and asynchronous logging workers
-- **Security**: Crypto (AES-256 for API keys), Helmet, Express-Rate-Limit
+### 3. Comprehensive Analytics & Cost Tracking
+Zyra logs every transaction, providing a real-time "Observer" dashboard built specifically for engineering and security teams. It tracks:
+- Total throughput (Tokens Processed)
+- Cost aggregation across providers
+- Threats intercepted (Flagged Count)
+- Interactive network visualizations of traffic distribution.
 
 ---
 
-## 🚀 Getting Started (Local Development)
+## 🏗️ Technical Stack
 
-Zyra is split into a Next.js `zyra-landing` frontend and a Node.js `backend`.
+- **Frontend (`/zyra-landing`)**:
+  - Framework: Next.js 16 (App Router)
+  - Styling: Tailwind CSS v4 featuring a premium, dark-mode "Technical Editorial" aesthetic.
+  - Animations: Framer Motion for scroll-linked telemetry reveals and network maps.
+  - Auth: Google OAuth (FedCM) and JWT-based local authentication.
+- **Backend (`/backend`)**:
+  - Core: Node.js with Express
+  - Database: MongoDB (User, Organization, Log, and Analytics schemas)
+  - Caching & Rate Limiting: Redis integration.
+  - Security: Helmet, xss-clean, express-mongo-sanitize.
 
-### Prerequisites
-Make sure you have installed:
-- Node.js (v18+)
-- MongoDB (Running locally or via Atlas)
-- Redis (Running locally, required for BullMQ and Rate Limiting)
+## ⚙️ Getting Started
 
-### 1. Setup the Backend
-Navigate to the backend folder and install dependencies:
+**Backend Installation**:
 ```bash
 cd backend
 npm install
-```
-
-Create a `.env` file in the `backend` directory:
-```env
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/zyra
-JWT_SECRET=your_super_secret_jwt_key
-ENCRYPTION_KEY=your_64_character_hex_encryption_key
-REDIS_HOST=localhost
-REDIS_PORT=6379
-FRONTEND_URL=http://localhost:3000
-```
-
-Start the backend services (You need two terminal tabs):
-```bash
-# Terminal 1: Start the API Server
 npm run dev
-
-# Terminal 2: Start the BullMQ Background Workers (Logging & Risk Analysis)
-npm run worker
+# Server running on localhost:5000
 ```
 
-### 2. Setup the Frontend
-Navigate to the frontend folder and install dependencies:
+**Frontend Installation**:
 ```bash
 cd zyra-landing
 npm install
-```
-
-Create a `.env.local` file in the `zyra-landing` directory:
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000
-```
-
-Start the development server:
-```bash
 npm run dev
+# Dashboard available at localhost:3000
 ```
-
-### 3. Test the Application
-1. Open `http://localhost:3000` and register a new account.
-2. Go to the **Dashboard ➔ Providers** and add your actual OpenAI API Key.
-3. Go to **Dashboard ➔ API Keys** and generate a Zyra Project Key (`sk-live-...`).
-4. Send a proxy request:
-```bash
-curl -X POST http://localhost:5000/proxy/openai/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "x-zyra-api-key: sk-live-YOUR_ZYRA_KEY" \
-  -d '{
-    "model": "gpt-3.5-turbo",
-    "messages": [{"role": "user", "content": "Hello Zyra!"}]
-  }'
-```
-5. Check your dashboard **Logs** to see the cost and risk analysis!
-
----
-
-## 🔒 Security Posture
-- All endpoint traffic goes through `express-rate-limit`.
-- Passwords are hashed via `bcryptjs`.
-- Upstream Provider API Keys (OpenAI etc.) are symmetrically encrypted (`aes-256-cbc`) using `crypto` before being saved to MongoDB. 
-- **DO NOT lose your `ENCRYPTION_KEY` environment variable**, or all saved provider keys will become unreadable.
-
-## 📄 License
-MIT License.
