@@ -13,7 +13,10 @@ if (mongoose.connection.readyState === 0) {
 }
 
 const worker = new Worker('interaction-logs', async (job) => {
-  const { orgId, userId, model, prompt, response, tokens, cost, latency } = job.data
+  const {
+    orgId, userId, model, prompt, response, tokens, cost, latency,
+    statusCode, optimizer, reliability
+  } = job.data
 
   console.log(`📝 Processing async log for org ${orgId}`)
 
@@ -26,7 +29,10 @@ const worker = new Worker('interaction-logs', async (job) => {
       response,
       tokens,
       cost,
-      latency
+      latency,
+      statusCode: statusCode || 200,
+      optimizer: optimizer || {},
+      reliability: reliability || {}
     })
 
     await Organization.findByIdAndUpdate(orgId, {

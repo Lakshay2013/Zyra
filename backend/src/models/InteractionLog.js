@@ -54,7 +54,23 @@ const interactionLogSchema = new mongoose.Schema({
   analyzed: {
     type: Boolean,
     default: false
-  }
+  },
+  // Cost optimizer tracking
+  optimizer: {
+    originalModel: { type: String, default: null },
+    optimizedModel: { type: String, default: null },
+    originalCost: { type: Number, default: 0 },
+    savings: { type: Number, default: 0 },
+    wasOptimized: { type: Boolean, default: false }
+  },
+  // Reliability tracking
+  reliability: {
+    retryCount: { type: Number, default: 0 },
+    fallbackUsed: { type: Boolean, default: false },
+    fallbackProvider: { type: String, default: null }
+  },
+  // Response status
+  statusCode: { type: Number, default: 200 }
 }, { timestamps: true })
 
 // Index for fast queries

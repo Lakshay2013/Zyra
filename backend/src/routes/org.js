@@ -16,4 +16,12 @@ router.get('/billing', orgController.getBilling)
 
 router.get('/members', orgController.getMembers)
 
+// Cost optimizer settings
+router.get('/optimizer', orgController.getOptimizer)
+router.put('/optimizer', orgController.updateOptimizer)
+
+// Reliability settings (retry + fallback)
+router.get('/reliability', orgController.getReliability)
+router.put('/reliability', orgController.updateReliability)
+
 module.exports = router

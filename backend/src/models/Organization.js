@@ -30,6 +30,18 @@ const organizationSchema = new mongoose.Schema({
     blockPII: { type: Boolean, default: false },
     blockInjection: { type: Boolean, default: true },
     maxTokensPerRequest: { type: Number, default: 2000 }
+  },
+  // Cost optimizer settings
+  optimizer: {
+    autoOptimize: { type: Boolean, default: false },
+    qualityTier: { type: String, enum: ['economy', 'standard', 'premium'], default: 'standard' },
+    costAlertThreshold: { type: Number, default: 100 }
+  },
+  // Reliability settings
+  reliability: {
+    enableRetry: { type: Boolean, default: true },
+    maxRetries: { type: Number, default: 2, min: 0, max: 5 },
+    fallbackOrder: [{ type: String, enum: ['openai', 'anthropic', 'gemini', 'groq'] }]
   }
 },{timestamps: true});
 
