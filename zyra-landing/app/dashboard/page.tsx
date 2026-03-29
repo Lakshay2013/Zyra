@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Terminal, Shield, Zap, Smartphone, Globe, ShieldAlert, Activity, Fingerprint, DollarSign } from "lucide-react"
+import { Terminal, Shield, Zap, Smartphone, Globe, ShieldAlert, Activity, Fingerprint, DollarSign, TrendingDown, CheckCircle2 } from "lucide-react"
 import api from "@/lib/api"
 
-const StatsCard = ({ title, value, icon: Icon, delay }: any) => (
+const StatsCard = ({ title, value, icon: Icon, delay, accent }: any) => (
   <motion.div
     initial={{ opacity: 0, y: 15 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -15,11 +15,11 @@ const StatsCard = ({ title, value, icon: Icon, delay }: any) => (
   >
     <div className="flex items-center justify-between xl:mb-6 mb-4">
       <h3 className="text-on-surface-variant text-[10px] font-label font-bold tracking-[0.15em] uppercase">{title}</h3>
-      <div className="p-2 bg-primary/10 rounded-full text-primary">
+      <div className={`p-2 rounded-full ${accent ? 'bg-emerald-500/10 text-emerald-400' : 'bg-primary/10 text-primary'}`}>
         <Icon className="w-[18px] h-[18px]" strokeWidth={2.5} />
       </div>
     </div>
-    <span className="text-3xl font-headline font-semibold text-on-surface tracking-tight truncate">
+    <span className={`text-3xl font-headline font-semibold tracking-tight truncate ${accent ? 'text-emerald-400' : 'text-on-surface'}`}>
       {value}
     </span>
   </motion.div>
@@ -29,27 +29,37 @@ export default function DashboardObserver() {
   const [stats, setStats] = useState<any>(null)
   const [usage, setUsage] = useState<any[]>([])
   const [highRisk, setHighRisk] = useState<any[]>([])
+  const [costBreakdown, setCostBreakdown] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [period, setPeriod] = useState<'7d' | '30d'>('7d')
+
+  const fetchData = async (p: string = period) => {
+    try {
+      const [overviewRes, usageRes, highRiskRes, costRes] = await Promise.all([
+        api.get('/api/analytics/overview'),
+        api.get(`/api/analytics/usage?period=${p}`),
+        api.get('/api/analytics/high-risk'),
+        api.get('/api/analytics/cost-breakdown')
+      ])
+      setStats(overviewRes.data)
+      setUsage(usageRes.data.usage || [])
+      setHighRisk(highRiskRes.data.highRisk || [])
+      setCostBreakdown(costRes.data)
+    } catch (err) {
+      console.error("Failed to load analytics", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const [overviewRes, usageRes, highRiskRes] = await Promise.all([
-          api.get('/api/analytics/overview'),
-          api.get('/api/analytics/usage?period=7d'),
-          api.get('/api/analytics/high-risk')
-        ])
-        setStats(overviewRes.data)
-        setUsage(usageRes.data.usage || [])
-        setHighRisk(highRiskRes.data.highRisk || [])
-      } catch (err) {
-        console.error("Failed to load analytics", err)
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchData()
   }, [])
+
+  const handlePeriodChange = (newPeriod: '7d' | '30d') => {
+    setPeriod(newPeriod)
+    fetchData(newPeriod)
+  }
 
   if (loading) {
     return (
@@ -60,18 +70,76 @@ export default function DashboardObserver() {
     )
   }
 
-  // Dummy data mixed with real data for terminal if highRisk is empty to maintain aesthetic
-  const initialTerminalLogs = highRisk.length > 0 ? [] : [
-    { type: 'INFO', msg: 'System initialized. Listening for mesh events...', time: '14:22:01', system: 'CORE' },
-    { type: 'WARNING', msg: 'Fallback provider Claude-3 engaged due to OpenAI P99 spike.', time: '14:22:15', system: 'ROUTING' }
-  ]
+  // Compute provider distribution from real cost breakdown data
+  const providerDistribution = (() => {
+    if (!costBreakdown?.byModel || costBreakdown.byModel.length === 0) return []
+    
+    const providerMap: Record<string, number> = {}
+    const modelToProvider: Record<string, string> = {
+      'gpt-4o': 'OpenAI', 'gpt-4o-mini': 'OpenAI', 'gpt-4-turbo': 'OpenAI', 'gpt-3.5-turbo': 'OpenAI',
+      'claude-3-5-sonnet': 'Anthropic', 'claude-3-opus': 'Anthropic', 'claude-3-haiku': 'Anthropic',
+      'gemini-1.5-pro': 'Gemini', 'gemini-1.5-flash': 'Gemini',
+      'llama3-70b-8192': 'Groq', 'mixtral-8x7b-32768': 'Groq'
+    }
 
-  // Chart data calculation
-  const defaultHeights = [40, 65, 45, 80, 55, 90, 75]
-  const maxLogs = Math.max(...(usage.length > 0 ? usage.map(u => u.totalLogs) : defaultHeights)) || 1
-  const chartData = usage.length > 0 
-    ? usage.map(u => ({ height: (u.totalLogs / maxLogs) * 100, date: new Date(u._id), value: u.totalLogs }))
-    : defaultHeights.map((h, i) => ({ height: h, date: new Date(Date.now() - (6-i)*86400000), value: h * 10 }))
+    let totalLogs = 0
+    for (const m of costBreakdown.byModel) {
+      const modelName = (m._id || '').toLowerCase()
+      let provider = 'Other'
+      for (const [key, prov] of Object.entries(modelToProvider)) {
+        if (modelName.includes(key) || key.includes(modelName)) {
+          provider = prov
+          break
+        }
+      }
+      providerMap[provider] = (providerMap[provider] || 0) + (m.totalLogs || 0)
+      totalLogs += m.totalLogs || 0
+    }
+
+    if (totalLogs === 0) return []
+
+    return Object.entries(providerMap)
+      .map(([name, count]) => ({ name, percent: Math.round((count / totalLogs) * 100) }))
+      .sort((a, b) => b.percent - a.percent)
+      .slice(0, 4)
+  })()
+
+  // Compute provider status from cost breakdown
+  const providerStatus = (() => {
+    if (!costBreakdown?.byModel || costBreakdown.byModel.length === 0) return []
+    
+    const statusMap: Record<string, { logs: number, avgLatency: number }> = {}
+    const modelToProviderLabel: Record<string, string> = {
+      'gpt': 'OPENAI', 'claude': 'ANTHROPIC', 'gemini': 'GEMINI', 'llama': 'GROQ', 'mixtral': 'GROQ'
+    }
+
+    for (const m of costBreakdown.byModel) {
+      const modelName = (m._id || '').toLowerCase()
+      let label = modelName.toUpperCase().replace(/-/g, '_')
+      
+      statusMap[label] = {
+        logs: m.totalLogs || 0,
+        avgLatency: Math.round(m.avgLatency || 0)
+      }
+    }
+
+    return Object.entries(statusMap)
+      .map(([name, data]) => ({
+        name,
+        logs: data.logs,
+        avgLatency: data.avgLatency,
+        status: data.avgLatency > 5000 ? 'DEGRADED' : 'ONLINE'
+      }))
+      .sort((a, b) => b.logs - a.logs)
+      .slice(0, 3)
+  })()
+
+  // Chart data from REAL usage — no fallback dummy data
+  const hasUsageData = usage.length > 0
+  const maxLogs = hasUsageData ? Math.max(...usage.map(u => u.totalLogs), 1) : 1
+  const chartData = hasUsageData 
+    ? usage.map(u => ({ height: (u.totalLogs / maxLogs) * 100, date: new Date(u._id), value: u.totalLogs, cost: u.totalCost || 0, savings: u.savings || 0 }))
+    : []
 
   return (
     <div className="min-h-screen pb-16 pt-2">
@@ -110,6 +178,17 @@ export default function DashboardObserver() {
                 {(stats?.flaggedCount || 0).toLocaleString()}
               </span>
             </div>
+            {(stats?.totalSavings || 0) > 0 && (
+              <>
+                <div className="w-px h-10 bg-outline-variant/20"></div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[9px] font-label font-bold tracking-[0.2em] text-emerald-400/80 uppercase">Money Saved</span>
+                  <span className="text-2xl font-label text-emerald-400 font-light">
+                    ${(stats?.totalSavings || 0).toFixed(2)}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -131,22 +210,21 @@ export default function DashboardObserver() {
             />
           </div>
 
+          {/* Traffic Distribution — from REAL data */}
           <div className="absolute top-6 left-6 z-10 flex flex-col space-y-2">
             <div className="glass-effect p-4 rounded-lg border border-outline-variant/10 border-l-2 border-l-primary shadow-lg">
               <p className="text-[9px] font-label text-primary uppercase font-bold tracking-[0.2em] mb-4">Traffic Distribution</p>
               <div className="flex items-center space-x-6">
-                <div>
-                  <p className="text-[9px] font-label font-bold text-on-surface-variant uppercase tracking-wider">OpenAI</p>
-                  <p className="text-sm font-label text-on-surface mt-1">62%</p>
-                </div>
-                <div>
-                  <p className="text-[9px] font-label font-bold text-on-surface-variant uppercase tracking-wider">Anthropic</p>
-                  <p className="text-sm font-label text-on-surface mt-1">31%</p>
-                </div>
-                <div>
-                  <p className="text-[9px] font-label font-bold text-on-surface-variant uppercase tracking-wider">Llama-3</p>
-                  <p className="text-sm font-label text-on-surface mt-1">7%</p>
-                </div>
+                {providerDistribution.length > 0 ? (
+                  providerDistribution.map(p => (
+                    <div key={p.name}>
+                      <p className="text-[9px] font-label font-bold text-on-surface-variant uppercase tracking-wider">{p.name}</p>
+                      <p className="text-sm font-label text-on-surface mt-1">{p.percent}%</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-[10px] font-label text-on-surface-variant italic">No traffic data yet</p>
+                )}
               </div>
             </div>
           </div>
@@ -183,34 +261,40 @@ export default function DashboardObserver() {
                 </div>
               </div>
 
+              {/* Provider Status — from REAL data */}
               <div className="flex flex-col space-y-6 w-52 z-20">
-                <div className="flex items-center space-x-4 bg-surface-container-low/90 backdrop-blur-md p-3.5 rounded-lg border border-outline-variant/20 hover:border-primary/50 transition-all shadow-xl">
-                  <div className="w-10 h-10 bg-surface flex items-center justify-center rounded-md border border-outline-variant/10">
-                    <Zap className="text-white w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-label font-bold text-white tracking-wider">OPENAI_GPT4</p>
-                    <p className="text-[9px] font-label font-bold text-emerald-400 mt-0.5">ONLINE_SECURE</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4 bg-surface-container-low/90 backdrop-blur-md p-3.5 rounded-lg border border-outline-variant/20 hover:border-primary/50 transition-all shadow-xl">
-                  <div className="w-10 h-10 bg-surface flex items-center justify-center rounded-md border border-outline-variant/10">
-                    <Shield className="text-white w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-label font-bold text-white tracking-wider">CLAUDE_3_OPUS</p>
-                    <p className="text-[9px] font-label font-bold text-emerald-400 mt-0.5">ONLINE_SECURE</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4 bg-error-container/5 backdrop-blur-md p-3.5 rounded-lg border border-secondary/30 border-l-2 border-l-secondary shadow-xl">
-                  <div className="w-10 h-10 bg-surface flex items-center justify-center rounded-md border border-outline-variant/10">
-                    <ShieldAlert className="text-secondary w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-label font-bold text-white tracking-wider">LLAMA_INST_3</p>
-                    <p className="text-[9px] font-label font-bold text-secondary mt-0.5">RATE_LIMIT_HIT</p>
-                  </div>
-                </div>
+                {providerStatus.length > 0 ? (
+                  providerStatus.map((ps, i) => (
+                    <div key={ps.name} className={`flex items-center space-x-4 backdrop-blur-md p-3.5 rounded-lg border shadow-xl transition-all
+                      ${ps.status === 'DEGRADED' 
+                        ? 'bg-error-container/5 border-secondary/30 border-l-2 border-l-secondary' 
+                        : 'bg-surface-container-low/90 border-outline-variant/20 hover:border-primary/50'}`}>
+                      <div className="w-10 h-10 bg-surface flex items-center justify-center rounded-md border border-outline-variant/10">
+                        {ps.status === 'DEGRADED' 
+                          ? <ShieldAlert className="text-secondary w-5 h-5" />
+                          : <Zap className="text-white w-5 h-5" />}
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-label font-bold text-white tracking-wider">{ps.name}</p>
+                        <p className={`text-[9px] font-label font-bold mt-0.5 ${ps.status === 'DEGRADED' ? 'text-secondary' : 'text-emerald-400'}`}>
+                          {ps.status === 'DEGRADED' ? 'DEGRADED' : 'ONLINE'} · {ps.avgLatency}ms
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <div className="flex items-center space-x-4 bg-surface-container-low/90 backdrop-blur-md p-3.5 rounded-lg border border-outline-variant/20 shadow-xl">
+                      <div className="w-10 h-10 bg-surface flex items-center justify-center rounded-md border border-outline-variant/10">
+                        <Zap className="text-on-surface-variant/40 w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-label font-bold text-on-surface-variant/50 tracking-wider">NO_PROVIDERS</p>
+                        <p className="text-[9px] font-label font-bold text-on-surface-variant/30 mt-0.5">AWAITING_DATA</p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Dynamic Path SVG */}
@@ -219,7 +303,7 @@ export default function DashboardObserver() {
                 <path d="M 60 320 Q 200 320 320 250" fill="none" stroke="rgba(200, 191, 255, 0.25)" strokeWidth="1.5" strokeDasharray="4 4" className="animate-[dash_30s_linear_infinite]"></path>
                 <path d="M 430 250 Q 550 120 620 120" fill="none" stroke="rgba(200, 191, 255, 0.25)" strokeWidth="1.5" strokeDasharray="4 4" className="animate-[dash_30s_linear_infinite]"></path>
                 <path d="M 430 250 Q 550 250 620 250" fill="none" stroke="rgba(200, 191, 255, 0.25)" strokeWidth="1.5" strokeDasharray="4 4" className="animate-[dash_30s_linear_infinite]"></path>
-                <path d="M 430 250 Q 550 380 620 380" fill="none" stroke="rgba(255, 179, 174, 0.5)" strokeWidth="1.5" strokeDasharray="4 4" className="animate-[dash_30s_linear_infinite]"></path>
+                <path d="M 430 250 Q 550 380 620 380" fill="none" stroke="rgba(200, 191, 255, 0.25)" strokeWidth="1.5" strokeDasharray="4 4" className="animate-[dash_30s_linear_infinite]"></path>
               </svg>
               <style jsx>{`@keyframes dash { to { stroke-dashoffset: -1000; } }`}</style>
             </div>
@@ -247,15 +331,13 @@ export default function DashboardObserver() {
 
           <div className="flex-1 overflow-y-auto p-5 space-y-5 font-label text-xs leading-relaxed tracking-wide">
             {highRisk.length === 0 ? (
-              initialTerminalLogs.map((log, i) => (
-                <div key={i} className={`flex space-x-3 ${log.type === 'WARNING' ? 'bg-error-container/10 p-3 -mx-2 border-l-2 border-secondary' : ''}`}>
-                  <span className={log.type === 'WARNING' ? 'text-secondary font-bold' : 'text-on-surface-variant'}>{log.time}</span>
-                  <div className="flex-1">
-                    <span className={`font-bold ${log.type === 'WARNING' ? 'text-secondary' : 'text-primary'}`}>[{log.system}]</span>
-                    <span className="text-on-surface ml-2">{log.msg}</span>
-                  </div>
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center space-y-3">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-400/40 mx-auto" />
+                  <p className="text-on-surface-variant/60 font-label text-[11px] font-bold uppercase tracking-[0.2em]">All Clear</p>
+                  <p className="text-on-surface-variant/40 font-label text-[10px]">No high-risk events detected</p>
                 </div>
-              ))
+              </div>
             ) : (
               highRisk.map((log, i) => (
                 <div key={log._id || i} className="flex space-x-3 bg-error-container/10 p-3 -mx-2 border-l-2 border-secondary hover:bg-error-container/20 transition-colors">
@@ -281,14 +363,16 @@ export default function DashboardObserver() {
           <div className="p-4 border-t border-outline-variant/10 bg-surface-container-low/80 flex items-center space-x-3 backdrop-blur-md">
             <span className="text-primary font-label text-sm font-bold">&gt;</span>
             <span className="w-1.5 h-4 bg-primary animate-pulse"></span>
-            <span className="text-[10px] font-label text-on-surface-variant italic tracking-widest uppercase">Awaiting network streams...</span>
+            <span className="text-[10px] font-label text-on-surface-variant italic tracking-widest uppercase">
+              {highRisk.length > 0 ? `${highRisk.length} threats intercepted` : 'Awaiting network streams...'}
+            </span>
           </div>
         </motion.div>
       </div>
 
       {/* 
         ==============================
-        ANALYTICS: THE LEGACY FEATURES
+        ANALYTICS: REAL DATA ONLY
         ==============================
       */}
       <div className="space-y-8 relative z-10 max-w-[1400px] mx-auto">
@@ -297,16 +381,17 @@ export default function DashboardObserver() {
           <span className="px-3 py-1 bg-surface-container text-on-surface-variant font-label text-[10px] tracking-[0.2em] rounded-sm font-bold">ANALYTICS ENGINE</span>
         </div>
 
-        {/* 5-Column Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* 6-Column Stats Row — now includes savings */}
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
           <StatsCard title="Total Logs" value={stats?.totalLogs?.toLocaleString() || '0'} icon={Activity} delay={0.05} />
           <StatsCard title="Avg Risk Score" value={stats?.avgRiskScore || '0'} icon={Zap} delay={0.1} />
           <StatsCard title="Total Cost" value={`$${stats?.totalCost || '0.00'}`} icon={DollarSign} delay={0.15} />
           <StatsCard title="Total Tokens" value={stats?.totalTokens?.toLocaleString() || '0'} icon={Fingerprint} delay={0.2} />
-          <StatsCard title="Flagged Count" value={stats?.flaggedCount?.toLocaleString() || '0'} icon={ShieldAlert} delay={0.25} />
+          <StatsCard title="Threats Flagged" value={stats?.flaggedCount?.toLocaleString() || '0'} icon={ShieldAlert} delay={0.25} />
+          <StatsCard title="Money Saved" value={`$${(stats?.totalSavings || 0).toFixed(2)}`} icon={TrendingDown} delay={0.3} accent={true} />
         </div>
 
-        {/* Daily Usage Render Chart */}
+        {/* Daily Usage Render Chart — REAL data only */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -317,9 +402,15 @@ export default function DashboardObserver() {
           <div className="flex items-center justify-between mb-12">
             <div>
               <h3 className="text-xl font-bold text-on-surface font-headline tracking-tight">Daily Usage Overview</h3>
-              <p className="text-[10px] font-label text-on-surface-variant font-bold uppercase tracking-[0.2em] mt-1.5">Logs over the past 7 days</p>
+              <p className="text-[10px] font-label text-on-surface-variant font-bold uppercase tracking-[0.2em] mt-1.5">
+                Logs over the past {period === '7d' ? '7' : '30'} days
+              </p>
             </div>
-            <select className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface text-sm font-label font-bold px-4 py-2.5 rounded-xl focus:outline-none focus:border-primary transition-colors hover:border-outline-variant/40">
+            <select 
+              value={period === '7d' ? 'Last 7 days' : 'Last 30 days'}
+              onChange={(e) => handlePeriodChange(e.target.value.includes('7') ? '7d' : '30d')}
+              className="bg-surface-container-lowest border border-outline-variant/20 text-on-surface text-sm font-label font-bold px-4 py-2.5 rounded-xl focus:outline-none focus:border-primary transition-colors hover:border-outline-variant/40"
+            >
               <option>Last 7 days</option>
               <option>Last 30 days</option>
             </select>
@@ -333,31 +424,40 @@ export default function DashboardObserver() {
               ))}
             </div>
 
-            {/* Simulated Rendering Bars */}
-            {chartData.map((data, i) => (
-              <div key={i} className="flex-1 flex flex-col justify-end items-center group relative z-10 h-full pb-8">
-                <motion.div 
-                  initial={{ height: 0 }}
-                  whileInView={{ height: `${Math.max(data.height, 6)}%` }} 
-                  viewport={{ once: true }}
-                  transition={{ duration: 1, delay: 0.2 + i * 0.1, type: 'spring', bounce: 0.2 }}
-                  className="w-full max-w-[56px] bg-primary/20 rounded-t-lg group-hover:bg-primary/40 transition-all relative flex items-end justify-center overflow-hidden"
-                >
-                  <div className="w-full bg-primary rounded-t-sm" style={{ height: '4px' }} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </motion.div>
-                
-                {/* Tooltip */}
-                <div className="opacity-0 group-hover:opacity-100 absolute bottom-1/2 bg-surface-container-highest text-sm font-label font-bold px-4 py-2.5 rounded-lg shadow-2xl border border-outline-variant/20 text-white whitespace-nowrap transition-all duration-200 pointer-events-none z-50 transform translate-y-1/2 scale-95 group-hover:scale-100 mb-4">
-                  {data.value.toLocaleString()} logs
-                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-surface-container-highest border-b border-r border-outline-variant/20 rotate-45"></div>
+            {chartData.length > 0 ? (
+              chartData.map((data, i) => (
+                <div key={i} className="flex-1 flex flex-col justify-end items-center group relative z-10 h-full pb-8">
+                  <motion.div 
+                    initial={{ height: 0 }}
+                    whileInView={{ height: `${Math.max(data.height, 6)}%` }} 
+                    viewport={{ once: true }}
+                    transition={{ duration: 1, delay: 0.2 + i * 0.1, type: 'spring', bounce: 0.2 }}
+                    className="w-full max-w-[56px] bg-primary/20 rounded-t-lg group-hover:bg-primary/40 transition-all relative flex items-end justify-center overflow-hidden"
+                  >
+                    <div className="w-full bg-primary rounded-t-sm" style={{ height: '4px' }} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  </motion.div>
+                  
+                  {/* Tooltip */}
+                  <div className="opacity-0 group-hover:opacity-100 absolute bottom-1/2 bg-surface-container-highest text-sm font-label font-bold px-4 py-2.5 rounded-lg shadow-2xl border border-outline-variant/20 text-white whitespace-nowrap transition-all duration-200 pointer-events-none z-50 transform translate-y-1/2 scale-95 group-hover:scale-100 mb-4">
+                    {data.value.toLocaleString()} logs · ${data.cost.toFixed(4)}
+                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-surface-container-highest border-b border-r border-outline-variant/20 rotate-45"></div>
+                  </div>
+                  
+                  <span className="absolute bottom-0 text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-widest transition-colors group-hover:text-primary">
+                    {data.date.toLocaleDateString(undefined, { weekday: 'short' })}
+                  </span>
                 </div>
-                
-                <span className="absolute bottom-0 text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-widest transition-colors group-hover:text-primary">
-                  {data.date.toLocaleDateString(undefined, { weekday: 'short' })}
-                </span>
+              ))
+            ) : (
+              <div className="flex-1 flex items-center justify-center z-10">
+                <div className="text-center space-y-3">
+                  <Activity className="w-10 h-10 text-on-surface-variant/20 mx-auto" />
+                  <p className="text-on-surface-variant/40 font-label text-sm font-bold">No usage data yet</p>
+                  <p className="text-on-surface-variant/30 font-label text-xs">Send requests through the proxy to see analytics</p>
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </motion.div>
       </div>

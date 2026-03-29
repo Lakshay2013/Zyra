@@ -43,7 +43,16 @@ const MODEL_TIERS = {
 const matchModel = (model) => {
   if (!model) return null
   const modelLower = model.toLowerCase()
-  return Object.keys(MODEL_PRICING).find(k => k !== 'default' && (modelLower.includes(k) || k.includes(modelLower))) || null
+  
+  // Exact match first
+  if (MODEL_PRICING[modelLower] && modelLower !== 'default') return modelLower
+  
+  // Fuzzy match — sort by key length DESC so 'gpt-4o-mini' matches before 'gpt-4o'
+  const keys = Object.keys(MODEL_PRICING)
+    .filter(k => k !== 'default')
+    .sort((a, b) => b.length - a.length)
+  
+  return keys.find(k => modelLower.includes(k) || k.includes(modelLower)) || null
 }
 
 const getPricing = (model) => {

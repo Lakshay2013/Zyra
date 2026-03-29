@@ -5,8 +5,9 @@ const { decrypt } = require('../utils/crypto')
 const { calculateCost, getProvider: getModelProvider, MODEL_TO_PROVIDER } = require('../utils/costCalculator')
 const { detectInjection } = require('../utils/injectionDetector')
 const { getRiskQueue, getLogQueue } = require('../config/queue')
-const { optimizeRequest, calculateActualSavings } = require('../services/costOptimizer')
+const { optimizeRequest, calculateActualSavings, estimateTokenCount } = require('../services/costOptimizer')
 const { executeWithRetry } = require('../services/retryHandler')
+const { validateResponse, getQualityFallbackModel } = require('../services/qualityGuard')
 
 const PROVIDERS = {
   openai: {
@@ -142,7 +143,6 @@ const buildFallbacks = (org, upstreamPath, requestBody, req, currentProvider, mo
     const fbKey = resolveProviderKey(req, org, fbProvider)
     if (!fbKey) continue
 
-    // Find a model for this fallback provider that's compatible
     const fbModel = findCompatibleModel(model, fbProvider)
     if (!fbModel) continue
 
@@ -161,10 +161,8 @@ const buildFallbacks = (org, upstreamPath, requestBody, req, currentProvider, mo
 
 /**
  * Find a compatible model for a fallback provider.
- * Maps across providers at roughly the same quality tier.
  */
 const findCompatibleModel = (originalModel, targetProvider) => {
-  // Simple mapping: pick the first model available for the target provider
   const providerModels = {
     openai: 'gpt-4o-mini',
     anthropic: 'claude-3-5-sonnet',
@@ -175,10 +173,12 @@ const findCompatibleModel = (originalModel, targetProvider) => {
 }
 
 
-// ──────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────
 // MAIN PROXY HANDLER
-// Pipeline: auth → policy → optimize → retry+fallback → log
-// ──────────────────────────────────────────────────────
+// Pipeline: auth → firewall → cost optimizer → provider call
+//           → quality check → (optional retry with higher tier)
+//           → log (with savings data) → response
+// ──────────────────────────────────────────────────────────────
 exports.proxy = async (req, res) => {
   const start = Date.now()
 
@@ -197,7 +197,7 @@ exports.proxy = async (req, res) => {
     return res.status(429).json({ message: 'Monthly log limit reached. Please upgrade your plan.' })
   }
 
-  // ── Resolve API key ──
+  // ── Step 1: Resolve API key ──
   let providerApiKey = resolveProviderKey(req, org, provider)
   if (!providerApiKey) {
     return res.status(400).json({
@@ -209,16 +209,16 @@ exports.proxy = async (req, res) => {
   let model = requestBody.model || 'unknown'
   const userId = req.headers['x-user-id'] || requestBody.user || 'anonymous'
 
-  // ── Apply Policies ──
+  // ── Step 2: Firewall Policies ──
   const maxTokens = org.policies?.maxTokensPerRequest || 2000
   if (!requestBody.max_tokens || requestBody.max_tokens > maxTokens) {
     requestBody.max_tokens = maxTokens
   }
 
   if (org.policies?.blockInjection) {
-    const promptText = extractPrompt(provider, requestBody)
-    if (promptText) {
-      const injectionResult = detectInjection(promptText)
+    const promptTextForScan = extractPrompt(provider, requestBody)
+    if (promptTextForScan) {
+      const injectionResult = detectInjection(promptTextForScan)
       if (injectionResult.hasInjection) {
         return res.status(403).json({
           error: 'Zyra Firewall blocked this request due to Prompt Injection policy.',
@@ -228,24 +228,30 @@ exports.proxy = async (req, res) => {
     }
   }
 
-  // ── Cost Optimizer ──
+  // ── Step 3: Cost Optimizer ──
   const promptText = extractPrompt(provider, requestBody)
+  const estimatedTokens = estimateTokenCount(promptText)
   let actualProvider = provider
   let actualModel = model
   let optimizerResult = {
     wasOptimized: false,
     originalModel: model,
     originalProvider: provider,
-    estimatedSavings: 0,
-    originalEstimatedCost: 0
+    optimizedModel: model,
+    optimizedProvider: provider,
+    originalCost: 0,
+    optimizedCost: 0,
+    savings: 0,
+    complexity: 'standard',
+    tier: 'standard'
   }
 
   if (org.optimizer?.autoOptimize) {
     optimizerResult = optimizeRequest(org, model, provider, promptText)
 
     if (optimizerResult.wasOptimized) {
-      actualProvider = optimizerResult.recommendedProvider
-      actualModel = optimizerResult.recommendedModel
+      actualProvider = optimizerResult.optimizedProvider
+      actualModel = optimizerResult.optimizedModel
 
       // Rewrite the request to use the optimized model
       requestBody.model = actualModel
@@ -263,17 +269,17 @@ exports.proxy = async (req, res) => {
         }
       }
 
-      console.log(`[Optimizer] ${model} → ${actualModel} (est. savings: $${optimizerResult.estimatedSavings})`)
+      console.log(`[Optimizer] ${model} → ${actualModel} | complexity: ${optimizerResult.complexity} | tier: ${optimizerResult.tier} | est. savings: $${optimizerResult.savings}`)
     }
   }
 
-  // ── Build primary request ──
+  // ── Step 4: Build primary request ──
   const primaryConfig = buildRequestConfig(actualProvider, upstreamPath, providerApiKey, requestBody, req)
 
-  // ── Build fallbacks ──
+  // ── Step 5: Build fallbacks ──
   const fallbacks = buildFallbacks(org, upstreamPath, requestBody, req, actualProvider, actualModel)
 
-  // ── Execute with retry + fallback ──
+  // ── Step 6: Execute with retry + fallback ──
   let responseBody
   let statusCode
   let retryCount = 0
@@ -281,6 +287,8 @@ exports.proxy = async (req, res) => {
   let fallbackProvider = null
   let finalModel = actualModel
   let finalProvider = actualProvider
+  let qualityRetried = false
+  let qualityFailReason = null
 
   const enableRetry = org.reliability?.enableRetry !== false
   const maxRetries = enableRetry ? (org.reliability?.maxRetries ?? 2) : 0
@@ -302,8 +310,6 @@ exports.proxy = async (req, res) => {
     finalModel = result.model
     finalProvider = result.provider
 
-    res.status(statusCode).json(responseBody)
-
   } catch (err) {
     console.error('[Proxy] All attempts failed:', err.message)
     statusCode = err.response?.status || 502
@@ -311,7 +317,49 @@ exports.proxy = async (req, res) => {
     return res.status(statusCode).json(responseBody)
   }
 
-  // ── Async logging with optimizer + reliability metadata ──
+  // ── Step 7: Quality Check ──
+  // If the optimizer downgraded the model, verify the response quality.
+  // If it fails validation, retry once with a higher-tier model.
+  if (optimizerResult.wasOptimized && statusCode >= 200 && statusCode < 400) {
+    const responseText = extractResponse(finalProvider, responseBody)
+    const quality = validateResponse(responseText, promptText, estimatedTokens)
+
+    if (!quality.passed) {
+      qualityFailReason = quality.reason
+      console.log(`[QualityGuard] Response failed validation (${quality.reason}). Attempting higher-tier retry...`)
+
+      const upgrade = getQualityFallbackModel(finalModel, org)
+
+      if (upgrade) {
+        try {
+          const upgradeKey = resolveProviderKey(req, org, upgrade.provider)
+          if (upgradeKey) {
+            const upgradeBody = { ...requestBody, model: upgrade.model }
+            const upgradeConfig = buildRequestConfig(upgrade.provider, upstreamPath, upgradeKey, upgradeBody, req)
+
+            const upgradeResult = await axios(upgradeConfig)
+
+            // Use the better response
+            responseBody = upgradeResult.data
+            statusCode = upgradeResult.status
+            finalModel = upgrade.model
+            finalProvider = upgrade.provider
+            qualityRetried = true
+
+            console.log(`[QualityGuard] Retried with ${upgrade.model} — success`)
+          }
+        } catch (upgradeErr) {
+          // Quality retry failed — use original response (it's still better than nothing)
+          console.log(`[QualityGuard] Higher-tier retry failed, using original response`)
+        }
+      }
+    }
+  }
+
+  // ── Send response to client ──
+  res.status(statusCode).json(responseBody)
+
+  // ── Step 8: Async logging with full optimizer + reliability metadata ──
   try {
     const latency = Date.now() - start
     const prompt = extractPrompt(finalProvider, requestBody)
@@ -344,7 +392,10 @@ exports.proxy = async (req, res) => {
         optimizedModel: optimizerResult.wasOptimized ? finalModel : null,
         originalCost,
         savings: actualSavings,
-        wasOptimized: optimizerResult.wasOptimized
+        wasOptimized: optimizerResult.wasOptimized,
+        complexity: optimizerResult.complexity,
+        qualityRetried,
+        qualityFailReason
       },
       // Reliability data
       reliability: {

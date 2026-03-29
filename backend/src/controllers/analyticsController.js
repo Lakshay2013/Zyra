@@ -1,7 +1,7 @@
 const InteractionLog = require('../models/InteractionLog')
 const mongoose = require('mongoose')
 const { Types } = mongoose
-const { getValueReport, getCostByModel, getCostByUser } = require('../services/valueMetrics')
+const { getValueReport, getCostByModel, getCostByUser, getCostComparison } = require('../services/valueMetrics')
 
 // GET /api/analytics/overview
 exports.getOverview = async (req, res) => {
@@ -128,7 +128,7 @@ exports.getHighRisk = async (req, res) => {
   }
 }
 
-// GET /api/analytics/savings — "You saved $X this month"
+// GET /api/analytics/savings — "How much money did Zyra save me?"
 exports.getSavings = async (req, res) => {
   try {
     const orgId = req.user.orgId
@@ -149,22 +149,37 @@ exports.getSavings = async (req, res) => {
           optimizedCount: {
             $sum: { $cond: [{ $eq: ['$optimizer.wasOptimized', true] }, 1, 0] }
           },
+          qualityRetryCount: {
+            $sum: { $cond: [{ $eq: ['$optimizer.qualityRetried', true] }, 1, 0] }
+          },
           totalRequests: { $sum: 1 },
-          totalCost: { $sum: '$cost' }
+          totalCost: { $sum: '$cost' },
+          originalCostSum: { $sum: { $ifNull: ['$optimizer.originalCost', '$cost'] } }
         }
       }
     ])
 
     const s = stats || {}
+    const totalSaved = parseFloat((s.totalSavings || 0).toFixed(2))
+    const wouldHaveSpent = parseFloat((s.originalCostSum || 0).toFixed(2))
+    const percentReduction = wouldHaveSpent > 0
+      ? parseFloat(((totalSaved / wouldHaveSpent) * 100).toFixed(1))
+      : 0
+
     res.json({
-      period: `last_${days}_days`,
-      totalSavings: parseFloat((s.totalSavings || 0).toFixed(4)),
-      optimizedRequests: s.optimizedCount || 0,
-      totalRequests: s.totalRequests || 0,
-      totalCost: parseFloat((s.totalCost || 0).toFixed(4)),
-      savingsPercentage: s.totalCost > 0
-        ? parseFloat(((s.totalSavings / (s.totalCost + s.totalSavings)) * 100).toFixed(1))
-        : 0
+      totalSaved,
+      percentReduction,
+      breakdown: {
+        optimization: totalSaved
+      },
+      details: {
+        period: `last_${days}_days`,
+        optimizedRequests: s.optimizedCount || 0,
+        qualityRetries: s.qualityRetryCount || 0,
+        totalRequests: s.totalRequests || 0,
+        actualCost: parseFloat((s.totalCost || 0).toFixed(4)),
+        wouldHaveCost: wouldHaveSpent
+      }
     })
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message })
@@ -199,3 +214,15 @@ exports.getValueReport = async (req, res) => {
   }
 }
 
+// GET /api/analytics/cost-comparison — "What would you have spent WITHOUT Zyra?"
+exports.getCostComparison = async (req, res) => {
+  try {
+    const orgId = req.user.orgId
+    const days = parseInt(req.query.days) || 30
+
+    const comparison = await getCostComparison(orgId, days)
+    res.json(comparison)
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message })
+  }
+}

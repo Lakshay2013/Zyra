@@ -16,14 +16,14 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const [orgData, setOrgData] = useState({ name: 'Acme Corp', plan: 'Starter' })
+  const [orgData, setOrgData] = useState({ name: 'Your Org', plan: 'Free' })
 
   useEffect(() => {
     const savedOrg = localStorage.getItem('zyra_org')
     if (savedOrg) {
       try {
         const parsed = JSON.parse(savedOrg)
-        setOrgData({ name: parsed.name || 'Your Org', plan: 'Starter' })
+        setOrgData({ name: parsed.name || 'Your Org', plan: parsed.plan || 'Free' })
       } catch (e) {}
     }
   }, [])

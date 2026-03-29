@@ -61,7 +61,10 @@ const interactionLogSchema = new mongoose.Schema({
     optimizedModel: { type: String, default: null },
     originalCost: { type: Number, default: 0 },
     savings: { type: Number, default: 0 },
-    wasOptimized: { type: Boolean, default: false }
+    wasOptimized: { type: Boolean, default: false },
+    complexity: { type: String, enum: ['simple', 'standard', 'complex'], default: null },
+    qualityRetried: { type: Boolean, default: false },
+    qualityFailReason: { type: String, default: null }
   },
   // Reliability tracking
   reliability: {

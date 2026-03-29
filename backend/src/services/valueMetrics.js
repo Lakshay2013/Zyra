@@ -138,8 +138,88 @@ const getCostByUser = async (orgId, days = 30) => {
   ])
 }
 
+/**
+ * Cost comparison: "What would you have spent WITHOUT Zyra?"
+ * Per-model breakdown of original cost vs. optimized cost.
+ */
+const getCostComparison = async (orgId, days = 30) => {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+
+  const [totals] = await InteractionLog.aggregate([
+    {
+      $match: {
+        orgId: new Types.ObjectId(orgId),
+        createdAt: { $gte: since }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalRequests: { $sum: 1 },
+        actualCost: { $sum: '$cost' },
+        wouldHaveCost: { $sum: { $ifNull: ['$optimizer.originalCost', '$cost'] } },
+        totalSavings: { $sum: { $ifNull: ['$optimizer.savings', 0] } },
+        optimizedCount: {
+          $sum: { $cond: [{ $eq: ['$optimizer.wasOptimized', true] }, 1, 0] }
+        },
+        qualityRetryCount: {
+          $sum: { $cond: [{ $eq: ['$optimizer.qualityRetried', true] }, 1, 0] }
+        }
+      }
+    }
+  ])
+
+  // Get per-model comparison
+  const byModel = await InteractionLog.aggregate([
+    {
+      $match: {
+        orgId: new Types.ObjectId(orgId),
+        createdAt: { $gte: since },
+        'optimizer.wasOptimized': true
+      }
+    },
+    {
+      $group: {
+        _id: {
+          originalModel: '$optimizer.originalModel',
+          optimizedModel: '$model'
+        },
+        requestCount: { $sum: 1 },
+        savings: { $sum: { $ifNull: ['$optimizer.savings', 0] } },
+        actualCost: { $sum: '$cost' },
+        originalCost: { $sum: { $ifNull: ['$optimizer.originalCost', 0] } }
+      }
+    },
+    { $sort: { savings: -1 } }
+  ])
+
+  const t = totals || {}
+
+  return {
+    period: `last_${days}_days`,
+    withoutZyra: parseFloat((t.wouldHaveCost || 0).toFixed(4)),
+    withZyra: parseFloat((t.actualCost || 0).toFixed(4)),
+    saved: parseFloat((t.totalSavings || 0).toFixed(4)),
+    percentReduction: (t.wouldHaveCost || 0) > 0
+      ? parseFloat((((t.totalSavings || 0) / (t.wouldHaveCost || 0)) * 100).toFixed(1))
+      : 0,
+    totalRequests: t.totalRequests || 0,
+    optimizedRequests: t.optimizedCount || 0,
+    qualityRetries: t.qualityRetryCount || 0,
+    modelSwaps: byModel.map(m => ({
+      from: m._id.originalModel,
+      to: m._id.optimizedModel,
+      requests: m.requestCount,
+      saved: parseFloat((m.savings || 0).toFixed(4)),
+      originalCost: parseFloat((m.originalCost || 0).toFixed(4)),
+      actualCost: parseFloat((m.actualCost || 0).toFixed(4))
+    }))
+  }
+}
+
 module.exports = {
   getValueReport,
   getCostByModel,
-  getCostByUser
+  getCostByUser,
+  getCostComparison
 }

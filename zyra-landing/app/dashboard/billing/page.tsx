@@ -57,7 +57,11 @@ export default function BillingPage() {
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-xl font-bold text-[#032416]">Requests Usage</h2>
             <div className="px-3 py-1 bg-[#fdfaea] border border-[#f1eedf] rounded-full text-xs font-bold text-[#424843]">
-              Resets un 12 days
+              Resets in {(() => {
+                const now = new Date()
+                const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+                return Math.ceil((endOfMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+              })()} days
             </div>
           </div>
 
