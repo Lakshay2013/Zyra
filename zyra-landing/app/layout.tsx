@@ -4,8 +4,8 @@ import './globals.css'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 
 export const metadata: Metadata = {
-  title: 'Zyra — LLM Observability & Risk Monitoring',
-  description: 'Proxy your LLM traffic through Zyra. Get instant visibility into every call — PII leaks, prompt injections, abuse patterns, cost, and latency.',
+  title: 'Zyra — AI Cost Optimization Layer',
+  description: 'Zyra sits between your app and AI models and automatically reduces your AI costs without changing your code.',
 }
 
 export default function RootLayout({

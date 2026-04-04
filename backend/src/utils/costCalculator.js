@@ -1,20 +1,26 @@
-// Prices per 1000 tokens in USD
+// Prices per 1000 tokens in USD (updated March 2026)
 const MODEL_PRICING = {
   // OpenAI
   'gpt-4o': { prompt: 0.005, completion: 0.015 },
   'gpt-4o-mini': { prompt: 0.00015, completion: 0.0006 },
   'gpt-4-turbo': { prompt: 0.01, completion: 0.03 },
   'gpt-3.5-turbo': { prompt: 0.0005, completion: 0.0015 },
-  // Anthropic
+  // Anthropic (Claude 4.6 series)
+  'claude-sonnet-4-6': { prompt: 0.003, completion: 0.015 },
+  'claude-opus-4-6': { prompt: 0.005, completion: 0.025 },
+  'claude-haiku-4-5': { prompt: 0.001, completion: 0.005 },
+  // Legacy Anthropic model IDs (still accepted by API)
   'claude-3-5-sonnet': { prompt: 0.003, completion: 0.015 },
   'claude-3-opus': { prompt: 0.015, completion: 0.075 },
   'claude-3-haiku': { prompt: 0.00025, completion: 0.00125 },
   // Gemini
   'gemini-1.5-pro': { prompt: 0.0035, completion: 0.0105 },
   'gemini-1.5-flash': { prompt: 0.000075, completion: 0.0003 },
-  // Groq
-  'llama3-70b-8192': { prompt: 0.00059, completion: 0.00079 },
-  'mixtral-8x7b-32768': { prompt: 0.00024, completion: 0.00024 },
+  'gemini-2.0-flash': { prompt: 0.0001, completion: 0.0004 },
+  // Groq (current production models)
+  'llama-3.3-70b-versatile': { prompt: 0.00059, completion: 0.00079 },
+  'llama-3.1-8b-instant': { prompt: 0.00005, completion: 0.00008 },
+  // Default fallback
   'default': { prompt: 0.005, completion: 0.015 }
 }
 
@@ -24,20 +30,24 @@ const MODEL_TO_PROVIDER = {
   'gpt-4o-mini': 'openai',
   'gpt-4-turbo': 'openai',
   'gpt-3.5-turbo': 'openai',
+  'claude-sonnet-4-6': 'anthropic',
+  'claude-opus-4-6': 'anthropic',
+  'claude-haiku-4-5': 'anthropic',
   'claude-3-5-sonnet': 'anthropic',
   'claude-3-opus': 'anthropic',
   'claude-3-haiku': 'anthropic',
   'gemini-1.5-pro': 'gemini',
   'gemini-1.5-flash': 'gemini',
-  'llama3-70b-8192': 'groq',
-  'mixtral-8x7b-32768': 'groq'
+  'gemini-2.0-flash': 'gemini',
+  'llama-3.3-70b-versatile': 'groq',
+  'llama-3.1-8b-instant': 'groq'
 }
 
 // Quality tiers — models within the same tier produce comparable output quality
 const MODEL_TIERS = {
-  premium: ['gpt-4o', 'claude-3-opus', 'gemini-1.5-pro', 'gpt-4-turbo'],
-  standard: ['gpt-4o-mini', 'claude-3-5-sonnet', 'llama3-70b-8192'],
-  economy: ['gpt-3.5-turbo', 'claude-3-haiku', 'gemini-1.5-flash', 'mixtral-8x7b-32768']
+  premium: ['gpt-4o', 'claude-opus-4-6', 'claude-3-opus', 'gemini-1.5-pro', 'gpt-4-turbo'],
+  standard: ['gpt-4o-mini', 'claude-sonnet-4-6', 'claude-3-5-sonnet', 'llama-3.3-70b-versatile', 'gemini-2.0-flash'],
+  economy: ['gpt-3.5-turbo', 'claude-haiku-4-5', 'claude-3-haiku', 'gemini-1.5-flash', 'llama-3.1-8b-instant']
 }
 
 const matchModel = (model) => {

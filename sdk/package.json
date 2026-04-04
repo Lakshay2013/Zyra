@@ -6,6 +6,14 @@
   "scripts": {
     "test": "node test.js"
   },
-  "keywords": ["llm", "logging", "monitoring", "ai-shield"],
-  "license": "MIT"
+  "keywords": [
+    "llm",
+    "logging",
+    "monitoring",
+    "ai-shield"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "openai": "^6.33.0"
+  }
 }

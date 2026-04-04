@@ -208,4 +208,34 @@ class AIShieldMiddleware {
   }
 }
 
-module.exports = { AIShield, OpenAIShield, AIShieldMiddleware }
+// -----------------------------------------------------------------------------
+// V2 SDK: Zyra Proxy Router Client
+// -----------------------------------------------------------------------------
+let OpenAIClient;
+try {
+  OpenAIClient = require('openai').OpenAI;
+} catch (e) {
+  OpenAIClient = class {
+    constructor() { throw new Error("Please install 'openai' to use the specific Zyra class."); }
+  };
+}
+
+class Zyra extends OpenAIClient {
+  constructor(options = {}) {
+    if (!options.apiKey) {
+      throw new Error("Zyra: apiKey is required.");
+    }
+    
+    super({
+      apiKey: "zyra-auth", // Bypass native key check
+      baseURL: options.baseURL || "https://api.zyra.dev/v1",
+      defaultHeaders: {
+        "x-zyra-api-key": options.apiKey,
+        ...options.defaultHeaders
+      },
+      ...options
+    });
+  }
+}
+
+module.exports = { AIShield, OpenAIShield, AIShieldMiddleware, Zyra }

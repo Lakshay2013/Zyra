@@ -165,9 +165,9 @@ const buildFallbacks = (org, upstreamPath, requestBody, req, currentProvider, mo
 const findCompatibleModel = (originalModel, targetProvider) => {
   const providerModels = {
     openai: 'gpt-4o-mini',
-    anthropic: 'claude-3-5-sonnet',
-    gemini: 'gemini-1.5-flash',
-    groq: 'llama3-70b-8192'
+    anthropic: 'claude-sonnet-4-6',
+    gemini: 'gemini-2.0-flash',
+    groq: 'llama-3.3-70b-versatile'
   }
   return providerModels[targetProvider] || null
 }
