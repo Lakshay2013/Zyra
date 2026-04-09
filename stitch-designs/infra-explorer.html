@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ZYRA - Infrastructure Explorer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "surface-dim": "#131314",
+                        "on-surface-variant": "#d9c1bf",
+                        "tertiary-container": "#80ccb0",
+                        "on-primary-container": "#7a3934",
+                        "inverse-primary": "#904a45",
+                        "surface-container-highest": "#353436",
+                        "inverse-on-surface": "#313031",
+                        "on-tertiary": "#00382a",
+                        "on-secondary-container": "#d8aaa6",
+                        "secondary-fixed-dim": "#eabbb7",
+                        "surface-container-lowest": "#0e0e0f",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#002117",
+                        "surface": "#131314",
+                        "surface-tint": "#ffb3ac",
+                        "surface-container": "#201f20",
+                        "tertiary": "#9be8cb",
+                        "on-tertiary-fixed-variant": "#00513e",
+                        "on-secondary-fixed-variant": "#603e3b",
+                        "tertiary-fixed-dim": "#89d5b9",
+                        "on-primary": "#561e1b",
+                        "on-tertiary-container": "#005742",
+                        "on-primary-fixed-variant": "#73332f",
+                        "surface-container-high": "#2a2a2b",
+                        "surface-container-low": "#1c1b1c",
+                        "surface-bright": "#3a393a",
+                        "on-primary-fixed": "#3b0908",
+                        "primary-fixed": "#ffdad6",
+                        "background": "#131314",
+                        "on-secondary": "#462826",
+                        "on-secondary-fixed": "#2e1412",
+                        "inverse-surface": "#e5e2e3",
+                        "on-surface": "#e5e2e3",
+                        "outline": "#a18c8a",
+                        "primary-container": "#ffa69e",
+                        "outline-variant": "#534341",
+                        "on-background": "#e5e2e3",
+                        "surface-variant": "#353436",
+                        "primary": "#ffcdc9",
+                        "secondary-fixed": "#ffdad6",
+                        "primary-fixed-dim": "#ffb3ac",
+                        "secondary-container": "#603e3b",
+                        "secondary": "#eabbb7",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#a5f2d5",
+                        "on-error": "#690005"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #131314;
+            color: #e5e2e3;
+        }
+        .editorial-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="flex overflow-hidden">
+<!-- SideNavBar (Authority: JSON) -->
+<aside class="hidden md:flex flex-col h-screen w-64 bg-[#131314] border-r border-zinc-800/50 py-6">
+<div class="px-6 mb-8">
+<div class="text-lg font-black text-[#ffa69e]">PROJECT_ALPHA</div>
+<div class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500 mt-1">v2.4.0-stable</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center px-6 py-3 text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c] transition-all font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center px-6 py-3 text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c] transition-all font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="rocket_launch">rocket_launch</span>
+                Deployments
+            </a>
+<!-- Active State Logic: Infrastructure Screen -->
+<a class="flex items-center px-6 py-3 text-[#ffa69e] border-r-2 border-[#ffa69e] bg-[#201f20] font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dns">dns</span>
+                Infrastructure
+            </a>
+<a class="flex items-center px-6 py-3 text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c] transition-all font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="query_stats">query_stats</span>
+                Analytics
+            </a>
+<a class="flex items-center px-6 py-3 text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c] transition-all font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="list_alt">list_alt</span>
+                Logs
+            </a>
+</nav>
+<div class="mt-auto px-6 space-y-4">
+<button class="w-full bg-[#ffa69e] text-[#3b0908] py-3 rounded-md font-bold text-[10px] uppercase tracking-[0.1em] hover:opacity-90 transition-opacity">
+                New Deployment
+            </button>
+<div class="space-y-1">
+<a class="flex items-center py-2 text-zinc-500 hover:text-zinc-300 font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="terminal">terminal</span>
+                    Terminal
+                </a>
+<a class="flex items-center py-2 text-zinc-500 hover:text-zinc-300 font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="contact_support">contact_support</span>
+                    Support
+                </a>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col h-screen overflow-hidden bg-background">
+<!-- TopAppBar (Authority: JSON) -->
+<header class="flex justify-between items-center w-full px-6 h-14 bg-[#131314] sticky top-0 z-10">
+<div class="flex items-center gap-6">
+<div class="text-xl font-black tracking-tighter text-[#ffa69e]">ZYRA</div>
+<div class="hidden md:flex items-center bg-[#1c1b1c] rounded px-3 py-1 gap-2">
+<span class="material-symbols-outlined text-zinc-500 text-sm" data-icon="search">search</span>
+<input class="bg-transparent border-none text-sm focus:ring-0 text-on-surface placeholder:text-zinc-600 font-medium" placeholder="Search systems..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="hidden md:block font-['Inter'] font-medium tracking-tight text-zinc-400 hover:text-[#ffa69e] cursor-pointer transition-colors duration-200">Docs</span>
+<span class="material-symbols-outlined text-zinc-400 hover:bg-[#2a2a2b] p-1.5 rounded transition-colors duration-200" data-icon="terminal">terminal</span>
+<span class="material-symbols-outlined text-zinc-400 hover:bg-[#2a2a2b] p-1.5 rounded transition-colors duration-200" data-icon="settings">settings</span>
+<span class="material-symbols-outlined text-zinc-400 hover:bg-[#2a2a2b] p-1.5 rounded transition-colors duration-200" data-icon="notifications">notifications</span>
+<div class="w-7 h-7 bg-surface-container-high rounded-full flex items-center justify-center overflow-hidden border border-outline-variant/20">
+<img alt="User profile" data-alt="User profile photo in dark room with cinematic lighting and soft shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIAWnYdHoPcgYvEF77KTBGSNgIG2Hod-6KWEZI-AW-mMhsaMzAYSdXEBQ_uWXMet6VVh5z_-Nb8nxOmFEPWsoWYI_U2Q-YK2h-dZ30Xbz-1T2dmJf8ybEFXNtYqSn9AstMu6CVMSRnYv5OQFrIJ33P1DtReh8pIdKUgVYimleqYT1IySNCLBvWD8Gp0Jg-4xoE-GAyMvlNhDVtkH5odw5ba-c7oHLzMjAm7S2jqC_pzb0yqBfI7iI953e1-hRM8CKAhh0GFUM03xc"/>
+</div>
+</div>
+</header>
+<section class="flex-1 overflow-y-auto p-6 md:p-10">
+<!-- Headline Anchor -->
+<div class="mb-10">
+<h1 class="text-6xl md:text-8xl font-black tracking-tighter text-on-surface uppercase leading-none">
+                    Infrastructure
+                </h1>
+<div class="flex items-center gap-4 mt-6">
+<div class="bg-surface-container-high px-4 py-2 rounded-xl flex items-center gap-3">
+<span class="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+<span class="editorial-label text-on-surface-variant">Systems Operational</span>
+</div>
+<div class="hidden md:flex items-center gap-6 text-zinc-500 font-mono text-xs">
+<span>LATENCY: 12ms</span>
+<span>TRAFFIC: 4.2k req/s</span>
+<span>ERROR RATE: 0.002%</span>
+</div>
+</div>
+</div>
+<!-- Filter Bar -->
+<div class="bg-surface-container-low p-4 mb-1 rounded-xl flex flex-wrap gap-8 items-center border border-outline-variant/10">
+<div class="flex flex-col gap-1">
+<span class="editorial-label text-zinc-500">Provider</span>
+<select class="bg-transparent border-none p-0 text-sm font-bold text-on-surface focus:ring-0">
+<option>ALL_PROVIDERS</option>
+<option>AWS_PRIMARY</option>
+<option>GCP_CORE</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<span class="editorial-label text-zinc-500">Region</span>
+<select class="bg-transparent border-none p-0 text-sm font-bold text-on-surface focus:ring-0">
+<option>GLOBAL_VIEW</option>
+<option>US_EAST_1</option>
+<option>EU_WEST_2</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<span class="editorial-label text-zinc-500">Environment</span>
+<div class="flex gap-2">
+<span class="text-xs bg-[#ffa69e] text-[#3b0908] px-2 py-0.5 font-bold">PROD</span>
+<span class="text-xs bg-surface-container-highest text-zinc-400 px-2 py-0.5 font-bold">STAGING</span>
+</div>
+</div>
+<div class="ml-auto flex gap-4">
+<button class="editorial-label text-[#ffa69e] border border-[#ffa69e]/30 px-4 py-2 rounded-lg hover:bg-[#ffa69e]/10 transition-colors">Export Report</button>
+<button class="bg-primary-container text-on-primary-fixed editorial-label px-4 py-2 rounded-lg">New Instance</button>
+</div>
+</div>
+<!-- Infrastructure Table -->
+<div class="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/10 shadow-2xl shadow-black/40">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/20">
+<th class="p-4 editorial-label text-zinc-500">Service Name</th>
+<th class="p-4 editorial-label text-zinc-500">Region</th>
+<th class="p-4 editorial-label text-zinc-500">Instance Type</th>
+<th class="p-4 editorial-label text-zinc-500">Uptime</th>
+<th class="p-4 editorial-label text-zinc-500 text-right">Status</th>
+</tr>
+</thead>
+<tbody class="font-mono text-sm text-on-surface-variant">
+<!-- Row 1 -->
+<tr class="border-b border-outline-variant/10 hover:bg-surface-container transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#ffa69e] text-lg" data-icon="database">database</span>
+<span class="font-bold text-on-surface">db-cluster-primary-01</span>
+</div>
+</td>
+<td class="p-4">us-east-1a</td>
+<td class="p-4">db.r6g.xlarge</td>
+<td class="p-4">124d 14h 22m</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<span class="text-[10px] font-bold">OPERATIONAL</span>
+<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b border-outline-variant/10 hover:bg-surface-container transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#ffa69e] text-lg" data-icon="memory">memory</span>
+<span class="font-bold text-on-surface">compute-edge-node-alpha</span>
+</div>
+</td>
+<td class="p-4">eu-west-2b</td>
+<td class="p-4">t3.medium</td>
+<td class="p-4">02d 09h 11m</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2 text-primary">
+<span class="text-[10px] font-bold">SCALING</span>
+<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="border-b border-outline-variant/10 hover:bg-surface-container transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#ffa69e] text-lg" data-icon="lan">lan</span>
+<span class="font-bold text-on-surface">gateway-loadbalancer-hq</span>
+</div>
+</td>
+<td class="p-4">ap-south-1</td>
+<td class="p-4">alb.v2.standard</td>
+<td class="p-4">342d 01h 45m</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<span class="text-[10px] font-bold">OPERATIONAL</span>
+<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="border-b border-outline-variant/10 hover:bg-surface-container transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#ffa69e] text-lg" data-icon="storage">storage</span>
+<span class="font-bold text-on-surface">s3-asset-bucket-cold</span>
+</div>
+</td>
+<td class="p-4">global</td>
+<td class="p-4">standard.ia</td>
+<td class="p-4">99.9% SLT</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<span class="text-[10px] font-bold">OPERATIONAL</span>
+<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="border-b border-outline-variant/10 hover:bg-surface-container transition-colors bg-error-container/5">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error text-lg" data-icon="warning">warning</span>
+<span class="font-bold text-on-surface">redis-cache-tier-04</span>
+</div>
+</td>
+<td class="p-4">us-west-2</td>
+<td class="p-4">cache.m5.large</td>
+<td class="p-4">-- -- --</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2 text-error">
+<span class="text-[10px] font-bold">DEGRADED</span>
+<span class="h-1.5 w-1.5 rounded-full bg-error"></span>
+</div>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#ffa69e] text-lg" data-icon="cloud_sync">cloud_sync</span>
+<span class="font-bold text-on-surface">auth-microservice-node</span>
+</div>
+</td>
+<td class="p-4">us-east-1c</td>
+<td class="p-4">c5.xlarge</td>
+<td class="p-4">45d 20h 03m</td>
+<td class="p-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<span class="text-[10px] font-bold">OPERATIONAL</span>
+<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Asymmetric Bento Grid Details -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+<div class="md:col-span-2 bg-surface-container p-6 rounded-xl border border-outline-variant/5">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="editorial-label text-zinc-500">Resource Distribution</h3>
+<p class="text-xl font-bold mt-1">Global Traffic Density</p>
+</div>
+<div class="text-right">
+<span class="font-mono text-2xl font-bold text-[#ffa69e]">84.2%</span>
+<p class="editorial-label text-zinc-600">Avg Utilization</p>
+</div>
+</div>
+<div class="h-48 bg-surface-container-lowest rounded-lg relative overflow-hidden flex items-end p-2 gap-1">
+<div class="flex-1 bg-primary/20 rounded-t h-[40%]"></div>
+<div class="flex-1 bg-primary/30 rounded-t h-[60%]"></div>
+<div class="flex-1 bg-primary/20 rounded-t h-[35%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[75%]"></div>
+<div class="flex-1 bg-primary/60 rounded-t h-[90%]"></div>
+<div class="flex-1 bg-primary/50 rounded-t h-[55%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[45%]"></div>
+<div class="flex-1 bg-primary/30 rounded-t h-[30%]"></div>
+<div class="flex-1 bg-primary/70 rounded-t h-[80%]"></div>
+<div class="flex-1 bg-primary/90 rounded-t h-[95%]"></div>
+<div class="flex-1 bg-primary/60 rounded-t h-[70%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[50%]"></div>
+<!-- Decorative overlay -->
+<div class="absolute inset-0 pointer-events-none bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent opacity-40"></div>
+</div>
+</div>
+<div class="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 flex flex-col justify-between">
+<div>
+<h3 class="editorial-label text-zinc-500 mb-4">Node Health</h3>
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium">Primary Cluster</span>
+<span class="font-mono text-xs text-primary">0.0ms</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium">Backup Registry</span>
+<span class="font-mono text-xs text-primary">0.1ms</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium">Cold Storage</span>
+<span class="font-mono text-xs text-zinc-500">OFFLINE</span>
+</div>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-outline-variant/10">
+<div class="w-full bg-surface-container-lowest h-12 rounded-lg flex items-center px-4 justify-between font-mono text-xs">
+<span class="text-zinc-500">ID: ZYR-88-AX</span>
+<span class="text-[#ffa69e]">ACTIVE</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar for Mobile (Authority: Logic) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#131314] flex justify-around items-center border-t border-zinc-800/50 z-20">
+<button class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined" data-icon="rocket_launch">rocket_launch</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-[#ffa69e]">
+<span class="material-symbols-outlined" data-icon="dns">dns</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined" data-icon="query_stats">query_stats</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+</button>
+</nav>
+</body></html>

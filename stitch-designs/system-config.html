@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ZYRA | CONFIGURATION</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "surface-dim": "#131314",
+                        "on-surface-variant": "#d9c1bf",
+                        "tertiary-container": "#80ccb0",
+                        "on-primary-container": "#7a3934",
+                        "inverse-primary": "#904a45",
+                        "surface-container-highest": "#353436",
+                        "inverse-on-surface": "#313031",
+                        "on-tertiary": "#00382a",
+                        "on-secondary-container": "#d8aaa6",
+                        "secondary-fixed-dim": "#eabbb7",
+                        "surface-container-lowest": "#0e0e0f",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#002117",
+                        "surface": "#131314",
+                        "surface-tint": "#ffb3ac",
+                        "surface-container": "#201f20",
+                        "tertiary": "#9be8cb",
+                        "on-tertiary-fixed-variant": "#00513e",
+                        "on-secondary-fixed-variant": "#603e3b",
+                        "tertiary-fixed-dim": "#89d5b9",
+                        "on-primary": "#561e1b",
+                        "on-tertiary-container": "#005742",
+                        "on-primary-fixed-variant": "#73332f",
+                        "surface-container-high": "#2a2a2b",
+                        "surface-container-low": "#1c1b1c",
+                        "surface-bright": "#3a393a",
+                        "on-primary-fixed": "#3b0908",
+                        "primary-fixed": "#ffdad6",
+                        "background": "#131314",
+                        "on-secondary": "#462826",
+                        "on-secondary-fixed": "#2e1412",
+                        "inverse-surface": "#e5e2e3",
+                        "on-surface": "#e5e2e3",
+                        "outline": "#a18c8a",
+                        "primary-container": "#ffa69e",
+                        "outline-variant": "#534341",
+                        "on-background": "#e5e2e3",
+                        "surface-variant": "#353436",
+                        "primary": "#ffcdc9",
+                        "secondary-fixed": "#ffdad6",
+                        "primary-fixed-dim": "#ffb3ac",
+                        "secondary-container": "#603e3b",
+                        "secondary": "#eabbb7",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#a5f2d5",
+                        "on-error": "#690005"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #131314;
+            color: #e5e2e3;
+        }
+    </style>
+</head>
+<body class="font-body selection:bg-primary-container selection:text-on-primary-fixed">
+<!-- TopAppBar -->
+<header class="fixed top-0 z-50 w-full bg-[#131314] flex justify-between items-center px-6 h-14 bg-[#1c1b1c]">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black tracking-tighter text-[#ffa69e]">ZYRA</span>
+<div class="hidden md:flex items-center gap-6 font-['Inter'] font-medium tracking-tight">
+<span class="text-zinc-400 hover:bg-[#2a2a2b] transition-colors duration-200 px-3 py-1 cursor-pointer">Dashboard</span>
+<span class="text-zinc-400 hover:bg-[#2a2a2b] transition-colors duration-200 px-3 py-1 cursor-pointer">Deployments</span>
+<span class="text-[#ffa69e] font-bold px-3 py-1">Settings</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-zinc-400 hover:bg-[#2a2a2b] p-2 transition-colors duration-200" data-icon="terminal">terminal</button>
+<button class="material-symbols-outlined text-zinc-400 hover:bg-[#2a2a2b] p-2 transition-colors duration-200" data-icon="notifications">notifications</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="close-up portrait of a professional developer in a dimly lit tech studio with subtle neon rim lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-G6vXto0s5aAaiUL3Ysi5OMNboAt_HzCBVpCr49qbuH_ULwiZ24JfA3-PX9IRuJb8Hs1q9ctV3nWeILksylT148p4HYIpLfFl5OQBGOFuoKTVAFAdWRHzOogTtXkI2h9SrocHqS2Kamw_zEzhxtBai4oRhkLq9eCgp_a84A1rAI7CQRe9a479qbnY-tefoJ6DmiV__Nbn1eA_NLG_bD-eO1kUKCLOExGOnkggt9_93CiLSo5ZKagZbKKFIr1M09PL95v-YG3krKQ"/>
+</div>
+</div>
+</header>
+<div class="flex pt-14 min-h-screen">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-[calc(100vh-3.5rem)] w-64 bg-[#131314] py-6 border-r border-zinc-800/50 sticky top-14">
+<div class="px-6 mb-8">
+<div class="text-lg font-black text-[#ffa69e]">PROJECT_ALPHA</div>
+<div class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500 mt-1">v2.4.0-stable</div>
+</div>
+<nav class="flex-1">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 px-6 py-3 font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c] transition-all" href="#">
+<span class="material-symbols-outlined text-base" data-icon="dashboard">dashboard</span>
+                            Dashboard
+                        </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-6 py-3 font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c] transition-all" href="#">
+<span class="material-symbols-outlined text-base" data-icon="rocket_launch">rocket_launch</span>
+                            Deployments
+                        </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-6 py-3 font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c] transition-all" href="#">
+<span class="material-symbols-outlined text-base" data-icon="dns">dns</span>
+                            Infrastructure
+                        </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-6 py-3 font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-[#ffa69e] border-r-2 border-[#ffa69e] bg-[#201f20]" href="#">
+<span class="material-symbols-outlined text-base" data-icon="settings">settings</span>
+                            Settings
+                        </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-6 py-3 font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c] transition-all" href="#">
+<span class="material-symbols-outlined text-base" data-icon="query_stats">query_stats</span>
+                            Analytics
+                        </a>
+</li>
+</ul>
+</nav>
+<div class="px-6 mt-auto">
+<button class="w-full py-3 bg-primary-container text-on-primary-fixed rounded-xl font-bold flex items-center justify-center gap-2 transition-transform active:scale-95 duration-100">
+<span class="material-symbols-outlined text-base" data-icon="add">add</span>
+                    New Deployment
+                </button>
+<div class="mt-6 space-y-2">
+<a class="flex items-center gap-3 text-zinc-500 font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="terminal">terminal</span>
+                        Terminal
+                    </a>
+<a class="flex items-center gap-3 text-zinc-500 font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="contact_support">contact_support</span>
+                        Support
+                    </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 bg-background p-8 md:p-12">
+<!-- Hero Header -->
+<header class="max-w-5xl mx-auto mb-16">
+<h1 class="text-7xl font-black tracking-[-0.04em] text-on-background leading-none">CONFIGURATION</h1>
+<div class="mt-4 flex items-center gap-4">
+<span class="font-mono text-primary text-xs bg-primary/10 px-2 py-1 rounded">SYS_UID: 8829-X-ALPHA</span>
+<div class="h-[1px] flex-1 bg-outline-variant/20"></div>
+</div>
+</header>
+<div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12">
+<!-- Vertical Tabs -->
+<nav class="md:col-span-3 space-y-1">
+<div class="mb-6 font-mono text-[10px] uppercase tracking-[0.3em] text-outline">Section_Nav</div>
+<button class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 text-primary bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="person">person</span>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] font-semibold">Profile</span>
+</button>
+<button class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 text-zinc-500 hover:text-zinc-300 hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="security">security</span>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] font-semibold">Security</span>
+</button>
+<button class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 text-zinc-500 hover:text-zinc-300 hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="group">group</span>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] font-semibold">Team</span>
+</button>
+<button class="w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 text-zinc-500 hover:text-zinc-300 hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="payments">payments</span>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] font-semibold">Billing</span>
+</button>
+</nav>
+<!-- Configuration Canvas -->
+<div class="md:col-span-9 space-y-16">
+<!-- Profile Section -->
+<section>
+<div class="mb-8 border-b border-outline-variant/10 pb-4">
+<h2 class="text-2xl font-bold tracking-tight">Public Identity</h2>
+<p class="text-zinc-500 text-sm mt-1">Configure how you appear across the infrastructure.</p>
+</div>
+<div class="grid grid-cols-1 gap-8">
+<div class="flex items-center gap-8 bg-surface-container-low p-6 rounded-xl">
+<div class="relative group">
+<img class="w-24 h-24 rounded-full object-cover grayscale brightness-75" data-alt="minimalist silhouette of a humanoid avatar in high contrast lighting against a deep charcoal background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUXhh3XCjvrJM5ufzPw9rP4U4qTi1MJtXkfYrM9vEkndDtc5BC-GSKIr-tkYLp_p53RJcqX006_j7vvyANtBwBHr3ODKUia2iJbZ2A0j67A2cTmxiQe9IO4uwy6N3p47jaKtrYJigCZ2iDWSesHEr_WSkuQ53vZk4WZf746tKqKpY_4xjSNpaFfjwpNt1h3i-FdRfygAEAJpDYFzQGjpBlBs83SGLHyPw2sNOl0-qVYu01jk2M4Naelc2jWCnrqvZeyW_02TPBTDI"/>
+<div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
+<span class="material-symbols-outlined" data-icon="photo_camera">photo_camera</span>
+</div>
+</div>
+<div class="flex-1">
+<label class="block font-label text-[10px] uppercase tracking-[0.2em] font-semibold text-outline mb-2">Display Name</label>
+<input class="w-full bg-transparent border border-outline-variant/30 rounded-lg px-4 py-3 focus:border-primary focus:ring-0 transition-colors placeholder:text-zinc-700" type="text" value="Alex Rivera"/>
+</div>
+</div>
+<div class="grid md:grid-cols-2 gap-8">
+<div>
+<label class="block font-label text-[10px] uppercase tracking-[0.2em] font-semibold text-outline mb-2">Username</label>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 font-mono text-sm">@</span>
+<input class="w-full bg-transparent border border-outline-variant/30 rounded-lg pl-10 pr-4 py-3 focus:border-primary focus:ring-0 transition-colors font-mono text-sm" type="text" value="arivera_arch"/>
+</div>
+</div>
+<div>
+<label class="block font-label text-[10px] uppercase tracking-[0.2em] font-semibold text-outline mb-2">Email Address</label>
+<input class="w-full bg-transparent border border-outline-variant/30 rounded-lg px-4 py-3 focus:border-primary focus:ring-0 transition-colors" type="email" value="alex@zyra.io"/>
+</div>
+</div>
+<div>
+<label class="block font-label text-[10px] uppercase tracking-[0.2em] font-semibold text-outline mb-2">Bio / System_Manifesto</label>
+<textarea class="w-full bg-transparent border border-outline-variant/30 rounded-lg px-4 py-3 focus:border-primary focus:ring-0 transition-colors resize-none" placeholder="Enter a brief architectural overview of your role..." rows="4"></textarea>
+</div>
+</div>
+</section>
+<!-- Technical Preferences -->
+<section>
+<div class="mb-8 border-b border-outline-variant/10 pb-4">
+<h2 class="text-2xl font-bold tracking-tight">System Preferences</h2>
+<p class="text-zinc-500 text-sm mt-1">Default behavior for terminal and logs.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="p-6 bg-surface-container-low rounded-xl flex items-center justify-between">
+<div>
+<div class="font-label text-[10px] uppercase tracking-[0.2em] font-semibold text-on-surface">Auto-Deploy Logs</div>
+<div class="text-xs text-zinc-500">Stream logs immediately after build</div>
+</div>
+<div class="w-12 h-6 bg-surface-container-highest rounded-full relative cursor-pointer border border-outline-variant/20">
+<div class="absolute left-1 top-1 w-4 h-4 bg-primary rounded-full transition-all translate-x-6"></div>
+</div>
+</div>
+<div class="p-6 bg-surface-container-low rounded-xl flex items-center justify-between opacity-50">
+<div>
+<div class="font-label text-[10px] uppercase tracking-[0.2em] font-semibold text-on-surface">Telemetry Mode</div>
+<div class="text-xs text-zinc-500">Send anonymous performance metrics</div>
+</div>
+<div class="w-12 h-6 bg-surface-container-highest rounded-full relative cursor-pointer border border-outline-variant/20">
+<div class="absolute left-1 top-1 w-4 h-4 bg-zinc-600 rounded-full transition-all"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Metric Marquee (Custom Component) -->
+<div class="bg-surface-container flex overflow-hidden py-4 border-y border-outline-variant/10">
+<div class="flex animate-none whitespace-nowrap px-6 gap-12">
+<div class="flex flex-col">
+<span class="font-label text-[8px] uppercase tracking-[0.3em] text-outline">CPU_LOAD</span>
+<span class="font-mono text-lg text-tertiary">0.04ms</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label text-[8px] uppercase tracking-[0.3em] text-outline">UPTIME_STREAK</span>
+<span class="font-mono text-lg text-primary">99.998%</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label text-[8px] uppercase tracking-[0.3em] text-outline">NET_THROUGHPUT</span>
+<span class="font-mono text-lg text-tertiary">1.2GB/s</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label text-[8px] uppercase tracking-[0.3em] text-outline">SESSION_TOKEN</span>
+<span class="font-mono text-lg text-zinc-400">#FF29..X0</span>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="pt-8 flex flex-col md:flex-row gap-4 justify-between items-center border-t border-outline-variant/10">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-error text-xl" data-icon="warning">warning</span>
+<div class="text-xs text-zinc-500 max-w-xs">
+                                Modifying these parameters may affect system integrity across 4 active deployments.
+                            </div>
+</div>
+<div class="flex gap-4 w-full md:w-auto">
+<button class="flex-1 md:flex-none px-8 py-3 border border-outline-variant/20 rounded-lg text-zinc-400 font-label text-[10px] uppercase tracking-[0.2em] font-semibold hover:bg-surface-container-high transition-colors">Discard</button>
+<button class="flex-1 md:flex-none px-12 py-3 bg-primary-container text-on-primary-fixed rounded-lg font-label text-[10px] uppercase tracking-[0.2em] font-black shadow-lg shadow-primary-container/10 active:scale-95 transition-all">Save Changes</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Mobile BottomNavBar (Hidden on desktop) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-[#1c1b1c] h-16 flex items-center justify-around z-50">
+<button class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[8px] font-bold uppercase tracking-widest">Dash</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined" data-icon="rocket_launch">rocket_launch</span>
+<span class="text-[8px] font-bold uppercase tracking-widest">Deploy</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-[#ffa69e]">
+<span class="material-symbols-outlined" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="text-[8px] font-bold uppercase tracking-widest">Settings</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-zinc-500">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span class="text-[8px] font-bold uppercase tracking-widest">Term</span>
+</button>
+</nav>
+</body></html>

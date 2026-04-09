@@ -42,6 +42,11 @@ const organizationSchema = new mongoose.Schema({
     enableRetry: { type: Boolean, default: true },
     maxRetries: { type: Number, default: 2, min: 0, max: 5 },
     fallbackOrder: [{ type: String, enum: ['openai', 'anthropic', 'gemini', 'groq'] }]
+  },
+  // Cache settings
+  cache: {
+    enabled: { type: Boolean, default: true },
+    ttlSeconds: { type: Number, default: 300, min: 0, max: 86400 }
   }
 },{timestamps: true});
 

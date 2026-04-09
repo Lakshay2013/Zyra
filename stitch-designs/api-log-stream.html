@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains+Mono', monospace; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #131314; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #353436; border-radius: 2px; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "surface-dim": "#131314",
+                        "on-surface-variant": "#d9c1bf",
+                        "tertiary-container": "#80ccb0",
+                        "on-primary-container": "#7a3934",
+                        "inverse-primary": "#904a45",
+                        "surface-container-highest": "#353436",
+                        "inverse-on-surface": "#313031",
+                        "on-tertiary": "#00382a",
+                        "on-secondary-container": "#d8aaa6",
+                        "secondary-fixed-dim": "#eabbb7",
+                        "surface-container-lowest": "#0e0e0f",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#002117",
+                        "surface": "#131314",
+                        "surface-tint": "#ffb3ac",
+                        "surface-container": "#201f20",
+                        "tertiary": "#9be8cb",
+                        "on-tertiary-fixed-variant": "#00513e",
+                        "on-secondary-fixed-variant": "#603e3b",
+                        "tertiary-fixed-dim": "#89d5b9",
+                        "on-primary": "#561e1b",
+                        "on-tertiary-container": "#005742",
+                        "on-primary-fixed-variant": "#73332f",
+                        "surface-container-high": "#2a2a2b",
+                        "surface-container-low": "#1c1b1c",
+                        "surface-bright": "#3a393a",
+                        "on-primary-fixed": "#3b0908",
+                        "primary-fixed": "#ffdad6",
+                        "background": "#131314",
+                        "on-secondary": "#462826",
+                        "on-secondary-fixed": "#2e1412",
+                        "inverse-surface": "#e5e2e3",
+                        "on-surface": "#e5e2e3",
+                        "outline": "#a18c8a",
+                        "primary-container": "#ffa69e",
+                        "outline-variant": "#534341",
+                        "on-background": "#e5e2e3",
+                        "surface-variant": "#353436",
+                        "primary": "#ffcdc9",
+                        "secondary-fixed": "#ffdad6",
+                        "primary-fixed-dim": "#ffb3ac",
+                        "secondary-container": "#603e3b",
+                        "secondary": "#eabbb7",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#a5f2d5",
+                        "on-error": "#690005"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface flex min-h-screen overflow-hidden">
+<!-- SideNavBar Anchor -->
+<aside class="hidden md:flex flex-col h-full py-6 border-r border-zinc-800/50 bg-[#131314] dark:bg-[#131314] docked left-0 h-screen w-64">
+<div class="px-6 mb-8">
+<div class="text-lg font-black text-[#ffa69e]">PROJECT_ALPHA</div>
+<div class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500 mt-1">v2.4.0-stable</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center px-6 py-3 transition-all text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c]" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="dashboard">dashboard</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold">Dashboard</span>
+</a>
+<a class="flex items-center px-6 py-3 transition-all text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c]" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="rocket_launch">rocket_launch</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold">Deployments</span>
+</a>
+<a class="flex items-center px-6 py-3 transition-all text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c]" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="dns">dns</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold">Infrastructure</span>
+</a>
+<a class="flex items-center px-6 py-3 transition-all text-zinc-500 hover:text-zinc-300 hover:bg-[#1c1b1c]" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="query_stats">query_stats</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold">Analytics</span>
+</a>
+<!-- Active State: Logs -->
+<a class="flex items-center px-6 py-3 text-[#ffa69e] border-r-2 border-[#ffa69e] bg-[#201f20]" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="list_alt">list_alt</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold">Logs</span>
+</a>
+</nav>
+<div class="px-6 mt-auto">
+<button class="w-full bg-primary-container text-on-primary-fixed py-2 rounded-md font-['Inter'] text-[10px] uppercase tracking-[0.1em] font-bold">New Deployment</button>
+<div class="mt-6 space-y-1">
+<a class="flex items-center py-2 text-zinc-500 hover:text-zinc-300 transition-all" href="#">
+<span class="material-symbols-outlined mr-3 text-sm" data-icon="terminal">terminal</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold">Terminal</span>
+</a>
+<a class="flex items-center py-2 text-zinc-500 hover:text-zinc-300 transition-all" href="#">
+<span class="material-symbols-outlined mr-3 text-sm" data-icon="contact_support">contact_support</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold">Support</span>
+</a>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0">
+<!-- TopAppBar Anchor -->
+<header class="flex justify-between items-center w-full px-6 h-14 bg-[#131314] dark:bg-[#131314] docked full-width top-0">
+<div class="flex items-center gap-6">
+<span class="text-xl font-black tracking-tighter text-[#ffa69e]">ZYRA</span>
+<div class="hidden md:flex items-center bg-[#1c1b1c] rounded-md px-3 py-1 text-zinc-400">
+<span class="material-symbols-outlined text-sm mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm font-['Inter'] font-medium" placeholder="Search systems..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="hidden md:block font-['Inter'] font-medium tracking-tight text-zinc-400 cursor-pointer hover:text-[#ffa69e] transition-colors duration-200">Docs</span>
+<div class="flex gap-2 text-zinc-400">
+<span class="material-symbols-outlined p-2 hover:bg-[#2a2a2b] transition-colors duration-200 rounded-md cursor-pointer" data-icon="terminal">terminal</span>
+<span class="material-symbols-outlined p-2 hover:bg-[#2a2a2b] transition-colors duration-200 rounded-md cursor-pointer" data-icon="settings">settings</span>
+<div class="relative">
+<span class="material-symbols-outlined p-2 hover:bg-[#2a2a2b] transition-colors duration-200 rounded-md cursor-pointer" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-1.5 h-1.5 bg-[#ffa69e] rounded-full"></span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-zinc-700">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a professional developer with neutral expression against a dark textured studio background with dramatic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCsXhtA12QXXlz_VSyS8A3HIyH8HYX2uDpQTEZu2HfmO7FMyo2fTfK6WjitJF6zKGdylHpfsS3kkmESmtO9I0DbQjHwYiD4tZUMY5lbPHyU3Wxr4JAuWSXltkZZC9v-Ch2r_uL1zuhmgG3zCUgpwk_0Zu_36Mzcd8-H3ie4M3gBK9zaEL0sS4Zttxh5KN4GrqC5fWB06ci1m-dfFZXu9UneANxUdOnAIf1GdmNXxOzWmWu7Culj5Gdnp7Q6e8339tuHU1FjudlZDY"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area: Technical Editorial -->
+<div class="flex-1 overflow-hidden flex flex-col md:flex-row">
+<!-- Side Navigation (Streams) -->
+<div class="w-full md:w-72 bg-surface-container-low p-8 flex flex-col border-r border-zinc-800/30">
+<div class="mb-10">
+<div class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-bold text-[#ffa69e] mb-4">API CREDENTIALS</div>
+<div class="bg-surface-container-high rounded-xl p-4 group cursor-pointer border border-transparent hover:border-[#ffa69e]/20 transition-all duration-300">
+<div class="flex justify-between items-center mb-2">
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500">Master Key</span>
+<span class="material-symbols-outlined text-sm text-[#ffa69e] opacity-0 group-hover:opacity-100 transition-opacity" data-icon="content_copy">content_copy</span>
+</div>
+<div class="mono text-xs text-on-surface truncate">zyra_live_7x8k2...m92l</div>
+</div>
+<button class="mt-4 w-full text-center font-['Inter'] text-[10px] uppercase tracking-[0.1em] font-bold text-on-surface-variant hover:text-[#ffa69e] transition-colors">
+                        View all Keys
+                    </button>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<div class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 mb-4">ACTIVE STREAMS</div>
+<div class="space-y-4">
+<div class="flex items-center gap-3 text-primary">
+<div class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(255,205,201,0.6)]"></div>
+<span class="mono text-xs font-medium">runtime-engine-01</span>
+</div>
+<div class="flex items-center gap-3 text-zinc-500 hover:text-zinc-300 cursor-pointer">
+<div class="w-1.5 h-1.5 rounded-full bg-zinc-700"></div>
+<span class="mono text-xs font-medium">auth-service-node</span>
+</div>
+<div class="flex items-center gap-3 text-zinc-500 hover:text-zinc-300 cursor-pointer">
+<div class="w-1.5 h-1.5 rounded-full bg-zinc-700"></div>
+<span class="mono text-xs font-medium">database-sharding-p1</span>
+</div>
+<div class="flex items-center gap-3 text-zinc-500 hover:text-zinc-300 cursor-pointer">
+<div class="w-1.5 h-1.5 rounded-full bg-zinc-700"></div>
+<span class="mono text-xs font-medium">ingress-controller</span>
+</div>
+<div class="flex items-center gap-3 text-zinc-500 hover:text-zinc-300 cursor-pointer">
+<div class="w-1.5 h-1.5 rounded-full bg-zinc-700"></div>
+<span class="mono text-xs font-medium">cdn-edge-london</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Log Stream Viewer -->
+<div class="flex-1 flex flex-col p-8 md:p-12 min-w-0 bg-background">
+<header class="mb-8 flex justify-between items-end">
+<div>
+<h1 class="font-headline font-black text-6xl md:text-8xl tracking-tighter text-on-surface leading-none">LOG_STREAM</h1>
+<p class="mt-4 font-['Inter'] text-[10px] uppercase tracking-[0.3em] font-semibold text-zinc-500">Live monitoring: Production-Alpha-v2</p>
+</div>
+<div class="flex flex-col items-end gap-2">
+<div class="flex items-center gap-2 bg-surface-container-high px-3 py-1 rounded-full">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="mono text-[10px] text-primary">LIVE</span>
+</div>
+<span class="mono text-xs text-zinc-600">OFFSET: 1.29s</span>
+</div>
+</header>
+<!-- Metric Marquee Custom Component -->
+<div class="mb-8 grid grid-cols-2 md:grid-cols-4 gap-0 border-y border-zinc-800/30">
+<div class="p-6 border-r border-zinc-800/30">
+<div class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500 mb-1">Throughput</div>
+<div class="mono text-2xl text-on-surface">1.2k <span class="text-xs text-zinc-600">req/s</span></div>
+</div>
+<div class="p-6 border-r border-zinc-800/30">
+<div class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500 mb-1">Latency</div>
+<div class="mono text-2xl text-on-surface">42 <span class="text-xs text-zinc-600">ms</span></div>
+</div>
+<div class="p-6 border-r border-zinc-800/30">
+<div class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500 mb-1">Error Rate</div>
+<div class="mono text-2xl text-error">0.02%</div>
+</div>
+<div class="p-6">
+<div class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500 mb-1">CPU Load</div>
+<div class="mono text-2xl text-on-surface">14%</div>
+</div>
+</div>
+<!-- Code Editor Area -->
+<div class="flex-1 bg-surface-container-lowest rounded-xl overflow-hidden flex flex-col border border-zinc-800/20">
+<div class="flex items-center justify-between px-6 py-4 bg-surface-container-low">
+<div class="flex gap-2">
+<div class="w-3 h-3 rounded-full bg-[#353436]"></div>
+<div class="w-3 h-3 rounded-full bg-[#353436]"></div>
+<div class="w-3 h-3 rounded-full bg-[#353436]"></div>
+</div>
+<div class="flex items-center gap-4">
+<span class="mono text-[10px] text-zinc-500">JSON_FORMAT</span>
+<span class="material-symbols-outlined text-zinc-500 hover:text-white cursor-pointer text-sm" data-icon="download">download</span>
+</div>
+</div>
+<div class="flex-1 overflow-auto p-6 custom-scrollbar mono text-xs leading-relaxed text-zinc-300">
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">01</span>
+<span>{</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">02</span>
+<span class="pl-4">"<span class="text-primary">timestamp</span>": "2023-10-27T10:24:02.144Z",</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">03</span>
+<span class="pl-4">"<span class="text-primary">level</span>": "<span class="text-tertiary">INFO</span>",</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">04</span>
+<span class="pl-4">"<span class="text-primary">service</span>": "runtime-engine-01",</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">05</span>
+<span class="pl-4">"<span class="text-primary">message</span>": "Successfully initiated node-handshake protocol",</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">06</span>
+<span class="pl-4">"<span class="text-primary">metadata</span>": {</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">07</span>
+<span class="pl-8">"<span class="text-primary">node_id</span>": "x82-alpha-99",</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">08</span>
+<span class="pl-8">"<span class="text-primary">region</span>": "us-east-1"</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">09</span>
+<span class="pl-4">}</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">10</span>
+<span>},</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">11</span>
+<span>{</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">12</span>
+<span class="pl-4">"<span class="text-primary">timestamp</span>": "2023-10-27T10:24:03.901Z",</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">13</span>
+<span class="pl-4">"<span class="text-primary">level</span>": "<span class="text-error">WARN</span>",</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">14</span>
+<span class="pl-4">"<span class="text-primary">message</span>": "Memory threshold nearing 85% capacity",</span>
+</div>
+<div class="flex gap-6 mb-2">
+<span class="text-zinc-700 w-8 text-right">15</span>
+<span>}</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Contextual FAB - Restricted to home/main screens, but let's assume we want it for 'New Incident' in logs -->
+<div class="fixed bottom-8 right-8 hidden md:block">
+<button class="bg-primary-container text-on-primary-fixed w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</body></html>

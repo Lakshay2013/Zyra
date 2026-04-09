@@ -1,16 +1,20 @@
 {
-  "name": "ai-shield-sdk",
-  "version": "0.1.0",
-  "description": "Official SDK for AI Shield — LLM logging and risk monitoring",
-  "main": "index.js",
+  "name": "zyra-sdk",
+  "version": "1.0.0",
+  "description": "Official Zyra SDK — AI cost optimizer proxy client. Drop-in replacement for the OpenAI SDK.",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
   "scripts": {
     "test": "node test.js"
   },
   "keywords": [
+    "zyra",
+    "ai",
     "llm",
-    "logging",
-    "monitoring",
-    "ai-shield"
+    "cost-optimization",
+    "proxy",
+    "openai",
+    "routing"
   ],
   "license": "MIT",
   "dependencies": {
