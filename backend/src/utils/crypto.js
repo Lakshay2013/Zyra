@@ -1,9 +1,17 @@
 const crypto = require('crypto');
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex'); // Must be 256 bits (32 characters strings is 32 bytes)
-// In production, ENCRYPTION_KEY must be a 64-character hex string (32 bytes). 
-// Here we parse it properly.
-const key = Buffer.from(ENCRYPTION_KEY.padEnd(64, '0').slice(0, 64), 'hex');
+if (!process.env.ENCRYPTION_KEY) {
+  console.error('❌ FATAL: ENCRYPTION_KEY environment variable is required. Must be a 64-character hex string (32 bytes).');
+  process.exit(1);
+}
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+if (!/^[0-9a-fA-F]{64}$/.test(ENCRYPTION_KEY)) {
+  console.error('❌ FATAL: ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes).');
+  process.exit(1);
+}
+
+const key = Buffer.from(ENCRYPTION_KEY, 'hex');
 const IV_LENGTH = 16; // For AES, this is always 16
 
 function encrypt(text) {

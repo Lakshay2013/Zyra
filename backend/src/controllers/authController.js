@@ -20,6 +20,23 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password, orgName } = req.body
 
+    // Input validation
+    if (!name || !email || !password || !orgName) {
+      return res.status(400).json({ message: 'Name, email, password, and organization name are required' })
+    }
+    if (typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 50) {
+      return res.status(400).json({ message: 'Name must be between 1 and 50 characters' })
+    }
+    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: 'Please provide a valid email address' })
+    }
+    if (typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' })
+    }
+    if (typeof orgName !== 'string' || orgName.trim().length < 1 || orgName.trim().length > 100) {
+      return res.status(400).json({ message: 'Organization name must be between 1 and 100 characters' })
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ email })
     if (existingUser) {
@@ -28,7 +45,7 @@ exports.register = async (req, res) => {
 
     // Create org first
     const org = await Organization.create({ name: orgName })
-    
+
     const otpCode = generateOTP()
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000) // 10 mins
 
@@ -52,8 +69,8 @@ exports.register = async (req, res) => {
       email: user.email
     })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('Register error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -71,10 +88,10 @@ exports.login = async (req, res) => {
     if (!user || !user.isActive) {
       return res.status(401).json({ message: 'Invalid credentials' })
     }
-    
-    // if (!user.isEmailVerified) {
-    //   return res.status(403).json({ message: 'Email not verified. Please verify your email first.', requiresOtp: true })
-    // }
+
+    if (!user.isEmailVerified) {
+      return res.status(403).json({ message: 'Email not verified. Please verify your email first.', requiresOtp: true })
+    }
 
     // Check password
     const isMatch = await user.comparePassword(password)
@@ -103,8 +120,8 @@ exports.login = async (req, res) => {
       }
     })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('Login error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -116,7 +133,8 @@ exports.getMe = async (req, res) => {
 
     res.json({ user, org })
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('GetMe error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -127,10 +145,10 @@ exports.verifyOtp = async (req, res) => {
     if (!email || !otp) return res.status(400).json({ message: 'Email and OTP required' })
 
     const user = await User.findOne({ email }).select('+otpCode +otpExpires')
-    
+
     if (!user) return res.status(404).json({ message: 'User not found' })
     if (user.isEmailVerified) return res.status(400).json({ message: 'Email already verified' })
-    
+
     if (user.otpCode !== otp || user.otpExpires < new Date()) {
       return res.status(400).json({ message: 'Invalid or expired OTP' })
     }
@@ -150,8 +168,8 @@ exports.verifyOtp = async (req, res) => {
       org: { id: org._id, name: org.name, plan: org.plan }
     })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('OTP verification error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -165,7 +183,7 @@ exports.googleLogin = async (req, res) => {
       idToken,
       audience: process.env.GOOGLE_CLIENT_ID,
     })
-    
+
     const payload = ticket.getPayload()
     const { email, name, sub: googleId } = payload
 
@@ -202,7 +220,7 @@ exports.googleLogin = async (req, res) => {
       org: { id: org._id, name: org.name, plan: org.plan }
     })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Google authentication failed', error: err.message })
+    console.error('Google auth error:', err)
+    res.status(500).json({ message: 'Google authentication failed' })
   }
 }

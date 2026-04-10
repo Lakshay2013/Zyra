@@ -12,8 +12,9 @@ exports.getProviders = async (req, res) => {
       groq: !!org.providerKeys?.groq,
     }
     res.json({ configured })
-  } catch (err) { 
-    res.status(500).json({ error: err.message }) 
+  } catch (err) {
+    console.error('getProviders error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -21,7 +22,7 @@ exports.updateProviders = async (req, res) => {
   try {
     const { openai, anthropic, gemini, groq } = req.body
     const org = await Organization.findById(req.user.orgId)
-    
+
     if (!org.providerKeys) org.providerKeys = {}
 
     if (openai !== undefined) org.providerKeys.openai = openai ? encrypt(openai) : null
@@ -31,8 +32,9 @@ exports.updateProviders = async (req, res) => {
 
     await org.save()
     res.json({ message: 'Providers updated successfully' })
-  } catch (err) { 
-    res.status(500).json({ error: err.message }) 
+  } catch (err) {
+    console.error('updateProviders error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -40,21 +42,31 @@ exports.getPolicies = async (req, res) => {
   try {
     const org = await Organization.findById(req.user.orgId).select('policies')
     res.json({ policies: org.policies })
-  } catch (err) { 
-    res.status(500).json({ error: err.message }) 
+  } catch (err) {
+    console.error('getPolicies error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
 exports.updatePolicies = async (req, res) => {
   try {
+    // Whitelist allowed policy fields
+    const allowed = {}
+    if (typeof req.body.blockPII === 'boolean') allowed['policies.blockPII'] = req.body.blockPII
+    if (typeof req.body.blockInjection === 'boolean') allowed['policies.blockInjection'] = req.body.blockInjection
+    if (typeof req.body.maxTokensPerRequest === 'number' && req.body.maxTokensPerRequest > 0) {
+      allowed['policies.maxTokensPerRequest'] = Math.min(req.body.maxTokensPerRequest, 32000)
+    }
+
     const org = await Organization.findByIdAndUpdate(
       req.user.orgId,
-      { $set: { policies: req.body } },
+      { $set: allowed },
       { new: true }
     )
     res.json({ policies: org.policies })
-  } catch (err) { 
-    res.status(500).json({ error: err.message }) 
+  } catch (err) {
+    console.error('updatePolicies error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -62,8 +74,9 @@ exports.getBilling = async (req, res) => {
   try {
     const org = await Organization.findById(req.user.orgId).select('plan monthlyLogLimit currentMonthlyLogs')
     res.json({ billing: org })
-  } catch (err) { 
-    res.status(500).json({ error: err.message }) 
+  } catch (err) {
+    console.error('getBilling error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -71,8 +84,9 @@ exports.getMembers = async (req, res) => {
   try {
     const users = await User.find({ orgId: req.user.orgId }).select('name email role isActive createdAt')
     res.json({ members: users })
-  } catch (err) { 
-    res.status(500).json({ error: err.message }) 
+  } catch (err) {
+    console.error('getMembers error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -82,7 +96,8 @@ exports.getOptimizer = async (req, res) => {
     const org = await Organization.findById(req.user.orgId).select('optimizer')
     res.json({ optimizer: org.optimizer || { autoOptimize: false, qualityTier: 'standard', costAlertThreshold: 100 } })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    console.error('getOptimizer error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -102,7 +117,8 @@ exports.updateOptimizer = async (req, res) => {
     )
     res.json({ optimizer: org.optimizer })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    console.error('updateOptimizer error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -112,7 +128,8 @@ exports.getReliability = async (req, res) => {
     const org = await Organization.findById(req.user.orgId).select('reliability')
     res.json({ reliability: org.reliability || { enableRetry: true, maxRetries: 2, fallbackOrder: [] } })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    console.error('getReliability error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -132,7 +149,8 @@ exports.updateReliability = async (req, res) => {
     )
     res.json({ reliability: org.reliability })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    console.error('updateReliability error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 

@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer')
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: process.env.SMTP_PORT || 587,
-  secure: false, 
+  secure: false,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -12,8 +12,10 @@ const transporter = nodemailer.createTransport({
 
 exports.sendOtpEmail = async (email, otp) => {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.log(`[MAILER MOCK] No SMTP credentials found.`)
-    console.log(`[MAILER MOCK] Sending OTP: ${otp} to: ${email}`)
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SMTP credentials not configured. Cannot send OTP in production.')
+    }
+    console.log(`[MAILER MOCK] OTP would be sent to: ${email}`)
     return true
   }
 

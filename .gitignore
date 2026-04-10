@@ -1,2 +1,7 @@
 node_modules 
 .env 
+
+# Test artifacts and logs
+*.log
+*.txt
+!README.md

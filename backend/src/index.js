@@ -5,11 +5,30 @@ const helmet = require('helmet')
 const morgan = require('morgan')
 require('dotenv').config()
 
+// ── ENV VALIDATION: crash immediately if critical vars missing ──
+const REQUIRED_ENV = ['JWT_SECRET', 'MONGO_URI', 'ENCRYPTION_KEY']
+const missing = REQUIRED_ENV.filter(k => !process.env[k])
+if (missing.length > 0) {
+  console.error(`❌ FATAL: Missing required environment variables: ${missing.join(', ')}`)
+  process.exit(1)
+}
+
 const app = express()
 
-app.use(helmet())
-app.use(cors({ origin: process.env.FRONTEND_URL || '*' }))
-app.use(morgan('dev'))
+app.use(helmet({
+  hsts: { maxAge: 31536000, includeSubDomains: true }
+}))
+
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map(s => s.trim())
+  : []
+app.use(cors({
+  origin: allowedOrigins.length > 0 ? allowedOrigins : false,
+  credentials: true
+}))
+
+const logFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev'
+app.use(morgan(logFormat))
 
 const { proxyLimiter } = require('./middleware/rateLimiter')
 
@@ -25,20 +44,22 @@ app.use(express.json({ limit: '10kb' }))
 const { authLimiter } = require('./middleware/rateLimiter')
 // Routes
 app.use('/api/auth', authLimiter, require('./routes/auth'))
-app.use('/api/keys', require('./routes/apiKeys')) 
+app.use('/api/keys', require('./routes/apiKeys'))
 app.use('/api/logs', require('./routes/logs'))
 app.use('/api/analytics', require('./routes/analytics'))
 app.use('/api/org', require('./routes/org'))
 
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', project: 'ai-shield' })
+app.get('/health', async (req, res) => {
+  const mongoOk = mongoose.connection.readyState === 1
+  const status = mongoOk ? 'ok' : 'degraded'
+  res.status(mongoOk ? 200 : 503).json({ status, project: 'ai-shield', mongo: mongoOk })
 })
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack)
+  console.error('Unhandled error:', err.stack)
   res.status(500).json({ message: 'Something went wrong' })
 })
 
@@ -47,6 +68,28 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => console.error('❌ MongoDB error:', err.message))
 
 const PORT = process.env.PORT || 5000
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`)
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT} (${process.env.NODE_ENV || 'development'})`)
 })
+
+// ── GRACEFUL SHUTDOWN ──
+const shutdown = async (signal) => {
+  console.log(`\n🛑 ${signal} received. Shutting down gracefully...`)
+  server.close(async () => {
+    try {
+      await mongoose.connection.close()
+      console.log('✅ MongoDB connection closed')
+    } catch (err) {
+      console.error('Error closing MongoDB:', err)
+    }
+    process.exit(0)
+  })
+  // Force shutdown after 10s if graceful fails
+  setTimeout(() => {
+    console.error('⚠️ Forced shutdown after timeout')
+    process.exit(1)
+  }, 10000)
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'))
+process.on('SIGINT', () => shutdown('SIGINT'))

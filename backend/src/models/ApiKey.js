@@ -35,4 +35,7 @@ const apiKeySchema = new mongoose.Schema({
   }
 }, { timestamps: true })
 
+apiKeySchema.index({ keyHash: 1 }, { unique: true })
+apiKeySchema.index({ orgId: 1 })
+
 module.exports = mongoose.model('ApiKey', apiKeySchema)

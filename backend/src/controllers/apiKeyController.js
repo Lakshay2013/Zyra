@@ -35,7 +35,8 @@ exports.createKey = async (req, res) => {
       prefix: apiKey.prefix
     })
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('createKey error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -49,7 +50,8 @@ exports.listKeys = async (req, res) => {
 
     res.json({ keys })
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('listKeys error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -70,6 +72,7 @@ exports.revokeKey = async (req, res) => {
 
     res.json({ message: 'Key revoked successfully' })
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('revokeKey error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }

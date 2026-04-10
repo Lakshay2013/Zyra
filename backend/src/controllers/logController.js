@@ -54,14 +54,15 @@ exports.ingest = async (req, res) => {
       logId: log._id
     })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('Log ingest error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
 exports.getLogs = async (req, res) => {
   try {
-    const { page = 1, limit = 50, userId, minRisk, maxRisk, model, flags, startDate, endDate } = req.query
+    const { page = 1, limit: rawLimit = 50, userId, minRisk, maxRisk, model, flags, startDate, endDate } = req.query
+    const limit = Math.min(Number(rawLimit) || 50, 200) // Max 200 per page
 
     const filter = { orgId: req.user.orgId }
 
@@ -98,6 +99,7 @@ exports.getLogs = async (req, res) => {
       }
     })
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('getLogs error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }

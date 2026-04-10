@@ -40,7 +40,8 @@ exports.getOverview = async (req, res) => {
       totalSavings: parseFloat((stats?.totalSavings || 0).toFixed(4))
     })
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('Analytics error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -75,7 +76,8 @@ exports.getUsage = async (req, res) => {
 
     res.json({ usage })
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('Analytics error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -105,7 +107,8 @@ exports.getTopUsers = async (req, res) => {
 
     res.json({ topUsers })
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('Analytics error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -124,7 +127,8 @@ exports.getHighRisk = async (req, res) => {
 
     res.json({ highRisk })
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('Analytics error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -182,7 +186,8 @@ exports.getSavings = async (req, res) => {
       }
     })
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('Analytics error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -197,7 +202,8 @@ exports.getCostBreakdown = async (req, res) => {
 
     res.json({ byModel, byUser })
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('Analytics error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -210,7 +216,8 @@ exports.getValueReport = async (req, res) => {
     const report = await getValueReport(orgId, days)
     res.json(report)
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('Analytics error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }
 
@@ -223,6 +230,7 @@ exports.getCostComparison = async (req, res) => {
     const comparison = await getCostComparison(orgId, days)
     res.json(comparison)
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message })
+    console.error('Analytics error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }

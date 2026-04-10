@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   },
 }
 
+const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
+
 export default function RootLayout({
   children,
 }: {
@@ -26,9 +28,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
-        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 'dummy'}>
-          {children}
-        </GoogleOAuthProvider>
+        {googleClientId ? (
+          <GoogleOAuthProvider clientId={googleClientId}>
+            {children}
+          </GoogleOAuthProvider>
+        ) : (
+          children
+        )}
       </body>
     </html>
   )
