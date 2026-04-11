@@ -384,7 +384,7 @@ exports.chatCompletions = async (req, res) => {
   const debugInfo = {}
 
   // ── Step 1: Check org limits ──
-  if (org.currentMonthLogs >= org.monthlyLogLimit) {
+  if (org.currentMonthlyLogs >= org.monthlyLogLimit) {
     return res.status(429).json({ error: { message: 'Monthly request limit reached. Please upgrade your plan.', type: 'rate_limit_error' } })
   }
 

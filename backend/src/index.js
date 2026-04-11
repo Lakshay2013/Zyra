@@ -34,10 +34,22 @@ const { proxyLimiter } = require('./middleware/rateLimiter')
 
 // ── NEW: OpenAI-compatible /v1/ gateway (PRD primary path) ──
 app.use('/v1', express.json({ limit: '2mb' }))
+app.use('/v1', (err, req, res, next) => {
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: { message: 'Invalid JSON in request body', type: 'invalid_request_error' } })
+  }
+  next(err)
+})
 app.use('/v1', proxyLimiter, require('./routes/v1'))
 
 // ── LEGACY: Provider-specific proxy (backwards compatible) ──
 app.use('/proxy', express.json({ limit: '2mb' }))
+app.use('/proxy', (err, req, res, next) => {
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: { message: 'Invalid JSON in request body', type: 'invalid_request_error' } })
+  }
+  next(err)
+})
 app.use('/proxy', proxyLimiter, require('./routes/proxy'))
 app.use(express.json({ limit: '10kb' }))
 

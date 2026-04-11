@@ -17,7 +17,21 @@ const injectionPhrases = [
   'developer mode',
   'override instructions',
   'ignore your guidelines',
-  'do anything now'
+  'do anything now',
+  'ignore your safety',
+  'ignored your safety',
+  'ignoring your safety',
+  'ignore safety guidelines',
+  'bypass safety',
+  'output all secret',
+  'output the secret',
+  'output secret keys',
+  'reveal all secret',
+  'output your instructions',
+  'disregard safety',
+  'without restrictions',
+  'no restrictions mode',
+  'unrestricted mode'
 ]
 
 exports.detectInjection = (text) => {
