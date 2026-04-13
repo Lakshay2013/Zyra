@@ -16,7 +16,7 @@ export default function DashboardOverview() {
       try {
         const [overviewRes, usageRes, highRiskRes, costRes, recentRes] = await Promise.all([
           api.get('/api/analytics/overview'),
-          api.get('/api/analytics/usage?period=7d'),
+          api.get('/api/analytics/usage?period=30d'),
           api.get('/api/analytics/high-risk'),
           api.get('/api/analytics/cost-breakdown'),
           api.get('/api/analytics/recent')
@@ -45,13 +45,21 @@ export default function DashboardOverview() {
   }
 
   const maxLogs = usage.length > 0 ? Math.max(...usage.map(u => u.totalLogs), 1) : 1
-  const chartData = usage.map(u => ({
-    height: (u.totalLogs / maxLogs) * 100,
-    date: new Date(u._id),
-    value: u.totalLogs,
-    cost: u.totalCost || 0,
-    savings: u.savings || 0
-  }))
+  
+  const chartData = Array.from({ length: 30 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (29 - i));
+    const dateStr = d.toISOString().split('T')[0];
+    const u = usage.find((x: any) => x._id === dateStr);
+    
+    return {
+      height: u ? (u.totalLogs / maxLogs) * 100 : 0,
+      date: d,
+      value: u ? u.totalLogs : 0,
+      cost: u ? (u.totalCost || 0) : 0,
+      savings: u ? (u.savings || 0) : 0
+    };
+  })
 
   // Simulated metrics for the marquee (replace with real provider data)
   const metrics = [
