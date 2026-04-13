@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const {
   getOverview, getUsage, getTopUsers, getHighRisk,
-  getSavings, getCostBreakdown, getValueReport, getCostComparison
+  getSavings, getCostBreakdown, getValueReport, getCostComparison, getRecent
 } = require('../controllers/analyticsController')
 const { protect } = require('../middleware/auth')
 
@@ -12,6 +12,7 @@ router.get('/overview', getOverview)
 router.get('/usage', getUsage)
 router.get('/top-users', getTopUsers)
 router.get('/high-risk', getHighRisk)
+router.get('/recent', getRecent)
 router.get('/savings', getSavings)
 router.get('/cost-breakdown', getCostBreakdown)
 router.get('/cost-comparison', getCostComparison)

@@ -234,3 +234,19 @@ exports.getCostComparison = async (req, res) => {
     res.status(500).json({ message: 'Server error' })
   }
 }
+
+// GET /api/analytics/recent
+exports.getRecent = async (req, res) => {
+  try {
+    const orgId = req.user.orgId
+    const recent = await InteractionLog.find({ orgId: new Types.ObjectId(orgId) })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select('userId model riskScore flags createdAt optimizer prompt tokens cost')
+
+    res.json({ recent })
+  } catch (err) {
+    console.error('Analytics error:', err)
+    res.status(500).json({ message: 'Server error' })
+  }
+}

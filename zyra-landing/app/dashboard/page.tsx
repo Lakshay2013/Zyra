@@ -8,21 +8,24 @@ export default function DashboardOverview() {
   const [usage, setUsage] = useState<any[]>([])
   const [costBreakdown, setCostBreakdown] = useState<any>(null)
   const [highRisk, setHighRisk] = useState<any[]>([])
+  const [recentLogs, setRecentLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [overviewRes, usageRes, highRiskRes, costRes] = await Promise.all([
+        const [overviewRes, usageRes, highRiskRes, costRes, recentRes] = await Promise.all([
           api.get('/api/analytics/overview'),
           api.get('/api/analytics/usage?period=7d'),
           api.get('/api/analytics/high-risk'),
-          api.get('/api/analytics/cost-breakdown')
+          api.get('/api/analytics/cost-breakdown'),
+          api.get('/api/analytics/recent')
         ])
         setStats(overviewRes.data)
         setUsage(usageRes.data.usage || [])
         setHighRisk(highRiskRes.data.highRisk || [])
         setCostBreakdown(costRes.data)
+        setRecentLogs(recentRes.data.recent || [])
       } catch (err) {
         console.error("Failed to load analytics", err)
       } finally {
@@ -230,48 +233,54 @@ export default function DashboardOverview() {
             <h3 style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#e5e2e3', textTransform: 'uppercase' }}>Recent_System_Events</h3>
             <button style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: '#ffcdc9', letterSpacing: '0.15em' }}>View History</button>
           </div>
-          <div>
-            {highRisk.length > 0 ? (
-              highRisk.slice(0, 5).map((log: any, i: number) => (
-                <div key={log._id || i} className="px-6 py-4 flex items-center justify-between transition-colors hover:bg-[#2a2a2b]" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>
-                  <div className="flex items-center gap-4">
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ffb4ab' }} />
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: '#ffb4ab' }}>
-                        Security event on <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, opacity: 0.6 }}>USER_{log.userId?.slice(0, 8)}</span>
-                      </div>
-                      <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '-0.02em' }}>
-                        Risk score {log.riskScore} — {log.flags?.join(', ') || 'unknown'}
-                      </div>
-                    </div>
-                  </div>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#71717a' }}>
-                    {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC
-                  </span>
-                </div>
-              ))
-            ) : (
-              <>
-                {[
-                  { text: 'Cost optimizer engine calibrated', sub: 'Model tier mapping refreshed for all providers', time: '14:22:10 UTC', ok: true },
-                  { text: 'Cache layer initialized', sub: 'Redis exact-match cache — TTL 300s', time: '14:18:55 UTC', ok: true },
-                  { text: 'Proxy gateway online', sub: '/v1/chat/completions endpoint accepting traffic', time: '14:05:32 UTC', ok: true },
-                  { text: 'Provider keys validated', sub: 'All configured providers passed health check', time: '13:45:12 UTC', ok: true },
-                ].map((evt, i) => (
-                  <div key={i} className="px-6 py-4 flex items-center justify-between transition-colors hover:bg-[#2a2a2b]" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>
+            {recentLogs.length > 0 ? (
+              recentLogs.slice(0, 5).map((log: any, i: number) => {
+                const isHighRisk = log.riskScore > 50;
+                
+                let text = "API Interaction Processed"
+                let sub = `Routed to ${log.model} via ${log.optimizer?.wasOptimized ? 'Optimizer' : 'Direct'}`
+                let dotColor = '#9be8cb' // green
+
+                if (isHighRisk) {
+                  text = "Security Alert Triggered"
+                  sub = `Risk score ${log.riskScore} — ${log.flags?.join(', ') || 'unknown'}`
+                  dotColor = '#ffb4ab' // red
+                } else if (log.optimizer?.wasOptimized) {
+                  text = "Routing Optimization Delivered"
+                  sub = `Shifted from ${log.optimizer.originalModel} to ${log.optimizer.optimizedModel}`
+                  dotColor = '#ffa69e' // peach/orange
+                }
+
+                return (
+                  <div key={log._id || i} className="px-6 py-4 flex items-center justify-between transition-colors hover:bg-[#2a2a2b]" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>
                     <div className="flex items-center gap-4">
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ffa69e' }} />
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor }} />
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: '#e5e2e3' }}>{evt.text}</div>
-                        <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '-0.02em' }}>{evt.sub}</div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: isHighRisk ? '#ffb4ab' : '#e5e2e3' }}>
+                          {text} <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, opacity: 0.6, marginLeft: 8 }}>USER_{log.userId?.slice(0, 8)}</span>
+                        </div>
+                        <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '-0.02em', marginTop: 2 }}>
+                          {sub}
+                        </div>
+                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#534341', marginTop: 4, fontStyle: 'italic', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          "{log.prompt}"
+                        </div>
                       </div>
                     </div>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#71717a' }}>{evt.time}</span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#71717a' }}>
+                        {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC
+                      </span>
+                      {log.cost > 0 && <span style={{ fontSize: 10, color: '#9be8cb', fontWeight: 600 }}>${log.cost.toFixed(6)}</span>}
+                    </div>
                   </div>
-                ))}
-              </>
+                )
+              })
+            ) : (
+              <div className="px-6 py-8 text-center" style={{ color: '#71717a', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                No recent activity detected. Connect your SDK to begin.
+              </div>
             )}
-          </div>
         </div>
       </div>
 

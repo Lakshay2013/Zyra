@@ -17,7 +17,6 @@ if (mongoose.connection.readyState === 0) {
 
 const worker = new Worker('risk-analysis', async (job) => {
   const { logId } = job.data
-  console.log(`🔍 Analyzing log ${logId}`)
 
   const log = await InteractionLog.findById(logId)
   if (!log) {
@@ -58,7 +57,6 @@ const worker = new Worker('risk-analysis', async (job) => {
     }
   })
 
-  console.log(`✅ Log ${logId} analyzed — risk score: ${riskScore}, flags: ${flags.join(', ') || 'none'}`)
 
 }, { connection })
 

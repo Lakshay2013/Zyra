@@ -39,7 +39,7 @@ const executeWithRetry = async (primaryRequest, options = {}) => {
 
   // Primary failed after all retries — try fallbacks in order
   for (const fallback of fallbacks) {
-    console.log(`[RetryHandler] Primary ${primaryProvider} failed. Trying fallback: ${fallback.provider}`)
+    console.warn(`[RetryHandler] Primary ${primaryProvider} failed. Trying fallback: ${fallback.provider}`)
 
     const fallbackResult = await attemptWithRetries(fallback.requestConfig, 1, baseDelay)
 
@@ -86,7 +86,7 @@ const attemptWithRetries = async (requestConfig, maxRetries, baseDelay) => {
 
       // Exponential backoff with jitter
       const delay = Math.min(baseDelay * Math.pow(2, attempt - 1) + Math.random() * 200, 10000)
-      console.log(`[RetryHandler] Attempt ${attempt}/${totalAttempts} failed (${statusCode || errorCode}). Retrying in ${Math.round(delay)}ms...`)
+      console.warn(`[RetryHandler] Attempt ${attempt}/${totalAttempts} failed (${statusCode || errorCode}). Retrying in ${Math.round(delay)}ms...`)
       await sleep(delay)
     }
   }

@@ -269,7 +269,6 @@ exports.proxy = async (req, res) => {
         }
       }
 
-      console.log(`[Optimizer] ${model} → ${actualModel} | complexity: ${optimizerResult.complexity} | tier: ${optimizerResult.tier} | est. savings: $${optimizerResult.savings}`)
     }
   }
 
@@ -326,7 +325,7 @@ exports.proxy = async (req, res) => {
 
     if (!quality.passed) {
       qualityFailReason = quality.reason
-      console.log(`[QualityGuard] Response failed validation (${quality.reason}). Attempting higher-tier retry...`)
+      console.warn(`[QualityGuard] Response failed validation (${quality.reason}). Attempting higher-tier retry...`)
 
       const upgrade = getQualityFallbackModel(finalModel, org)
 
@@ -346,11 +345,10 @@ exports.proxy = async (req, res) => {
             finalProvider = upgrade.provider
             qualityRetried = true
 
-            console.log(`[QualityGuard] Retried with ${upgrade.model} — success`)
           }
         } catch (upgradeErr) {
           // Quality retry failed — use original response (it's still better than nothing)
-          console.log(`[QualityGuard] Higher-tier retry failed, using original response`)
+          console.warn(`[QualityGuard] Higher-tier retry failed, using original response`)
         }
       }
     }

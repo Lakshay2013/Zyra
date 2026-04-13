@@ -641,7 +641,7 @@ exports.chatCompletions = async (req, res) => {
 
     if (!quality.passed) {
       qualityFailReason = quality.reason
-      console.log(`[QualityGuard] Failed (${quality.reason}). Retrying with higher tier...`)
+      console.warn(`[QualityGuard] Failed (${quality.reason}). Retrying with higher tier...`)
 
       const upgrade = getQualityFallbackModel(finalModel, org)
       if (upgrade) {
@@ -658,7 +658,7 @@ exports.chatCompletions = async (req, res) => {
             qualityRetried = true
           }
         } catch (upgradeErr) {
-          console.log(`[QualityGuard] Upgrade retry failed, using original response`)
+          console.warn(`[QualityGuard] Upgrade retry failed, using original response`)
         }
       }
     }
