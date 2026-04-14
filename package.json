@@ -1,8 +1,14 @@
 {
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix zyra-landing\" \"npm run dev --prefix backend\" \"npm run worker --prefix backend\""
+  },
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",
     "axios": "^1.13.6",
     "react-router-dom": "^7.13.1",
     "recharts": "^3.7.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

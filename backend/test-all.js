@@ -86,8 +86,17 @@ async function runTests() {
   })
 
   await test('Login after register', async () => {
-    // OTP check is disabled in the code, so login should work immediately
-    const res = await request('POST', '/api/auth/login', { email: testEmail, password: testPass })
+    let res = await request('POST', '/api/auth/login', { email: testEmail, password: testPass })
+    
+    if (res.status === 403 && res.data.requiresOtp) {
+      const mongoose = require('mongoose')
+      const bypassConn = await mongoose.createConnection(process.env.MONGO_URI || 'mongodb://localhost:27018/ai-shield').asPromise()
+      await bypassConn.db.collection('users').updateOne({ email: testEmail }, { $set: { isEmailVerified: true } })
+      await bypassConn.close()
+      
+      res = await request('POST', '/api/auth/login', { email: testEmail, password: testPass })
+    }
+
     assert(res.status === 200, `Login: ${res.status} ${JSON.stringify(res.data)}`)
     TOKEN = res.data.token
     assert(TOKEN, 'No token returned from login')

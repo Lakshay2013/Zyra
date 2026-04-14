@@ -291,6 +291,12 @@ export function useMotionEngine() {
       countObs.disconnect()
       trails.forEach(t => t.remove())
       document.body.classList.remove('custom-cursor')
+      
+      const elementsToRemove = ['cursor-dot', 'cursor-ring', 'scroll-progress', 'noise-overlay', 'back-to-top'];
+      elementsToRemove.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+      });
     }
   }, [playSound])
 }

@@ -128,9 +128,9 @@ export default function DashboardLayout({
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex gap-6 mr-4" style={{ fontWeight: 500 }}>
-              {['Dashboard', 'Deployments', 'Docs'].map((t, i) => (
-                <a key={t} href="#" style={{ color: i === 0 ? '#ffa69e' : '#a1a1aa', fontWeight: i === 0 ? 700 : 400, fontSize: 14 }}>{t}</a>
-              ))}
+              <Link href="/dashboard" style={{ color: pathname === '/dashboard' ? '#ffa69e' : '#a1a1aa', fontWeight: pathname === '/dashboard' ? 700 : 400, fontSize: 14 }}>Dashboard</Link>
+              <Link href="/dashboard/providers" style={{ color: pathname.startsWith('/dashboard/providers') ? '#ffa69e' : '#a1a1aa', fontWeight: pathname.startsWith('/dashboard/providers') ? 700 : 400, fontSize: 14 }}>Deployments</Link>
+              <Link href="/#docs" style={{ color: '#a1a1aa', fontWeight: 400, fontSize: 14 }}>Docs</Link>
             </div>
             <div className="flex items-center gap-1">
               {['terminal', 'notifications', 'settings'].map(icon => (

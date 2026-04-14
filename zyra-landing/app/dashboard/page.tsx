@@ -9,31 +9,50 @@ export default function DashboardOverview() {
   const [costBreakdown, setCostBreakdown] = useState<any>(null)
   const [highRisk, setHighRisk] = useState<any[]>([])
   const [recentLogs, setRecentLogs] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      const [overviewRes, usageRes, highRiskRes, costRes, recentRes] = await Promise.all([
+        api.get('/api/analytics/overview'),
+        api.get('/api/analytics/usage?period=30d'),
+        api.get('/api/analytics/high-risk'),
+        api.get('/api/analytics/cost-breakdown'),
+        api.get('/api/analytics/recent')
+      ]);
+      setStats(overviewRes.data);
+      setUsage(usageRes.data.usage || []);
+      setHighRisk(highRiskRes.data.highRisk || []);
+      setCostBreakdown(costRes.data);
+      setRecentLogs(recentRes.data.recent || []);
+    } catch (err) {
+      console.error("Failed to load analytics", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleExportLogs = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ stats, usage, recentLogs }, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "zyra_dashboard_export.json");
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [overviewRes, usageRes, highRiskRes, costRes, recentRes] = await Promise.all([
-          api.get('/api/analytics/overview'),
-          api.get('/api/analytics/usage?period=30d'),
-          api.get('/api/analytics/high-risk'),
-          api.get('/api/analytics/cost-breakdown'),
-          api.get('/api/analytics/recent')
-        ])
-        setStats(overviewRes.data)
-        setUsage(usageRes.data.usage || [])
-        setHighRisk(highRiskRes.data.highRisk || [])
-        setCostBreakdown(costRes.data)
-        setRecentLogs(recentRes.data.recent || [])
-      } catch (err) {
-        console.error("Failed to load analytics", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
+    const initFetch = async () => {
+      await handleRefresh();
+      setLoading(false);
+    };
+    initFetch();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) {
     return (
@@ -83,16 +102,24 @@ export default function DashboardOverview() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button style={{
-            background: '#2a2a2b', padding: '8px 16px', borderRadius: 12,
-            fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
-            color: '#e5e2e3', border: '1px solid rgba(83,67,65,0.15)'
+          <button 
+            onClick={handleExportLogs}
+            className="hover:bg-[#353436] transition-colors"
+            style={{
+              background: '#2a2a2b', padding: '8px 16px', borderRadius: 12,
+              fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
+              color: '#e5e2e3', border: '1px solid rgba(83,67,65,0.15)',
+              cursor: 'pointer'
           }}>Export Logs</button>
-          <button style={{
-            background: '#ffa69e', padding: '8px 16px', borderRadius: 12,
-            fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
-            color: '#3b0908'
-          }}>Refresh Core</button>
+          <button 
+            onClick={handleRefresh}
+            className={`transition-opacity flex items-center justify-center min-w-[120px] ${isRefreshing ? 'opacity-80 cursor-not-allowed' : 'hover:opacity-80 cursor-pointer'}`}
+            disabled={isRefreshing}
+            style={{
+              background: '#ffa69e', padding: '8px 16px', borderRadius: 12,
+              fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
+              color: '#3b0908'
+          }}>{isRefreshing ? 'Refreshing...' : 'Refresh Core'}</button>
         </div>
       </div>
 
@@ -133,10 +160,19 @@ export default function DashboardOverview() {
               chartData.map((d, i) => {
                 const isPeach = d.height > 50
                 return (
-                  <div key={i} className="flex-1 rounded-t-sm transition-all hover:opacity-80" style={{
-                    height: `${Math.max(d.height, 4)}%`,
-                    background: isPeach ? `rgba(255,166,158,${0.3 + d.height / 200})` : '#353436',
-                  }} />
+                  <div key={i} className="relative flex-1 h-full flex items-end group">
+                    <div className="w-full rounded-t-sm transition-all group-hover:opacity-80 absolute bottom-0" style={{
+                      height: `${Math.max(d.height, 4)}%`,
+                      background: isPeach ? `rgba(255,166,158,${0.3 + d.height / 200})` : '#353436',
+                    }} />
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-[#2a2a2b] border border-[#534341] rounded shadow-xl text-xs text-[#e5e2e3] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap flex flex-col gap-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <div className="text-[#9be8cb] font-bold border-b border-[#534341] pb-1 mb-1">{d.date.toLocaleDateString()}</div>
+                      <div className="flex justify-between gap-4"><span>Reqs:</span> <span>{d.value}</span></div>
+                      <div className="flex justify-between gap-4"><span>Cost:</span> <span>${(d.cost || 0).toFixed(4)}</span></div>
+                      <div className="flex justify-between gap-4"><span>Saved:</span> <span className="text-[#9be8cb]">${(d.savings || 0).toFixed(4)}</span></div>
+                    </div>
+                  </div>
                 )
               })
             ) : (
@@ -144,10 +180,16 @@ export default function DashboardOverview() {
                 const h = [20,25,40,35,60,75,85,70,50,45,30,95,80,60,40,20,15,65,45,30][i]
                 const isPeach = h > 60
                 return (
-                  <div key={i} className="flex-1 rounded-t-sm" style={{
-                    height: `${h}%`,
-                    background: isPeach ? `rgba(255,166,158,${0.3 + h / 200})` : '#353436',
-                  }} />
+                  <div key={i} className="relative flex-1 h-full flex items-end group">
+                    <div className="w-full rounded-t-sm transition-all group-hover:opacity-80 absolute bottom-0" style={{
+                      height: `${h}%`,
+                      background: isPeach ? `rgba(255,166,158,${0.3 + h / 200})` : '#353436',
+                    }} />
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-[#2a2a2b] border border-[#534341] rounded shadow-xl text-xs text-[#e5e2e3] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap flex flex-col gap-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <div className="text-[#9be8cb] font-bold border-b border-[#534341] pb-1 mb-1">Simulated Day {i+1}</div>
+                      <div className="flex justify-between gap-4"><span>Traffic Vol:</span> <span>{h}%</span></div>
+                    </div>
+                  </div>
                 )
               })
             )}
