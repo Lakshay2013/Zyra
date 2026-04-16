@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Users, UserPlus, Settings, MoreVertical } from "lucide-react"
+import toast from 'react-hot-toast'
 import api from "@/lib/api"
 
 export default function TeamPage() {
@@ -31,7 +32,7 @@ export default function TeamPage() {
           <p className="text-[#424843] font-medium text-sm">Manage members, roles, and access across your AI Shield organization.</p>
         </div>
         
-        <button className="flex items-center space-x-2 px-5 py-2.5 bg-[#1a3a2a] hover:bg-[#032416] text-white rounded-xl text-sm font-bold transition-all shadow-[0_4px_14px_rgba(26,58,42,0.4)]">
+        <button onClick={() => toast('Invite team member flow coming soon', { icon: '🧑‍💻' })} className="flex items-center space-x-2 px-5 py-2.5 bg-[#1a3a2a] hover:bg-[#032416] text-white rounded-xl text-sm font-bold transition-all shadow-[0_4px_14px_rgba(26,58,42,0.4)]">
           <UserPlus className="w-4 h-4 ml-[-4px]" />
           <span>Invite Member</span>
         </button>
@@ -79,7 +80,7 @@ export default function TeamPage() {
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap text-right">
-                    <button className="text-[#c1c8c2] hover:text-[#032416] p-2 rounded-lg transition-colors">
+                    <button onClick={() => toast(`Options for ${user.name} coming soon`, { icon: '⚙️' })} className="text-[#c1c8c2] hover:text-[#032416] p-2 rounded-lg transition-colors">
                       <MoreVertical className="w-4 h-4" />
                     </button>
                   </td>

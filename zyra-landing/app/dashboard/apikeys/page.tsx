@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Copy, KeyRound, Plus, Trash2, X } from "lucide-react"
+import toast from 'react-hot-toast'
 import api from "@/lib/api"
 
 export default function ApiKeys() {
@@ -39,7 +40,7 @@ export default function ApiKeys() {
       fetchKeys()
     } catch (err) {
       console.error("Failed to create key", err)
-      alert("Failed to create key.")
+      toast.error("Failed to create key.")
     }
   }
 
@@ -55,7 +56,7 @@ export default function ApiKeys() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    alert("Copied to clipboard!")
+    toast.success("Copied to clipboard!")
   }
 
   return (

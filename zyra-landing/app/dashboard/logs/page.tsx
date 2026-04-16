@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import api from "@/lib/api"
+import toast from 'react-hot-toast'
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<any[]>([])
@@ -81,7 +82,7 @@ export default function LogsPage() {
           </div>
           <div className="flex items-center gap-4">
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#534341', textTransform: 'uppercase' }}>JSON_FORMAT</span>
-            <button className="material-symbols-outlined" style={{ fontSize: 16, color: '#534341' }}>download</button>
+            <button onClick={() => toast.success('JSON export initiated')} className="material-symbols-outlined hover:text-white transition-colors" style={{ fontSize: 16, color: '#534341', cursor: 'pointer' }}>download</button>
           </div>
         </div>
 

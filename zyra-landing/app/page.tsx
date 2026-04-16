@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 import { Check, ShieldCheck, Zap, FileText, ChevronRight } from 'lucide-react'
 import { useMotionEngine, WordReveal, CopyButton, FAQItem } from './components/motion-engine'
 
@@ -50,9 +51,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="logo-glitch font-black text-xl tracking-tight" data-magnetic>ZYRA</Link>
           <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium text-gray-400">
-            <Link href="#" className="text-white hover:text-brand-accent transition-colors">Platform</Link>
-            <Link href="#" className="hover:text-white transition-colors">Solutions</Link>
-            <Link href="#" className="hover:text-white transition-colors">Integrations</Link>
+            <a onClick={() => toast('Platform overview coming in v2', { icon: '🚀' })} className="text-white hover:text-brand-accent transition-colors cursor-pointer">Platform</a>
+            <a onClick={() => toast('Solutions page coming soon', { icon: '🚀' })} className="hover:text-white transition-colors cursor-pointer">Solutions</a>
+            <a onClick={() => toast('Integrations catalog coming soon', { icon: '🚀' })} className="hover:text-white transition-colors cursor-pointer">Integrations</a>
             <Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link>
           </nav>
           <Link href="/login" className="text-[13px] font-medium text-gray-300 hover:text-white transition-colors" data-magnetic>Log in</Link>
@@ -438,7 +439,7 @@ export default function HomePage() {
                 <h4 className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-6">{col.title}</h4>
                 <ul className="space-y-4 text-[13px] text-gray-400 font-medium">
                   {col.links.map((l, j) => (
-                    <li key={j}><Link href="#" className="fill-underline hover:text-white transition-colors">{l}</Link></li>
+                    <li key={j}><a onClick={() => toast(`${l} document coming soon`, { icon: '📄' })} className="fill-underline hover:text-white transition-colors cursor-pointer">{l}</a></li>
                   ))}
                 </ul>
               </div>

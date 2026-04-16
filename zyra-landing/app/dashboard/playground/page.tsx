@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from "react"
+import toast from 'react-hot-toast'
 import api from "@/lib/api"
 
 export default function PlaygroundPage() {
@@ -218,8 +219,11 @@ export default function PlaygroundPage() {
               <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase' }}>Response</span>
               {response && (
                 <button
-                  onClick={() => navigator.clipboard.writeText(response)}
-                  style={{ fontSize: 10, color: '#ffa69e', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                  onClick={() => {
+                    navigator.clipboard.writeText(response)
+                    toast.success('Response copied to clipboard')
+                  }}
+                  style={{ fontSize: 10, color: '#ffa69e', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
                 >Copy</button>
               )}
             </div>

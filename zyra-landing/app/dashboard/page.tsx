@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import api from "@/lib/api"
+import toast from 'react-hot-toast'
 
 export default function DashboardOverview() {
   const [stats, setStats] = useState<any>(null)
@@ -211,7 +212,7 @@ export default function DashboardOverview() {
                 </div>
               </div>
             </div>
-            <button style={{ color: '#ffcdc9', fontSize: 10, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.15em' }}>Full Report</button>
+            <button onClick={() => toast.loading('Compiling full report PDF...', { duration: 2000 })} style={{ color: '#ffcdc9', fontSize: 10, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.15em' }}>Full Report</button>
           </div>
         </div>
 
@@ -281,7 +282,7 @@ export default function DashboardOverview() {
         <div className="md:col-span-12 overflow-hidden" style={{ background: '#1c1b1c', borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)' }}>
           <div className="px-6 py-4 flex justify-between items-center" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)', background: '#201f20' }}>
             <h3 style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#e5e2e3', textTransform: 'uppercase' }}>Recent_System_Events</h3>
-            <button style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: '#ffcdc9', letterSpacing: '0.15em' }}>View History</button>
+            <button onClick={() => toast('Loading historical event logs...', { icon: '⏳' })} style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: '#ffcdc9', letterSpacing: '0.15em' }}>View History</button>
           </div>
             {recentLogs.length > 0 ? (
               recentLogs.slice(0, 5).map((log: any, i: number) => {

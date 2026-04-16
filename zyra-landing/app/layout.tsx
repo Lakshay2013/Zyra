@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { Toaster } from 'react-hot-toast'
 
 export const metadata: Metadata = {
   title: 'Reduce AI Costs by 90% | Zyra AI Proxy',
@@ -31,9 +32,13 @@ export default function RootLayout({
         {googleClientId ? (
           <GoogleOAuthProvider clientId={googleClientId}>
             {children}
+            <Toaster position="bottom-right" toastOptions={{ style: { background: '#1c1b1c', color: '#e5e2e3', border: '1px solid rgba(83,67,65,0.2)', fontSize: '13px', fontFamily: '\'JetBrains Mono\', monospace' } }} />
           </GoogleOAuthProvider>
         ) : (
-          children
+          <>
+            {children}
+            <Toaster position="bottom-right" toastOptions={{ style: { background: '#1c1b1c', color: '#e5e2e3', border: '1px solid rgba(83,67,65,0.2)', fontSize: '13px', fontFamily: '\'JetBrains Mono\', monospace' } }} />
+          </>
         )}
       </body>
     </html>

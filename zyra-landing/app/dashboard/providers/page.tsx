@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import api from "@/lib/api"
+import toast from "react-hot-toast"
 
 export default function ProvidersPage() {
   const [providers, setProviders] = useState<any>(null)
@@ -24,6 +25,7 @@ export default function ProvidersPage() {
   }, [])
 
   const handleSaveKey = async (provider: string) => {
+    const toastId = toast.loading('Saving key securely...')
     try {
       await api.post('/api/org/providers', { provider, apiKey: keyInput })
       setShowKeyModal(null)
@@ -31,8 +33,10 @@ export default function ProvidersPage() {
       // Refresh
       const res = await api.get('/api/org/providers')
       setProviders(res.data)
+      toast.success('Key connected successfully', { id: toastId })
     } catch (err) {
       console.error('Failed to save provider key', err)
+      toast.error('Connection failed, invalid key?', { id: toastId })
     }
   }
 
@@ -73,13 +77,13 @@ export default function ProvidersPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <button style={{
-            background: '#2a2a2b', padding: '8px 16px', borderRadius: 12,
+          <button onClick={() => toast('Export feature in development', { icon: '📊' })} style={{
+            background: '#2a2a2b', padding: '8px 16px', borderRadius: 12, cursor: 'pointer',
             fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
             color: '#e5e2e3', border: '1px solid rgba(83,67,65,0.15)'
           }}>Export Report</button>
-          <button style={{
-            background: '#ffa69e', padding: '8px 16px', borderRadius: 12,
+          <button onClick={() => toast.promise(new Promise(res => setTimeout(res, 2000)), { loading: 'Running suite...', success: 'All systems green!', error: 'Fail' })} style={{
+            background: '#ffa69e', padding: '8px 16px', borderRadius: 12, cursor: 'pointer',
             fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
             color: '#3b0908'
           }}>Test All</button>

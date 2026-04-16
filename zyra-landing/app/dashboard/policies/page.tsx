@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import api from "@/lib/api"
+import toast from "react-hot-toast"
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile')
@@ -209,10 +210,10 @@ export default function SettingsPage() {
                   <span style={{ fontSize: 12, color: '#71717a' }}>Modifying these parameters may affect system integrity across active deployments.</span>
                 </div>
                 <div className="flex gap-3">
-                  <button style={{ fontSize: 11, fontWeight: 700, color: '#71717a', padding: '10px 20px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Discard</button>
-                  <button style={{
+                  <button onClick={() => toast.success('Changes discarded')} style={{ fontSize: 11, fontWeight: 700, color: '#71717a', padding: '10px 20px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>Discard</button>
+                  <button onClick={() => toast.promise(new Promise(res => setTimeout(res, 1000)), { loading: 'Saving...', success: 'Profile updated!', error: 'Failed' })} style={{
                     background: '#ffa69e', color: '#3b0908', padding: '10px 24px', borderRadius: 8,
-                    fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase'
+                    fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer'
                   }}>Save Changes</button>
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { CreditCard, TrendingUp, AlertTriangle } from "lucide-react"
+import toast from 'react-hot-toast'
 import api from "@/lib/api"
 
 export default function BillingPage() {
@@ -47,7 +48,7 @@ export default function BillingPage() {
               {billing?.plan || 'Free'}
             </p>
           </div>
-          <button className="mt-8 w-full py-3 bg-[#fdfaea] border border-[#f1eedf] text-[#032416] font-bold rounded-xl hover:bg-[#f1eedf] transition-colors text-sm">
+          <button onClick={() => toast('Plan management portal coming soon', { icon: '💳' })} className="mt-8 w-full py-3 bg-[#fdfaea] border border-[#f1eedf] text-[#032416] font-bold rounded-xl hover:bg-[#f1eedf] transition-colors text-sm">
             Change Plan
           </button>
         </div>
