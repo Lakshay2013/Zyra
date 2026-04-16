@@ -21,6 +21,24 @@
   --color-brand-border: rgba(255, 255, 255, 0.06);
   --color-brand-border-accent: rgba(255, 166, 158, 0.3);
   --color-brand-green: #4ade80;
+
+  /* shadcn/ui Design Tokens — mapped to Zyra dark theme */
+  --color-background: #0B0B0C;
+  --color-foreground: #FFFFFF;
+  --color-primary: #FFA69E;
+  --color-primary-foreground: #0B0B0C;
+  --color-secondary: #18181A;
+  --color-secondary-foreground: #FFFFFF;
+  --color-muted: #18181A;
+  --color-muted-foreground: #A1A1AA;
+  --color-accent: #1E1E20;
+  --color-accent-foreground: #FFFFFF;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-input: rgba(255, 255, 255, 0.08);
+  --color-ring: #FFA69E;
+  --radius: 0.625rem;
 }
 
 @layer base {
