@@ -7,6 +7,12 @@ const organizationSchema = new mongoose.Schema({
     maxlength: [100,"Organization name cannot exceed 100 characters"],
     trim: true
   },
+  bio:{
+    type: String,
+    maxlength: [500,"Bio cannot exceed 500 characters"],
+    default: '',
+    trim: true
+  },
   plan:{
     type: String,
     enum: ['free', 'pro', 'enterprise'],
