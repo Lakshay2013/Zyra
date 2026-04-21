@@ -2,6 +2,55 @@ const Organization = require('../models/Organization')
 const User = require('../models/User')
 const { encrypt } = require('../utils/crypto')
 
+// GET /api/org/settings — get org profile for configuration page
+exports.getSettings = async (req, res) => {
+  try {
+    const org = await Organization.findById(req.user.orgId)
+    const user = await User.findById(req.user.userId)
+    res.json({
+      _id: org._id,
+      name: org.name,
+      slug: org.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+      email: user?.email || '',
+      bio: org.bio || '',
+      plan: org.plan || 'free',
+    })
+  } catch (err) {
+    console.error('getSettings error:', err)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+// PUT /api/org/settings — update org profile
+exports.updateSettings = async (req, res) => {
+  try {
+    const { displayName, email, bio } = req.body
+    const update = {}
+    if (typeof displayName === 'string' && displayName.trim().length > 0 && displayName.trim().length <= 100) {
+      update.name = displayName.trim()
+    }
+    if (typeof bio === 'string' && bio.length <= 500) {
+      update.bio = bio.trim()
+    }
+    
+    const org = await Organization.findByIdAndUpdate(
+      req.user.orgId,
+      { $set: update },
+      { new: true }
+    )
+
+    // Update user email if provided
+    if (typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      await User.findByIdAndUpdate(req.user.userId, { email: email.trim() })
+    }
+
+    res.json({ message: 'Settings updated successfully', org })
+  } catch (err) {
+    console.error('updateSettings error:', err)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
 exports.getProviders = async (req, res) => {
   try {
     const org = await Organization.findById(req.user.orgId)

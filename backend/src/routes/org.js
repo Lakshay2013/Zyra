@@ -6,6 +6,9 @@ const orgController = require('../controllers/orgController')
 // All organization API routes are protected
 router.use(protect)
 
+router.get('/settings', orgController.getSettings)
+router.put('/settings', orgController.updateSettings)
+
 router.get('/providers', orgController.getProviders)
 router.put('/providers', orgController.updateProviders)
 

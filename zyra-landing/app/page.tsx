@@ -431,15 +431,33 @@ export default function HomePage() {
           </div>
           <div className="flex flex-wrap gap-16 md:gap-32">
             {[
-              { title: 'PLATFORM', links: ['Semantic Proxy', 'API Architecture', 'Observability'] },
-              { title: 'COMPANY', links: ['Pricing', 'Documentation', 'Terms of Service'] },
-              { title: 'LEGAL', links: ['Privacy Policy', 'Security', 'Status'] },
+              { title: 'PLATFORM', links: [
+                { label: 'Semantic Proxy', href: null },
+                { label: 'API Architecture', href: null },
+                { label: 'Observability', href: null },
+              ]},
+              { title: 'COMPANY', links: [
+                { label: 'Pricing', href: '#pricing' },
+                { label: 'Documentation', href: null },
+                { label: 'Terms of Service', href: '/terms' },
+              ]},
+              { title: 'LEGAL', links: [
+                { label: 'Privacy Policy', href: '/privacy' },
+                { label: 'Security', href: null },
+                { label: 'Status', href: null },
+              ]},
             ].map((col, i) => (
               <div key={i}>
                 <h4 className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-6">{col.title}</h4>
                 <ul className="space-y-4 text-[13px] text-gray-400 font-medium">
                   {col.links.map((l, j) => (
-                    <li key={j}><a onClick={() => toast(`${l} document coming soon`, { icon: '📄' })} className="fill-underline hover:text-white transition-colors cursor-pointer">{l}</a></li>
+                    <li key={j}>
+                      {l.href ? (
+                        <Link href={l.href} className="fill-underline hover:text-white transition-colors">{l.label}</Link>
+                      ) : (
+                        <a onClick={() => toast(`${l.label} page coming soon`, { icon: '🚀' })} className="fill-underline hover:text-white transition-colors cursor-pointer">{l.label}</a>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </div>

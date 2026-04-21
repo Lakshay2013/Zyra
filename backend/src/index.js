@@ -3,6 +3,8 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
+const securityHeaders = require('./middleware/securityHeaders')
+const sanitize = require('./middleware/sanitize')
 require('dotenv').config()
 
 // ── ENV VALIDATION: crash immediately if critical vars missing ──
@@ -18,6 +20,8 @@ const app = express()
 app.use(helmet({
   hsts: { maxAge: 31536000, includeSubDomains: true }
 }))
+app.use(securityHeaders)
+app.use(sanitize)
 
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(',').map(s => s.trim())
