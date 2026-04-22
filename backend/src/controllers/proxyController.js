@@ -378,10 +378,12 @@ exports.proxy = async (req, res) => {
       orgId: org._id.toString(),
       userId,
       model: finalModel,
+      provider: finalProvider,
       prompt,
       response,
       tokens,
       cost,
+      cached: false,
       latency,
       statusCode,
       // Optimizer data

@@ -27,9 +27,17 @@ const interactionLogSchema = new mongoose.Schema({
     completion: { type: Number, default: 0 },
     total: { type: Number, default: 0 }
   },
+  provider: {
+    type: String,
+    default: null
+  },
   cost: {
     type: Number,
     default: 0
+  },
+  cached: {
+    type: Boolean,
+    default: false
   },
   latency: {
     type: Number,
@@ -80,5 +88,7 @@ const interactionLogSchema = new mongoose.Schema({
 interactionLogSchema.index({ orgId: 1, createdAt: -1 })
 interactionLogSchema.index({ orgId: 1, userId: 1 })
 interactionLogSchema.index({ orgId: 1, riskScore: -1 })
+interactionLogSchema.index({ orgId: 1, model: 1 })
+interactionLogSchema.index({ orgId: 1, provider: 1 })
 
 module.exports = mongoose.model('InteractionLog', interactionLogSchema)

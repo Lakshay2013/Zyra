@@ -5,7 +5,10 @@ import { ArrowLeft } from 'lucide-react'
 
 const LAST_UPDATED = 'April 21, 2026'
 
-const sections = [
+type ContentBlock = { subtitle?: string; text: string }
+type Section = { title: string; content: ContentBlock[] }
+
+const sections: Section[] = [
   {
     title: '1. Information We Collect',
     content: [

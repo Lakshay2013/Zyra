@@ -15,19 +15,20 @@ if (mongoose.connection.readyState === 0) {
 const worker = new Worker('interaction-logs', async (job) => {
   const {
     orgId, userId, model, prompt, response, tokens, cost, latency,
-    statusCode, optimizer, reliability
+    statusCode, optimizer, reliability, provider, cached
   } = job.data
-
 
   try {
     const log = await InteractionLog.create({
       orgId,
       userId,
       model,
+      provider: provider || null,
       prompt,
       response,
       tokens,
       cost,
+      cached: cached || false,
       latency,
       statusCode: statusCode || 200,
       optimizer: optimizer || {},

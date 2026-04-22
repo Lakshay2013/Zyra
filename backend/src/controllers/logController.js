@@ -14,7 +14,7 @@ exports.ingest = async (req, res) => {
 
     // Check org log limit
     const org = req.org
-    if (org.currentMonthLogs >= org.monthlyLogLimit) {
+    if (org.currentMonthlyLogs >= org.monthlyLogLimit) {
       return res.status(429).json({ message: 'Monthly log limit reached. Please upgrade your plan.' })
     }
 

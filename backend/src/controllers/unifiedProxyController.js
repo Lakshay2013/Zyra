@@ -513,22 +513,23 @@ exports.chatCompletions = async (req, res) => {
       res.json(cached)
 
       // Async log cache hit
-      try {
-        const tokens = extractTokens(provider, cached)
-        const cost = 0 // Cache hits are free
-        const logQueue = getLogQueue()
-        await logQueue.add('log-interaction', {
-          orgId: org._id.toString(),
-          userId: req.headers['x-user-id'] || 'anonymous',
-          model, prompt: promptText,
-          response: extractResponse(provider, cached),
-          tokens, cost, latency: Date.now() - start,
-          statusCode: 200,
-          optimizer: { ...optimizerResult, wasOptimized: false },
-          reliability: { retryCount: 0, fallbackUsed: false, fallbackProvider: null },
-          cached: true
-        })
-      } catch {}
+        try {
+          const tokens = extractTokens(provider, cached)
+          const cost = 0 // Cache hits are free
+          const logQueue = getLogQueue()
+          await logQueue.add('log-interaction', {
+            orgId: org._id.toString(),
+            userId: req.headers['x-user-id'] || 'anonymous',
+            model, provider,
+            prompt: promptText,
+            response: extractResponse(provider, cached),
+            tokens, cost, latency: Date.now() - start,
+            statusCode: 200,
+            optimizer: { ...optimizerResult, wasOptimized: false },
+            reliability: { retryCount: 0, fallbackUsed: false, fallbackProvider: null },
+            cached: true
+          })
+        } catch {}
       return
     }
   }
@@ -580,9 +581,10 @@ exports.chatCompletions = async (req, res) => {
         try {
           const logQueue = getLogQueue()
           await logQueue.add('log-interaction', {
-            orgId: org._id.toString(), userId, model,
+            orgId: org._id.toString(), userId, model, provider,
             prompt: promptText, response: streamResult.content,
             tokens, cost, latency: Date.now() - start, statusCode: 200,
+            cached: false,
             optimizer: {
               originalModel: optimizerResult.originalModel,
               optimizedModel: optimizerResult.wasOptimized ? model : null,
@@ -709,9 +711,11 @@ exports.chatCompletions = async (req, res) => {
     const logQueue = getLogQueue()
     await logQueue.add('log-interaction', {
       orgId: org._id.toString(), userId,
-      model: finalModel, prompt: promptText,
+      model: finalModel, provider: finalProvider,
+      prompt: promptText,
       response: extractResponse(finalProvider, responseBody),
       tokens, cost, latency, statusCode,
+      cached: false,
       optimizer: {
         originalModel: optimizerResult.originalModel,
         optimizedModel: optimizerResult.wasOptimized ? finalModel : null,
