@@ -5,12 +5,20 @@ let redis = null
 
 const getRedis = () => {
   if (!redis) {
-    redis = new Redis({
+    const redisConfig = {
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT) || 6380,
       maxRetriesPerRequest: 3,
       lazyConnect: true
-    })
+    }
+
+    // Upstash / cloud Redis: add password + TLS
+    if (process.env.REDIS_PASSWORD) {
+      redisConfig.password = process.env.REDIS_PASSWORD
+      redisConfig.tls = {}  // enables TLS (required by Upstash)
+    }
+
+    redis = new Redis(redisConfig)
     redis.on('error', (err) => {
       console.warn('[Cache] Redis error (non-fatal):', err.message)
     })
