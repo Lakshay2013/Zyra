@@ -187,41 +187,10 @@ const calculateActualSavings = (originalModel, actualModel, promptTokens, comple
   return parseFloat(Math.max(originalCost - actualCost, 0).toFixed(6))
 }
 
-/**
- * Build the model swap mapping for the proxy.
- * When optimizer picks a different provider, we need to know how to rewrite the request.
- */
-const getProviderConfig = (provider) => {
-  const PROVIDERS = {
-    openai: {
-      baseUrl: 'https://api.openai.com',
-      authHeader: 'Authorization',
-      chatPath: '/v1/chat/completions'
-    },
-    anthropic: {
-      baseUrl: 'https://api.anthropic.com',
-      authHeader: 'x-api-key',
-      chatPath: '/v1/messages'
-    },
-    gemini: {
-      baseUrl: 'https://generativelanguage.googleapis.com',
-      authHeader: 'Authorization',
-      chatPath: ''
-    },
-    groq: {
-      baseUrl: 'https://api.groq.com/openai',
-      authHeader: 'Authorization',
-      chatPath: '/v1/chat/completions'
-    }
-  }
-  return PROVIDERS[provider] || null
-}
-
 module.exports = {
   optimizeRequest,
   calculateActualSavings,
   estimateTokenCount,
-  getProviderConfig,
   classifyPromptComplexity,
   getHigherTier
 }

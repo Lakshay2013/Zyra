@@ -69,8 +69,16 @@ app.use('/api/org', require('./routes/org'))
 // Health check
 app.get('/health', async (req, res) => {
   const mongoOk = mongoose.connection.readyState === 1
-  const status = mongoOk ? 'ok' : 'degraded'
-  res.status(mongoOk ? 200 : 503).json({ status, project: 'ai-shield', mongo: mongoOk })
+  let redisOk = false
+  try {
+    const { getRedis } = require('./services/cacheLayer')
+    const redis = getRedis()
+    await redis.ping()
+    redisOk = true
+  } catch {}
+  const allOk = mongoOk && redisOk
+  const status = allOk ? 'ok' : 'degraded'
+  res.status(allOk ? 200 : 503).json({ status, project: 'zyra', mongo: mongoOk, redis: redisOk })
 })
 
 // Global error handler

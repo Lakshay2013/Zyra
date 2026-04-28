@@ -1,6 +1,6 @@
 const InteractionLog = require('../models/InteractionLog')
 const Organization = require('../models/Organization')
-const { calculateCost } = require('../utils/costCalculator')
+const { calculateCost, getProvider } = require('../utils/costCalculator')
 const { getRiskQueue } = require('../config/queue')
 
 exports.ingest = async (req, res) => {
@@ -29,6 +29,7 @@ exports.ingest = async (req, res) => {
       orgId: org._id,
       userId,
       model,
+      provider: getProvider(model) || 'unknown',
       prompt,
       response: response || '',
       tokens: {
@@ -42,7 +43,7 @@ exports.ingest = async (req, res) => {
 
     // Increment org log count
     await Organization.findByIdAndUpdate(org._id, {
-      $inc: { currentMonthLogs: 1 }
+      $inc: { currentMonthlyLogs: 1 }
     })
 
     // Queue risk analysis
