@@ -1,7 +1,45 @@
-node_modules 
-.env 
+node_modules
+.env
+.env.local
+.env.production
+.env*.local
+.next/
+out/
+build/
+dist/
 
 # Test artifacts and logs
 *.log
 *.txt
 !README.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Planning / development artifacts
+.planning/
+stitch-designs/
+error.txt
+error_utf8.txt
+
+# Backend test scripts (not for production)
+backend/dashboard-test.js
+backend/integration-test.js
+backend/prelaunch-test.js
+backend/test-all.js
+backend/get-key.js
+backend/get-users.js
+backend/fails-only.log
+backend/failures.txt
+backend/integration-results.log
+backend/test-output.log
+backend/test-results.txt
+
+# Stitch design files
+zyra-landing/stitch_landing.html
+zyra-landing/stitch_observer.html

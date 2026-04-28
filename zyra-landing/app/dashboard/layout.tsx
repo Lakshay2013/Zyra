@@ -50,7 +50,7 @@ export default function DashboardLayout({
             <span className="material-symbols-outlined" style={{ fontSize: 20 }}>rocket_launch</span>
             {orgData.name}
           </div>
-          <div style={{ fontSize: 10, letterSpacing: '0.2em', color: '#71717a', marginTop: 4, fontWeight: 600, textTransform: 'uppercase' as const }}>V2.4.0-STABLE</div>
+          <div style={{ fontSize: 10, letterSpacing: '0.2em', color: '#71717a', marginTop: 4, fontWeight: 600, textTransform: 'uppercase' as const }}>v0.1.0-BETA</div>
         </div>
 
         <nav className="flex-1 space-y-0.5">

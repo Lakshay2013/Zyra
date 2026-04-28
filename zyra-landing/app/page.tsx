@@ -51,9 +51,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="logo-glitch font-black text-xl tracking-tight" data-magnetic>ZYRA</Link>
           <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium text-gray-400">
-            <a onClick={() => toast('Platform overview coming in v2', { icon: '🚀' })} className="text-white hover:text-brand-accent transition-colors cursor-pointer">Platform</a>
-            <a onClick={() => toast('Solutions page coming soon', { icon: '🚀' })} className="hover:text-white transition-colors cursor-pointer">Solutions</a>
-            <a onClick={() => toast('Integrations catalog coming soon', { icon: '🚀' })} className="hover:text-white transition-colors cursor-pointer">Integrations</a>
+            <a onClick={() => toast('Platform overview — coming in Beta v2', { icon: '🚀' })} className="text-white hover:text-brand-accent transition-colors cursor-pointer">Platform</a>
+            <a onClick={() => toast('Solutions page — coming in Beta v2', { icon: '🚀' })} className="hover:text-white transition-colors cursor-pointer">Solutions</a>
+            <a onClick={() => toast('Integrations catalog — coming in Beta v2', { icon: '🚀' })} className="hover:text-white transition-colors cursor-pointer">Integrations</a>
             <Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link>
           </nav>
           <Link href="/login" className="text-[13px] font-medium text-gray-300 hover:text-white transition-colors" data-magnetic>Log in</Link>
@@ -69,7 +69,7 @@ export default function HomePage() {
 
           <div className="border border-white/10 text-gray-400 text-[10px] font-semibold uppercase tracking-[0.2em] px-4 py-1.5 rounded-full mb-10 flex items-center gap-2 reveal">
             <span className="w-1.5 h-1.5 bg-brand-accent rounded-full animate-pulse" />
-            COST OPTIMIZER LIVE
+            BETA — EARLY ACCESS
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black tracking-[-0.03em] leading-[1.05] mb-7 max-w-3xl reveal" data-scramble>
@@ -465,8 +465,8 @@ export default function HomePage() {
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-24 pt-8 border-t border-white/[0.04] flex flex-col md:flex-row items-center justify-between text-[11px] text-gray-600 font-mono">
-          <div>© 2026 ZYRA INC. ALL RIGHTS RESERVED.</div>
-          <div>SYS.VERSION_0.3.A</div>
+          <div>© 2026 ZYRA. ALL RIGHTS RESERVED.</div>
+          <div>v0.1.0-BETA</div>
         </div>
       </footer>
     </div>

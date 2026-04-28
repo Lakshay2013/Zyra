@@ -1,4 +1,9 @@
 {
+  "name": "zyra",
+  "version": "0.1.0-beta",
+  "description": "Zyra AI Cost Optimization Proxy — intelligently route AI requests to cut costs by up to 90%",
+  "author": "Zyra Team",
+  "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix zyra-landing\" \"npm run dev --prefix backend\" \"npm run worker --prefix backend\""
   },

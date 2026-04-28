@@ -7,6 +7,8 @@ const securityHeaders = require('./middleware/securityHeaders')
 const sanitize = require('./middleware/sanitize')
 require('dotenv').config()
 
+const VERSION = '0.1.0-beta'
+
 // ── ENV VALIDATION: crash immediately if critical vars missing ──
 const REQUIRED_ENV = ['JWT_SECRET', 'MONGO_URI', 'ENCRYPTION_KEY']
 const missing = REQUIRED_ENV.filter(k => !process.env[k])
@@ -16,6 +18,9 @@ if (missing.length > 0) {
 }
 
 const app = express()
+
+// Trust proxy for correct IP detection behind load balancers (Railway, Render, etc.)
+app.set('trust proxy', 1)
 
 app.use(helmet({
   hsts: { maxAge: 31536000, includeSubDomains: true }
@@ -78,7 +83,15 @@ app.get('/health', async (req, res) => {
   } catch {}
   const allOk = mongoOk && redisOk
   const status = allOk ? 'ok' : 'degraded'
-  res.status(allOk ? 200 : 503).json({ status, project: 'zyra', mongo: mongoOk, redis: redisOk })
+  res.status(allOk ? 200 : 503).json({
+    status,
+    project: 'zyra',
+    version: VERSION,
+    environment: process.env.NODE_ENV || 'development',
+    mongo: mongoOk,
+    redis: redisOk,
+    uptime: Math.floor(process.uptime())
+  })
 })
 
 // Global error handler
@@ -93,7 +106,9 @@ mongoose.connect(process.env.MONGO_URI)
 
 const PORT = process.env.PORT || 5000
 const server = app.listen(PORT, () => {
+  console.log(`\n███ ZYRA v${VERSION} ███`)
   console.log(`🚀 Server running on port ${PORT} (${process.env.NODE_ENV || 'development'})`)
+  console.log(`📍 Health check: http://localhost:${PORT}/health\n`)
 })
 
 // ── GRACEFUL SHUTDOWN ──

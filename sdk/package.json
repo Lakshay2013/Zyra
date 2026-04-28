@@ -1,6 +1,6 @@
 {
   "name": "zyra-sdk",
-  "version": "1.0.0",
+  "version": "0.1.0-beta",
   "description": "Official Zyra SDK — AI cost optimizer proxy client. Drop-in replacement for the OpenAI SDK.",
   "main": "src/index.js",
   "types": "src/index.d.ts",
