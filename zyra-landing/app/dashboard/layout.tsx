@@ -29,6 +29,7 @@ export default function DashboardLayout({
     { label: "API Keys", icon: "vpn_key", href: "/dashboard/apikeys" },
     { label: "Analytics", icon: "query_stats", href: "/dashboard/logs" },
     { label: "Logs", icon: "list_alt", href: "/dashboard/policies" },
+    { label: "Billing", icon: "payments", href: "/dashboard/billing" },
   ]
 
   const bottomItems = [

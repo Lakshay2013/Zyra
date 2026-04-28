@@ -69,6 +69,7 @@ app.use('/api/keys', require('./routes/apiKeys'))
 app.use('/api/logs', require('./routes/logs'))
 app.use('/api/analytics', require('./routes/analytics'))
 app.use('/api/org', require('./routes/org'))
+app.use('/api/payments', require('./routes/payments'))
 
 
 // Health check

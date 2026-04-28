@@ -10,7 +10,13 @@
     "dev": "nodemon src/index.js",
     "worker": "nodemon src/workers/index.js"
   },
-  "keywords": ["zyra", "ai", "proxy", "cost-optimization", "llm"],
+  "keywords": [
+    "zyra",
+    "ai",
+    "proxy",
+    "cost-optimization",
+    "llm"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
@@ -33,7 +39,8 @@
     "morgan": "^1.10.1",
     "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.3",
-    "rate-limit-redis": "^4.3.1"
+    "rate-limit-redis": "^4.3.1",
+    "razorpay": "^2.9.6"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

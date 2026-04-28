@@ -373,8 +373,8 @@ export default function HomePage() {
                     <li key={j} className="flex items-center gap-2"><Check size={14} className="text-brand-accent shrink-0" />{it}</li>
                   ))}
                 </ul>
-                <Link href="/register" className={`shimmer-btn mt-8 block text-center px-6 py-3 rounded-lg text-[13px] font-bold transition-all ${plan.highlight ? 'bg-brand-accent text-black hover:bg-white' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`} data-magnetic>
-                  {plan.name === 'Growth' ? 'Contact Sales' : 'Get Started'}
+                <Link href={plan.name === 'Builder' ? '/register' : '/register'} className={`shimmer-btn mt-8 block text-center px-6 py-3 rounded-lg text-[13px] font-bold transition-all ${plan.highlight ? 'bg-brand-accent text-black hover:bg-white' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`} data-magnetic>
+                  {plan.name === 'Builder' ? 'Get Started Free' : plan.name === 'Pro' ? 'Start Pro Trial' : 'Get Growth'}
                 </Link>
               </div>
             ))}

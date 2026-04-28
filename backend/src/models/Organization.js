@@ -53,6 +53,13 @@ const organizationSchema = new mongoose.Schema({
   cache: {
     enabled: { type: Boolean, default: true },
     ttlSeconds: { type: Number, default: 300, min: 0, max: 86400 }
+  },
+  // Subscription / billing
+  subscription: {
+    razorpayPaymentId: { type: String, default: null },
+    billingCycle: { type: String, enum: ['monthly', 'yearly'], default: null },
+    currentPeriodEnd: { type: Date, default: null },
+    status: { type: String, enum: ['active', 'expired', 'cancelled', null], default: null }
   }
 },{timestamps: true});
 
