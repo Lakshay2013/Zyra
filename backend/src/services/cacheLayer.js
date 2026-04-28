@@ -5,24 +5,27 @@ let redis = null
 
 const getRedis = () => {
   if (!redis) {
-    const redisConfig = {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT) || 6380,
-      maxRetriesPerRequest: 3,
-      lazyConnect: true
+    // Upstash / cloud Redis: use URL with TLS
+    if (process.env.REDIS_PASSWORD && process.env.REDIS_HOST) {
+      const url = `rediss://default:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT || 6379}`
+      redis = new Redis(url, {
+        maxRetriesPerRequest: 3,
+        retryStrategy: (times) => Math.min(times * 200, 5000)
+      })
+    } else {
+      // Local Docker Redis (no TLS, no password)
+      redis = new Redis({
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT) || 6380,
+        maxRetriesPerRequest: 3,
+        lazyConnect: true
+      })
+      redis.connect().catch(() => {})
     }
 
-    // Upstash / cloud Redis: add password + TLS
-    if (process.env.REDIS_PASSWORD) {
-      redisConfig.password = process.env.REDIS_PASSWORD
-      redisConfig.tls = {}  // enables TLS (required by Upstash)
-    }
-
-    redis = new Redis(redisConfig)
     redis.on('error', (err) => {
       console.warn('[Cache] Redis error (non-fatal):', err.message)
     })
-    redis.connect().catch(() => {})
   }
   return redis
 }
