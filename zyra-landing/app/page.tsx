@@ -4,7 +4,10 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { Check, ShieldCheck, Zap, FileText, ChevronRight } from 'lucide-react'
-import { useMotionEngine, WordReveal, CopyButton, FAQItem } from './components/motion-engine'
+import { useMotionEngine } from '@/components/ui/motion-engine'
+import { WordReveal } from '@/components/ui/word-reveal'
+import { CopyButton } from '@/components/ui/copy-button'
+import { FAQItem } from '@/components/ui/faq-item'
 
 const CODE_SNIPPET = `import Zyra from "zyra-sdk";
 

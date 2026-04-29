@@ -1,8 +1,0 @@
-[FAIL] 3.1 Simple prompt via llama3-70b -> expect optimizer downgrade to mixtral: Status: 400 {"error":{"message":"The model `mixtral-8x7b-32768` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model t
-[FAIL] 3.2 Simple Q: "Define REST API": Status: 400
-[FAIL] 3.3 Complex prompt (code) via llama3-70b -> should stay on standard: Status: 400
-[FAIL] 3.4 Direct mixtral-8x7b (economy) -> no swap needed: Status: 400
-[FAIL] 3.7 Multi-turn conversation: Status: 400
-[FAIL] 4.1 Logs exist for our requests: Should have at least 1 log from our requests
-[FAIL] 4.2 Logs have correct structure: Need logs
-[FAIL] 5.1 Overview has real data: Should show logs
