@@ -1,14 +1,26 @@
 'use client'
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { Logo } from '@/components/ui/logo'
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+const NAV_ITEMS = [
+  { label: 'Dashboard', icon: 'dashboard', href: '/dashboard' },
+  { label: 'Providers', icon: 'dns', href: '/dashboard/providers' },
+  { label: 'Playground', icon: 'terminal', href: '/dashboard/playground' },
+  { label: 'API Keys', icon: 'vpn_key', href: '/dashboard/apikeys' },
+  { label: 'Analytics', icon: 'query_stats', href: '/dashboard/logs' },
+  { label: 'Logs', icon: 'list_alt', href: '/dashboard/policies' },
+  { label: 'Billing', icon: 'payments', href: '/dashboard/billing' },
+]
+
+const BOTTOM_ITEMS = [
+  { label: 'Terminal', icon: 'terminal', href: '#' },
+  { label: 'Support', icon: 'contact_support', href: '#' },
+]
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [orgData, setOrgData] = useState({ name: 'PROJECT_ALPHA', plan: 'Pro' })
 
@@ -18,24 +30,11 @@ export default function DashboardLayout({
       try {
         const parsed = JSON.parse(savedOrg)
         setOrgData({ name: parsed.name || 'PROJECT_ALPHA', plan: parsed.plan || 'Free' })
-      } catch (e) {}
+      } catch (e) {
+        console.error('Failed to parse org data', e)
+      }
     }
   }, [])
-
-  const navItems = [
-    { label: "Dashboard", icon: "dashboard", href: "/dashboard" },
-    { label: "Providers", icon: "dns", href: "/dashboard/providers" },
-    { label: "Playground", icon: "terminal", href: "/dashboard/playground" },
-    { label: "API Keys", icon: "vpn_key", href: "/dashboard/apikeys" },
-    { label: "Analytics", icon: "query_stats", href: "/dashboard/logs" },
-    { label: "Logs", icon: "list_alt", href: "/dashboard/policies" },
-    { label: "Billing", icon: "payments", href: "/dashboard/billing" },
-  ]
-
-  const bottomItems = [
-    { label: "Terminal", icon: "terminal", href: "#" },
-    { label: "Support", icon: "contact_support", href: "#" },
-  ]
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -55,7 +54,7 @@ export default function DashboardLayout({
         </div>
 
         <nav className="flex-1 space-y-0.5">
-          {navItems.map((item) => {
+          {NAV_ITEMS.map((item) => {
             const active = isActive(item.href)
             return (
               <Link
@@ -98,7 +97,7 @@ export default function DashboardLayout({
         </div>
 
         <div style={{ borderTop: '1px solid rgba(63,63,70,0.3)', paddingTop: 16 }}>
-          {bottomItems.map(item => (
+          {BOTTOM_ITEMS.map(item => (
             <Link
               key={item.label}
               href={item.href}
@@ -117,7 +116,7 @@ export default function DashboardLayout({
         {/* ── TOP BAR ── */}
         <header className="flex justify-between items-center w-full px-6 h-14 shrink-0" style={{ borderBottom: '1px solid rgba(63,63,70,0.2)', background: '#131314' }}>
           <div className="flex items-center gap-8">
-            <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.03em', color: '#ffa69e' }}>ZYRA</span>
+            <Logo className="text-xl" />
             <div className="hidden lg:flex items-center px-3 py-1.5 w-96" style={{ background: '#1c1b1c', borderRadius: 8 }}>
               <span className="material-symbols-outlined" style={{ color: '#71717a', fontSize: 16, marginRight: 8 }}>search</span>
               <input
@@ -152,7 +151,6 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      {/* Material Symbols font link */}
       <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
     </div>

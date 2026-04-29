@@ -1,15 +1,28 @@
+require('dotenv').config()
+
 const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
+
 const securityHeaders = require('./middleware/securityHeaders')
 const sanitize = require('./middleware/sanitize')
-require('dotenv').config()
+const { proxyLimiter, authLimiter } = require('./middleware/rateLimiter')
+const { isRedisReady } = require('./services/cacheLayer')
+
+const v1Routes = require('./routes/v1')
+const proxyRoutes = require('./routes/proxy')
+const authRoutes = require('./routes/auth')
+const apiKeysRoutes = require('./routes/apiKeys')
+const logsRoutes = require('./routes/logs')
+const analyticsRoutes = require('./routes/analytics')
+const orgRoutes = require('./routes/org')
+const paymentsRoutes = require('./routes/payments')
 
 const VERSION = '0.1.0-beta'
 
-// ── ENV VALIDATION: crash immediately if critical vars missing ──
+// ── ENV VALIDATION ──
 const REQUIRED_ENV = ['JWT_SECRET', 'MONGO_URI', 'ENCRYPTION_KEY']
 const missing = REQUIRED_ENV.filter(k => !process.env[k])
 if (missing.length > 0) {
@@ -39,47 +52,36 @@ app.use(cors({
 const logFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev'
 app.use(morgan(logFormat))
 
-const { proxyLimiter } = require('./middleware/rateLimiter')
-
-// ── NEW: OpenAI-compatible /v1/ gateway (PRD primary path) ──
-app.use('/v1', express.json({ limit: '2mb' }))
-app.use('/v1', (err, req, res, next) => {
+// JSON parsing error handler
+const handleJsonError = (err, req, res, next) => {
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({ error: { message: 'Invalid JSON in request body', type: 'invalid_request_error' } })
   }
   next(err)
-})
-app.use('/v1', proxyLimiter, require('./routes/v1'))
+}
 
-// ── LEGACY: Provider-specific proxy (backwards compatible) ──
-app.use('/proxy', express.json({ limit: '2mb' }))
-app.use('/proxy', (err, req, res, next) => {
-  if (err.type === 'entity.parse.failed') {
-    return res.status(400).json({ error: { message: 'Invalid JSON in request body', type: 'invalid_request_error' } })
-  }
-  next(err)
-})
-app.use('/proxy', proxyLimiter, require('./routes/proxy'))
+// ── GATEWAY ROUTES ──
+app.use('/v1', express.json({ limit: '2mb' }), handleJsonError, proxyLimiter, v1Routes)
+app.use('/proxy', express.json({ limit: '2mb' }), handleJsonError, proxyLimiter, proxyRoutes)
+
 app.use(express.json({ limit: '10kb' }))
 
-const { authLimiter } = require('./middleware/rateLimiter')
-// Routes
-app.use('/api/auth', authLimiter, require('./routes/auth'))
-app.use('/api/keys', require('./routes/apiKeys'))
-app.use('/api/logs', require('./routes/logs'))
-app.use('/api/analytics', require('./routes/analytics'))
-app.use('/api/org', require('./routes/org'))
-app.use('/api/payments', require('./routes/payments'))
-
+// ── API ROUTES ──
+app.use('/api/auth', authLimiter, authRoutes)
+app.use('/api/keys', apiKeysRoutes)
+app.use('/api/logs', logsRoutes)
+app.use('/api/analytics', analyticsRoutes)
+app.use('/api/org', orgRoutes)
+app.use('/api/payments', paymentsRoutes)
 
 // Health check
 app.get('/health', async (req, res) => {
   const mongoOk = mongoose.connection.readyState === 1
   let redisOk = false
   try {
-    const { isRedisReady } = require('./services/cacheLayer')
     redisOk = isRedisReady()
   } catch {}
+  
   const status = mongoOk ? (redisOk ? 'ok' : 'degraded') : 'down'
   res.status(mongoOk ? 200 : 503).json({
     status,
@@ -121,6 +123,7 @@ const shutdown = async (signal) => {
     }
     process.exit(0)
   })
+  
   // Force shutdown after 10s if graceful fails
   setTimeout(() => {
     console.error('⚠️ Forced shutdown after timeout')

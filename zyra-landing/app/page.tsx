@@ -8,6 +8,7 @@ import { useMotionEngine } from '@/components/ui/motion-engine'
 import { WordReveal } from '@/components/ui/word-reveal'
 import { CopyButton } from '@/components/ui/copy-button'
 import { FAQItem } from '@/components/ui/faq-item'
+import { Logo } from '@/components/ui/logo'
 
 const CODE_SNIPPET = `import Zyra from "zyra-sdk";
 
@@ -41,7 +42,9 @@ export default function HomePage() {
   return (
     <div className="bg-brand-bg text-white min-h-screen font-sans relative">
       {/* Page Load Curtain (#28) */}
-      <div id="page-curtain"><div className="curtain-logo">ZYRA</div></div>
+      <div id="page-curtain" className="flex items-center justify-center">
+        <Logo className="text-[80px] animate-pulse" />
+      </div>
 
       {/* Canvas Starfield (#25) */}
       <canvas id="canvas-network" />
@@ -52,7 +55,7 @@ export default function HomePage() {
       {/* ============ NAVIGATION (#6) ============ */}
       <header className="nav-bar px-6 md:px-8 py-5">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="logo-glitch font-black text-xl tracking-tight" data-magnetic>ZYRA</Link>
+          <Link href="/" data-magnetic><Logo className="text-[26px]" /></Link>
           <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium text-gray-400">
             <a onClick={() => toast('Platform overview — coming in Beta v2', { icon: '🚀' })} className="text-white hover:text-brand-accent transition-colors cursor-pointer">Platform</a>
             <a onClick={() => toast('Solutions page — coming in Beta v2', { icon: '🚀' })} className="hover:text-white transition-colors cursor-pointer">Solutions</a>
@@ -429,7 +432,7 @@ export default function HomePage() {
       <footer className="w-full border-t border-white/[0.04] pt-24 pb-12 px-8 relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-16 md:gap-0">
           <div className="max-w-xs">
-            <div className="logo-glitch font-black text-xl tracking-tight mb-4">ZYRA</div>
+            <div className="mb-6"><Logo className="text-[28px]" /></div>
             <p className="text-gray-500 text-[13px] leading-relaxed">Accelerating intelligence, efficiency, and scale for modern operators.</p>
           </div>
           <div className="flex flex-wrap gap-16 md:gap-32">

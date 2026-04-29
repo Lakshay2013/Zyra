@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 import { GoogleLogin } from '@react-oauth/google'
 import api from '@/lib/api'
 import { setAuth } from '@/lib/auth'
+import { Logo } from '@/components/ui/logo'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -51,9 +52,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 font-body text-on-background selection:bg-primary-container selection:text-on-primary-container">
       <div className="w-full max-w-[440px]">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-4xl font-headline italic text-primary tracking-tight hover:opacity-80 transition-opacity">
-            zyra
+        <div className="text-center mb-8 flex justify-center">
+          <Link href="/" className="hover:opacity-80 transition-opacity">
+            <Logo className="text-[40px] text-primary" />
           </Link>
         </div>
 
