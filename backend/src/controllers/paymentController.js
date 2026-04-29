@@ -88,8 +88,8 @@ exports.createOrder = async (req, res) => {
       label: planConfig.label
     })
   } catch (err) {
-    console.error('[Payment] Create order error:', err)
-    res.status(500).json({ message: 'Failed to create payment order' })
+    console.error('[Payment] Create order error:', err.message, err.statusCode, JSON.stringify(err.error || {}))
+    res.status(500).json({ message: 'Failed to create payment order', detail: err.message })
   }
 }
 
