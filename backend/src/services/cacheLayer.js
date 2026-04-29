@@ -2,33 +2,52 @@ const crypto = require('crypto')
 const Redis = require('ioredis')
 
 let redis = null
+let redisAvailable = false
 
 const getRedis = () => {
   if (!redis) {
+    const commonOpts = {
+      maxRetriesPerRequest: null,      // NEVER throw MaxRetriesPerRequestError
+      enableOfflineQueue: false,       // fail immediately when disconnected
+      retryStrategy: (times) => {
+        if (times > 10) return null    // stop retrying after 10 attempts
+        return Math.min(times * 500, 5000)
+      }
+    }
+
     // Upstash / cloud Redis: use URL with TLS
     if (process.env.REDIS_PASSWORD && process.env.REDIS_HOST) {
       const url = `rediss://default:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT || 6379}`
-      redis = new Redis(url, {
-        maxRetriesPerRequest: 3,
-        retryStrategy: (times) => Math.min(times * 200, 5000)
-      })
+      redis = new Redis(url, commonOpts)
     } else {
       // Local Docker Redis (no TLS, no password)
       redis = new Redis({
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT) || 6380,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true
+        lazyConnect: true,
+        ...commonOpts
       })
       redis.connect().catch(() => {})
     }
 
+    redis.on('ready', () => {
+      redisAvailable = true
+      console.log('[Cache] Redis connected ✅')
+    })
+
     redis.on('error', (err) => {
+      redisAvailable = false
       console.warn('[Cache] Redis error (non-fatal):', err.message)
+    })
+
+    redis.on('close', () => {
+      redisAvailable = false
     })
   }
   return redis
 }
+
+const isRedisReady = () => redisAvailable
 
 /**
  * Build a deterministic cache key from model + messages.
@@ -50,6 +69,7 @@ const buildCacheKey = (model, messages, extraParams = {}) => {
  * @returns {Object|null} Cached response body or null
  */
 const getFromCache = async (key) => {
+  if (!redisAvailable) return null
   try {
     const r = getRedis()
     const data = await r.get(key)
@@ -69,6 +89,7 @@ const getFromCache = async (key) => {
  * @param {number} ttl - TTL in seconds (default 300)
  */
 const setInCache = async (key, responseBody, ttl = 300) => {
+  if (!redisAvailable) return
   try {
     const r = getRedis()
     await r.set(key, JSON.stringify(responseBody), 'EX', ttl)
@@ -77,4 +98,4 @@ const setInCache = async (key, responseBody, ttl = 300) => {
   }
 }
 
-module.exports = { buildCacheKey, getFromCache, setInCache, getRedis }
+module.exports = { buildCacheKey, getFromCache, setInCache, getRedis, isRedisReady }

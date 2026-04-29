@@ -77,14 +77,11 @@ app.get('/health', async (req, res) => {
   const mongoOk = mongoose.connection.readyState === 1
   let redisOk = false
   try {
-    const { getRedis } = require('./services/cacheLayer')
-    const redis = getRedis()
-    await redis.ping()
-    redisOk = true
+    const { isRedisReady } = require('./services/cacheLayer')
+    redisOk = isRedisReady()
   } catch {}
-  const allOk = mongoOk && redisOk
-  const status = allOk ? 'ok' : 'degraded'
-  res.status(allOk ? 200 : 503).json({
+  const status = mongoOk ? (redisOk ? 'ok' : 'degraded') : 'down'
+  res.status(mongoOk ? 200 : 503).json({
     status,
     project: 'zyra',
     version: VERSION,
