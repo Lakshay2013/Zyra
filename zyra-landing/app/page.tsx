@@ -452,6 +452,11 @@ export default function HomePage() {
                 { label: 'Security', href: null },
                 { label: 'Status', href: null },
               ]},
+              { title: 'CONNECT', links: [
+                { label: 'GitHub (Open Source)', href: 'https://github.com/Lakshay2013/Zyra' },
+                { label: 'LinkedIn', href: 'https://www.linkedin.com/in/lakshay-mishra-429b43296/' },
+                { label: 'Email', href: 'mailto:mishralakshay42@gmail.com' },
+              ]},
             ].map((col, i) => (
               <div key={i}>
                 <h4 className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-6">{col.title}</h4>
