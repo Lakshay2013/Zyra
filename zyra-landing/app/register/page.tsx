@@ -137,7 +137,7 @@ export default function RegisterPage() {
             /* Main Registration View */
             <div>
               <h1 className="text-2xl font-bold font-headline text-on-surface mb-2">Create your account</h1>
-              <p className="text-sm font-body text-on-surface-variant mb-8 font-medium">Start monitoring your LLM traffic. Free forever on Starter.</p>
+              <p className="text-sm font-body text-on-surface-variant mb-8 font-medium">Start monitoring your LLM traffic. Free forever on Builder.</p>
 
               {error && (
                 <div className="bg-error-container/20 border border-error/50 text-error rounded-xl px-4 py-3 text-sm font-body mb-5">
@@ -172,7 +172,7 @@ export default function RegisterPage() {
                   <div>
                     <label className="block text-sm font-semibold text-on-surface mb-1.5 font-body">Your name</label>
                     <input
-                      type="text" name="name" value={form.name} onChange={handleChange} required placeholder="Laksh"
+                      type="text" name="name" value={form.name} onChange={handleChange} required placeholder="Jane Doe"
                       className="w-full px-4 py-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface placeholder-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-body text-sm"
                     />
                   </div>
@@ -196,7 +196,7 @@ export default function RegisterPage() {
                 <div>
                   <label className="block text-sm font-semibold text-on-surface mb-1.5 font-body">Password</label>
                   <input
-                    type="password" name="password" value={form.password} onChange={handleChange} required minLength={6} placeholder="Min 6 characters"
+                    type="password" name="password" value={form.password} onChange={handleChange} required minLength={8} placeholder="Min 8 characters"
                     className="w-full px-4 py-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface placeholder-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-body text-sm"
                   />
                 </div>

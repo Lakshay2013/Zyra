@@ -27,7 +27,7 @@ export default function ProvidersPage() {
   const handleSaveKey = async (provider: string) => {
     const toastId = toast.loading('Saving key securely...')
     try {
-      await api.post('/api/org/providers', { provider, apiKey: keyInput })
+      await api.put('/api/org/providers', { [provider]: keyInput })
       setShowKeyModal(null)
       setKeyInput('')
       // Refresh
@@ -51,9 +51,9 @@ export default function ProvidersPage() {
 
   const providerList = [
     { id: 'openai', name: 'OPENAI', model: 'GPT-4O / GPT-4O-MINI', icon: 'smart_toy', configured: providers?.openai },
-    { id: 'anthropic', name: 'ANTHROPIC', model: 'CLAUDE-3-SONNET / HAIKU', icon: 'psychology', configured: providers?.anthropic },
+    { id: 'anthropic', name: 'ANTHROPIC', model: 'CLAUDE-SONNET-4 / HAIKU-4', icon: 'psychology', configured: providers?.anthropic },
     { id: 'groq', name: 'GROQ', model: 'LLAMA-3.3-70B / MIXTRAL', icon: 'bolt', configured: providers?.groq },
-    { id: 'gemini', name: 'GOOGLE_GEMINI', model: 'GEMINI-1.5-FLASH / PRO', icon: 'auto_awesome', configured: providers?.gemini },
+    { id: 'gemini', name: 'GOOGLE_GEMINI', model: 'GEMINI-2.0-FLASH / PRO', icon: 'auto_awesome', configured: providers?.gemini },
   ]
 
   const configuredCount = providerList.filter(p => p.configured).length
@@ -158,7 +158,7 @@ export default function ProvidersPage() {
       <div className="mt-6" style={{ background: '#201f20', borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)' }}>
         <div className="px-6 py-4 flex justify-between items-center" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>
           <h3 style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#e5e2e3', textTransform: 'uppercase' }}>Fallback_Order</h3>
-          <span style={{ fontSize: 10, color: '#71717a', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase' }}>Drag to reorder</span>
+          <span style={{ fontSize: 10, color: '#71717a', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase' }}>Priority order</span>
         </div>
         {providerList.filter(p => p.configured).map((p, i) => (
           <div key={p.id} className="px-6 py-4 flex items-center gap-4 transition-colors hover:bg-[#2a2a2b]" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>

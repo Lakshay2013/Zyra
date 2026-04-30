@@ -9,5 +9,6 @@ router.post('/verify-otp', authController.verifyOtp)
 router.post('/google', authController.googleLogin)
 
 router.get('/me', protect, authController.getMe)
+router.put('/change-password', protect, authController.changePassword)
 
 module.exports = router

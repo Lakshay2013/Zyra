@@ -36,11 +36,15 @@ export default function PlaygroundPage() {
       const token = localStorage.getItem('zyra_token')
       const orgData = JSON.parse(localStorage.getItem('zyra_org') || '{}')
       
-      const res = await api.post('/proxy/openai', {
-        model,
-        prompt: prompt.trim(),
-        userId: 'playground-user',
-        maxTokens: 1024
+      const res = await api.post('/v1/chat/completions', {
+        model: model === 'auto' ? 'gpt-4o-mini' : model,
+        messages: [{ role: 'user', content: prompt.trim() }],
+        max_tokens: 1024,
+      }, {
+        headers: {
+          // Use the stored Zyra API key if available, otherwise fallback to JWT auth
+          ...(localStorage.getItem('zyra_api_key') ? { 'x-zyra-api-key': localStorage.getItem('zyra_api_key') } : {})
+        }
       })
 
       setLatency(Date.now() - start)

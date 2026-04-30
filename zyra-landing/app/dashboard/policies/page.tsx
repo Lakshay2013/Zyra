@@ -330,7 +330,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (passwords.newPass !== passwords.confirm) {
                       toast.error('Passwords do not match')
                       return
@@ -339,8 +339,22 @@ export default function SettingsPage() {
                       toast.error('Password must be at least 8 characters')
                       return
                     }
-                    toast.success('Password updated successfully')
-                    setPasswords({ current: '', newPass: '', confirm: '' })
+                    if (!passwords.current) {
+                      toast.error('Current password is required')
+                      return
+                    }
+                    try {
+                      await toast.promise(
+                        api.put('/api/auth/change-password', {
+                          currentPassword: passwords.current,
+                          newPassword: passwords.newPass,
+                        }),
+                        { loading: 'Updating password...', success: 'Password updated successfully', error: 'Failed to update password' }
+                      )
+                      setPasswords({ current: '', newPass: '', confirm: '' })
+                    } catch (err: any) {
+                      // toast.promise already handles the error display
+                    }
                   }}
                   style={{
                     background: '#ffa69e', color: '#3b0908', padding: '10px 24px', borderRadius: 8,
@@ -387,14 +401,14 @@ export default function SettingsPage() {
                   <span style={{ fontSize: 10, fontWeight: 700, color: '#9be8cb', letterSpacing: '0.15em', textTransform: 'uppercase' }}>ACTIVE</span>
                 </div>
                 <button
-                  onClick={() => toast.success('All other sessions have been revoked')}
+                  onClick={() => toast('Session revocation is not yet available. JWT-based sessions cannot be individually revoked without a token blocklist.', { icon: 'ℹ️', duration: 4000 })}
                   className="w-full py-3 transition-colors hover:bg-[#2a2a2b]"
                   style={{
-                    background: 'transparent', borderRadius: 8, border: '1px solid rgba(255,180,171,0.2)',
-                    color: '#ffb4ab', fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase',
+                    background: 'transparent', borderRadius: 8, border: '1px solid rgba(83,67,65,0.15)',
+                    color: '#71717a', fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase',
                     cursor: 'pointer',
                   }}
-                >Revoke All Other Sessions</button>
+                >Revoke All Other Sessions <span style={{ fontSize: 9, opacity: 0.6, marginLeft: 8 }}>COMING SOON</span></button>
               </div>
 
               {/* API Key Rotation */}
@@ -590,7 +604,7 @@ export default function SettingsPage() {
                     {[
                       { name: 'Builder', price: 'Free', limit: '1,000 req/mo', current: billing?.plan === 'free' },
                       { name: 'Pro', price: '₹999/mo', limit: '50,000 req/mo', current: billing?.plan === 'pro' },
-                      { name: 'Growth', price: '₹3,999/mo', limit: 'Unlimited', current: billing?.plan === 'enterprise' },
+                      { name: 'Growth', price: '₹3,999/mo', limit: 'Unlimited', current: billing?.plan === 'growth' },
                     ].map((plan, i) => (
                       <div key={i} className="p-5" style={{
                         ...cardStyle,

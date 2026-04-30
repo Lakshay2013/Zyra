@@ -15,12 +15,12 @@ const organizationSchema = new mongoose.Schema({
   },
   plan:{
     type: String,
-    enum: ['free', 'pro', 'enterprise'],
+    enum: ['free', 'pro', 'growth'],
     default: 'free'
   },
   monthlyLogLimit:{
     type: Number,
-    default: 5000
+    default: 1000
   },
   currentMonthlyLogs:{
     type: Number,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import api from "@/lib/api"
 import toast from 'react-hot-toast'
 
@@ -177,22 +178,12 @@ export default function DashboardOverview() {
                 )
               })
             ) : (
-              Array.from({ length: 20 }).map((_, i) => {
-                const h = [20,25,40,35,60,75,85,70,50,45,30,95,80,60,40,20,15,65,45,30][i]
-                const isPeach = h > 60
-                return (
-                  <div key={i} className="relative flex-1 h-full flex items-end group">
-                    <div className="w-full rounded-t-sm transition-all group-hover:opacity-80 absolute bottom-0" style={{
-                      height: `${h}%`,
-                      background: isPeach ? `rgba(255,166,158,${0.3 + h / 200})` : '#353436',
-                    }} />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-[#2a2a2b] border border-[#534341] rounded shadow-xl text-xs text-[#e5e2e3] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap flex flex-col gap-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                      <div className="text-[#9be8cb] font-bold border-b border-[#534341] pb-1 mb-1">Simulated Day {i+1}</div>
-                      <div className="flex justify-between gap-4"><span>Traffic Vol:</span> <span>{h}%</span></div>
-                    </div>
-                  </div>
-                )
-              })
+              <div className="flex flex-col items-center justify-center h-full gap-4">
+                <span className="material-symbols-outlined" style={{ fontSize: 48, color: '#353436' }}>insert_chart</span>
+                <p style={{ fontSize: 13, color: '#534341', textAlign: 'center', maxWidth: 260, lineHeight: 1.5 }}>
+                  No traffic data yet. Connect your SDK to start seeing throughput metrics.
+                </p>
+              </div>
             )}
           </div>
 
@@ -212,7 +203,7 @@ export default function DashboardOverview() {
                 </div>
               </div>
             </div>
-            <button onClick={() => toast.loading('Compiling full report PDF...', { duration: 2000 })} style={{ color: '#ffcdc9', fontSize: 10, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.15em' }}>Full Report</button>
+            <button onClick={handleExportLogs} style={{ color: '#ffcdc9', fontSize: 10, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.15em' }}>Full Report</button>
           </div>
         </div>
 
@@ -282,7 +273,7 @@ export default function DashboardOverview() {
         <div className="md:col-span-12 overflow-hidden" style={{ background: '#1c1b1c', borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)' }}>
           <div className="px-6 py-4 flex justify-between items-center" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)', background: '#201f20' }}>
             <h3 style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#e5e2e3', textTransform: 'uppercase' }}>Recent_System_Events</h3>
-            <button onClick={() => toast('Loading historical event logs...', { icon: '⏳' })} style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: '#ffcdc9', letterSpacing: '0.15em' }}>View History</button>
+            <Link href="/dashboard/logs" style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: '#ffcdc9', letterSpacing: '0.15em' }}>View History</Link>
           </div>
             {recentLogs.length > 0 ? (
               recentLogs.slice(0, 5).map((log: any, i: number) => {

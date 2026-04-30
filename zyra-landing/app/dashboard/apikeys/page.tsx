@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Copy, KeyRound, Plus, Trash2, X } from "lucide-react"
 import toast from 'react-hot-toast'
 import api from "@/lib/api"
 
@@ -49,8 +47,10 @@ export default function ApiKeys() {
     try {
       await api.delete(`/api/keys/${id}`)
       fetchKeys()
+      toast.success('Key revoked successfully')
     } catch (err) {
       console.error("Failed to delete key", err)
+      toast.error('Failed to revoke key')
     }
   }
 
@@ -59,164 +59,195 @@ export default function ApiKeys() {
     toast.success("Copied to clipboard!")
   }
 
+  const cardStyle: React.CSSProperties = {
+    background: '#201f20', borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)',
+  }
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12 relative flex flex-col font-body">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div>
+      {/* ── HEADER ── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6" style={{ borderBottom: '1px solid rgba(83,67,65,0.1)' }}>
         <div>
-          <h1 className="text-[32px] font-headline font-bold text-[#032416] mb-2 tracking-tight">API Keys</h1>
-          <p className="text-[#424843] font-medium text-sm">Manage proxy keys to authenticate SDK requests to Zyra.</p>
+          <h1 style={{ fontSize: 48, fontWeight: 900, letterSpacing: '-0.03em', textTransform: 'uppercase', color: '#e5e2e3', lineHeight: 1 }}>
+            API_KEYS
+          </h1>
+          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: '#71717a', marginTop: 8 }}>
+            PROXY_AUTHENTICATION // KEYS: <span style={{ color: '#9be8cb' }}>{keys.filter(k => k.isActive !== false).length} ACTIVE</span>
+          </p>
         </div>
-        
         <button 
           onClick={() => setShowModal(true)}
-          className="flex items-center space-x-2 px-5 py-2.5 bg-[#1a3a2a] hover:bg-[#032416] text-white rounded-xl text-sm font-bold transition-all shadow-[0_4px_14px_rgba(26,58,42,0.4)]"
+          style={{
+            background: '#ffa69e', padding: '8px 20px', borderRadius: 12, cursor: 'pointer',
+            fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
+            color: '#3b0908', display: 'flex', alignItems: 'center', gap: 6,
+          }}
         >
-          <Plus className="w-4 h-4 ml-[-4px]" />
-          <span>Create new key</span>
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
+          Create New Key
         </button>
       </div>
 
-      <div className="bg-white rounded-[16px] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-[#f1eedf] flex flex-col overflow-hidden">
+      {/* ── METRIC STRIP ── */}
+      <div className="flex items-center gap-8 mt-6 p-4 flex-wrap" style={{ background: '#1c1b1c', borderRadius: 12 }}>
+        {[
+          { label: 'Total Keys', value: `${keys.length}` },
+          { label: 'Active', value: `${keys.filter(k => k.isActive !== false).length}`, accent: true },
+          { label: 'Revoked', value: `${keys.filter(k => k.isActive === false).length}` },
+        ].map((m, i) => (
+          <div key={i} className="flex flex-col">
+            <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', marginBottom: 4 }}>{m.label}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700, color: m.accent ? '#9be8cb' : '#e5e2e3' }}>{m.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── KEY TABLE ── */}
+      <div className="mt-6 overflow-hidden" style={{ ...cardStyle }}>
         {loading ? (
-          <div className="p-12 text-center text-[#424843] font-body text-sm">Loading keys...</div>
+          <div className="flex gap-3 items-center justify-center py-20" style={{ color: '#ffa69e' }}>
+            <span className="material-symbols-outlined animate-pulse">vpn_key</span>
+            <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 700, textTransform: 'uppercase' }}>Loading keys...</span>
+          </div>
         ) : keys.length === 0 ? (
-          <div className="p-12 text-center text-[#424843] font-body text-sm">You don't have any keys yet. Create one to get started!</div>
+          <div className="text-center py-16">
+            <span className="material-symbols-outlined" style={{ fontSize: 48, color: '#353436' }}>vpn_key</span>
+            <p style={{ fontSize: 14, color: '#534341', marginTop: 12 }}>No API keys created yet.</p>
+            <p style={{ fontSize: 12, color: '#71717a', marginTop: 4 }}>Create a key to authenticate SDK requests to Zyra.</p>
+          </div>
         ) : (
-          <table className="w-full text-left font-body text-sm">
-            <thead className="text-[11px] text-[#424843] uppercase bg-[#fdfaea] border-b border-[#f1eedf] font-bold tracking-wider">
-              <tr>
-                <th className="px-6 py-4">Name</th>
-                <th className="px-6 py-4">Prefix</th>
-                <th className="px-6 py-4">Created By</th>
-                <th className="px-6 py-4">Last Used</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#f1eedf]">
-              {keys.map((key) => (
-                <tr key={key._id} className="hover:bg-[#fdfaea]/60 transition-colors">
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div className="flex items-center space-x-3">
-                      <KeyRound className="w-[18px] h-[18px] text-[#a99cfe]" />
-                      <span className={`font-bold ${key.isActive !== false ? 'text-[#032416]' : 'text-[#424843] line-through'}`}>
-                        {key.name || "Unnamed Key"}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <span className="font-mono text-[13px] bg-[#fdfaea] border border-[#f1eedf] px-2 py-1 rounded-md text-[#032416] font-semibold">
-                      {key.prefix}••••••••••••••••
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap text-[#424843] font-semibold">
-                    {key.createdBy?.name || 'Admin'}
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap text-[#424843]">
-                    {new Date(key.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold border 
-                      ${key.isActive !== false 
-                        ? 'bg-[#e8f5e9] text-[#2e7d32] border-[#c8e6c9]' 
-                        : 'bg-[#ffebee] text-[#c62828] border-[#ffcdd2]'}`}
-                    >
-                      {key.isActive !== false ? 'Active' : 'Revoked'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap text-right">
-                    {key.isActive !== false && (
-                      <button onClick={() => handleRevokeKey(key._id)} className="text-[#c1c8c2] hover:text-[#d32f2f] hover:bg-red-50 p-2 rounded-lg transition-colors" title="Revoke Key">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
+          <>
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-4 px-6 py-3" style={{ borderBottom: '1px solid rgba(83,67,65,0.1)', background: '#1c1b1c' }}>
+              {['Name', 'Prefix', 'Created', 'Status', ''].map((h, i) => (
+                <div key={h || 'actions'} className={i === 0 ? 'col-span-3' : i === 4 ? 'col-span-2' : 'col-span-2'} style={{
+                  fontSize: 10, letterSpacing: '0.15em', fontWeight: 700, color: '#71717a', textTransform: 'uppercase'
+                }}>{h}</div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Key Rows */}
+            {keys.map((key) => (
+              <div key={key._id} className="grid grid-cols-12 gap-4 px-6 py-5 items-center transition-colors hover:bg-[#2a2a2b]" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>
+                <div className="col-span-3 flex items-center gap-3">
+                  <span className="material-symbols-outlined" style={{ fontSize: 18, color: key.isActive !== false ? '#ffa69e' : '#534341' }}>vpn_key</span>
+                  <span style={{
+                    fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 600,
+                    color: key.isActive !== false ? '#e5e2e3' : '#71717a',
+                    textDecoration: key.isActive === false ? 'line-through' : 'none',
+                  }}>{key.name || "Unnamed Key"}</span>
+                </div>
+                <div className="col-span-2">
+                  <span style={{
+                    fontFamily: "'JetBrains Mono', monospace", fontSize: 12,
+                    background: '#131314', padding: '4px 8px', borderRadius: 6,
+                    color: '#a1a1aa', border: '1px solid rgba(83,67,65,0.1)',
+                  }}>{key.prefix}••••••</span>
+                </div>
+                <div className="col-span-2" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#71717a' }}>
+                  {key.createdBy?.name || 'Admin'}
+                </div>
+                <div className="col-span-3 flex items-center gap-2">
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                    color: key.isActive !== false ? '#9be8cb' : '#ffb4ab'
+                  }}>
+                    {key.isActive !== false ? 'ACTIVE' : 'REVOKED'}
+                  </span>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: key.isActive !== false ? '#9be8cb' : '#ffb4ab' }} />
+                </div>
+                <div className="col-span-2 flex justify-end">
+                  {key.isActive !== false && (
+                    <button
+                      onClick={() => handleRevokeKey(key._id)}
+                      style={{
+                        fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                        color: '#ffb4ab', background: 'rgba(255,180,171,0.1)', padding: '6px 12px', borderRadius: 8,
+                        border: '1px solid rgba(255,180,171,0.2)',
+                      }}
+                    >Revoke</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </>
         )}
       </div>
 
-      {/* Modal for Creating Key */}
-      <AnimatePresence>
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              onClick={() => !generatedKey && setShowModal(false)}
-              className="absolute inset-0 bg-[#032416]/40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white border border-[#f1eedf] shadow-[0_20px_60px_rgb(0,0,0,0.08)] rounded-[20px] w-full max-w-md relative z-10 overflow-hidden font-body"
-            >
-              <div className="p-6 border-b border-[#f1eedf] flex items-center justify-between bg-[#fdfaea]/50">
-                <h3 className="text-xl font-bold font-headline text-[#032416]">Generate API Key</h3>
-                {!generatedKey && (
-                  <button onClick={() => setShowModal(false)} className="text-[#424843] hover:text-[#032416] transition-colors bg-white rounded-full p-1 border border-[#f1eedf] shadow-sm">
-                    <X className="w-5 h-5" />
+      {/* ── CREATE KEY MODAL ── */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="create-key-title" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
+          <div className="w-full max-w-md p-6" style={{ background: '#201f20', borderRadius: 16, border: '1px solid rgba(83,67,65,0.2)' }}>
+            <h3 id="create-key-title" style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 700, color: '#ffa69e', textTransform: 'uppercase', marginBottom: 16 }}>
+              {generatedKey ? 'Key Generated Successfully' : 'Generate API Key'}
+            </h3>
+
+            {!generatedKey ? (
+              <form onSubmit={handleCreateKey}>
+                <label htmlFor="key-name-input" style={{ fontSize: 10, letterSpacing: '0.15em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>Key Name</label>
+                <input
+                  id="key-name-input"
+                  type="text"
+                  value={newKeyName}
+                  onChange={e => setNewKeyName(e.target.value)}
+                  placeholder="e.g. Production Traffic"
+                  required
+                  autoFocus
+                  style={{
+                    width: '100%', background: '#0e0e0f', border: 'none', outline: 'none',
+                    color: '#e5e2e3', fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
+                    padding: '12px 16px', borderRadius: 8, marginBottom: 16,
+                  }}
+                />
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => { setShowModal(false); setNewKeyName('') }}
+                    style={{ fontSize: 10, fontWeight: 700, color: '#71717a', padding: '8px 16px', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                  >Cancel</button>
+                  <button
+                    type="submit"
+                    style={{
+                      background: '#ffa69e', color: '#3b0908', padding: '8px 20px', borderRadius: 8,
+                      fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase'
+                    }}
+                  >Create Key</button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-3" style={{ background: 'rgba(155,232,203,0.08)', border: '1px solid rgba(155,232,203,0.2)', borderRadius: 8 }}>
+                  <p style={{ fontSize: 12, color: '#9be8cb', lineHeight: 1.5 }}>
+                    <strong>Copy this key now.</strong> You will not be able to view it again after closing this dialog.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 p-3" style={{ background: '#131314', borderRadius: 8 }}>
+                  <code className="flex-1 break-all select-all" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#e5e2e3' }}>
+                    {generatedKey}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(generatedKey)}
+                    className="shrink-0 p-2 transition-colors hover:bg-[#2a2a2b]"
+                    style={{ borderRadius: 6, color: '#ffa69e' }}
+                    aria-label="Copy key"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>content_copy</span>
                   </button>
-                )}
+                </div>
+                <button
+                  onClick={() => { setGeneratedKey(null); setShowModal(false) }}
+                  className="w-full py-3"
+                  style={{
+                    background: '#2a2a2b', color: '#e5e2e3', borderRadius: 8,
+                    fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                    border: '1px solid rgba(83,67,65,0.15)',
+                  }}
+                >I Have Saved It</button>
               </div>
-              
-              <div className="p-8">
-                {!generatedKey ? (
-                  <form onSubmit={handleCreateKey} className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-bold text-[#032416] mb-2">Key Name</label>
-                      <input 
-                        type="text" 
-                        value={newKeyName}
-                        onChange={e => setNewKeyName(e.target.value)}
-                        placeholder="e.g. Production Traffic"
-                        required
-                        autoFocus
-                        className="w-full bg-white border border-[#c1c8c2] rounded-xl px-4 py-3.5 text-[#032416] placeholder-[#c1c8c2] focus:outline-none focus:border-[#5e51ad] focus:ring-1 focus:ring-[#5e51ad] transition-all text-sm font-semibold"
-                      />
-                    </div>
-                    <button type="submit" className="w-full py-3.5 bg-[#1a3a2a] text-white font-bold rounded-xl hover:bg-[#032416] transition-colors shadow-lg">
-                      Create Key
-                    </button>
-                  </form>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="p-4 bg-[#e8f5e9] border border-[#c8e6c9] text-[#2e7d32] rounded-xl text-sm leading-relaxed font-medium">
-                      <strong>Success!</strong> Your API key has been generated. Please copy it now as you will <strong>never</strong> be able to view it again.
-                    </div>
-                    
-                    <div className="flex items-center bg-[#fdfaea] border border-[#f1eedf] rounded-xl overflow-hidden p-2">
-                      <code className="flex-1 px-3 py-2 text-[#032416] font-mono text-sm break-all font-bold select-all">
-                        {generatedKey}
-                      </code>
-                      <button 
-                        onClick={() => copyToClipboard(generatedKey)}
-                        className="p-3 bg-white border border-[#f1eedf] hover:bg-[#5e51ad]/5 text-[#5e51ad] rounded-lg transition-colors shadow-sm ml-2"
-                      >
-                        <Copy className="w-[18px] h-[18px]" strokeWidth={2.5} />
-                      </button>
-                    </div>
-                    
-                    <button 
-                      onClick={() => {
-                        setGeneratedKey(null)
-                        setShowModal(false)
-                      }} 
-                      className="w-full py-3.5 bg-white text-[#1a3a2a] border border-[#c1c8c2] font-bold rounded-xl hover:bg-[#f1eedf] transition-colors"
-                    >
-                      I have saved it
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
+            )}
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   )
 }

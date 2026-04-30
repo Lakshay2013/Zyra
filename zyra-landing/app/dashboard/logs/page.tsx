@@ -9,12 +9,14 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedLog, setSelectedLog] = useState<any>(null)
   const [filter, setFilter] = useState({ page: 1, limit: 20 })
+  const [totalCount, setTotalCount] = useState(0)
 
   useEffect(() => {
     const fetchLogs = async () => {
       try {
         const res = await api.get(`/api/logs?page=${filter.page}&limit=${filter.limit}`)
         setLogs(res.data.logs || res.data || [])
+        setTotalCount(res.data.total || res.data.logs?.length || 0)
       } catch (err) {
         console.error('Failed to load logs', err)
       } finally {
@@ -55,9 +57,9 @@ export default function LogsPage() {
       <div className="flex items-center gap-12 mt-6 p-4" style={{ background: '#1c1b1c', borderRadius: 12 }}>
         {[
           { label: 'Throughput', value: `${logs.length}`, unit: 'logs' },
-          { label: 'Latency', value: '42', unit: 'ms' },
-          { label: 'Error Rate', value: '0.02%', unit: '', error: true },
-          { label: 'Total', value: `${logs.length}`, unit: '' },
+          { label: 'Avg Latency', value: logs.length > 0 ? `${Math.round(logs.reduce((sum: number, l: any) => sum + (l.latency || 0), 0) / logs.length)}` : '—', unit: 'ms' },
+          { label: 'Error Rate', value: logs.length > 0 ? `${((logs.filter((l: any) => l.riskScore > 5).length / logs.length) * 100).toFixed(2)}%` : '0%', unit: '', error: true },
+          { label: 'Page', value: `${filter.page}`, unit: '' },
         ].map((m, i) => (
           <div key={i} className="flex flex-col">
             <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', marginBottom: 4 }}>{m.label}</span>
@@ -141,12 +143,41 @@ export default function LogsPage() {
       </div>
 
       {/* ── BOTTOM TERMINAL PROMPT ── */}
-      <div className="mt-6 flex items-center gap-3 p-4" style={{ background: '#1c1b1c', borderRadius: 12 }}>
-        <span style={{ color: '#ffa69e', fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700 }}>&gt;</span>
-        <span style={{ width: 6, height: 16, background: '#ffa69e', animation: 'pulse 1s infinite' }} />
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
-          {logs.length > 0 ? `${logs.length} entries loaded` : 'Awaiting network streams...'}
-        </span>
+      <div className="mt-6 flex items-center justify-between gap-3 p-4" style={{ background: '#1c1b1c', borderRadius: 12 }}>
+        <div className="flex items-center gap-3">
+          <span style={{ color: '#ffa69e', fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700 }}>&gt;</span>
+          <span style={{ width: 6, height: 16, background: '#ffa69e', animation: 'pulse 1s infinite' }} />
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+            {logs.length > 0 ? `${logs.length} entries loaded — page ${filter.page}` : 'Awaiting network streams...'}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setFilter(f => ({ ...f, page: Math.max(1, f.page - 1) }))}
+            disabled={filter.page <= 1}
+            style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: filter.page <= 1 ? '#534341' : '#ffa69e',
+              background: 'rgba(255,166,158,0.1)', padding: '6px 14px', borderRadius: 8,
+              border: '1px solid rgba(255,166,158,0.2)',
+              cursor: filter.page <= 1 ? 'not-allowed' : 'pointer',
+              opacity: filter.page <= 1 ? 0.5 : 1,
+            }}
+          >Prev</button>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#71717a', minWidth: 40, textAlign: 'center' }}>{filter.page}</span>
+          <button
+            onClick={() => setFilter(f => ({ ...f, page: f.page + 1 }))}
+            disabled={logs.length < filter.limit}
+            style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: logs.length < filter.limit ? '#534341' : '#ffa69e',
+              background: 'rgba(255,166,158,0.1)', padding: '6px 14px', borderRadius: 8,
+              border: '1px solid rgba(255,166,158,0.2)',
+              cursor: logs.length < filter.limit ? 'not-allowed' : 'pointer',
+              opacity: logs.length < filter.limit ? 0.5 : 1,
+            }}
+          >Next</button>
+        </div>
       </div>
 
       <style jsx>{`

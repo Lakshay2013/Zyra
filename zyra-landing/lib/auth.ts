@@ -9,7 +9,7 @@ export interface AuthUser {
 export interface AuthOrg {
   _id: string
   name: string
-  plan: 'free' | 'pro' | 'enterprise'
+  plan: 'free' | 'pro' | 'growth'
   monthlyLogLimit: number
   currentMonthLogs: number
 }

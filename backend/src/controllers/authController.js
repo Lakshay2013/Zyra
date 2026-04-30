@@ -128,8 +128,8 @@ exports.login = async (req, res) => {
 // GET /api/auth/me
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId)
-    const org = await Organization.findById(req.user.orgId)
+    const user = await User.findById(req.user.userId).select('name email role isActive isEmailVerified')
+    const org = await Organization.findById(req.user.orgId).select('name plan monthlyLogLimit currentMonthlyLogs optimizer reliability cache')
 
     res.json({ user, org })
   } catch (err) {
@@ -222,5 +222,42 @@ exports.googleLogin = async (req, res) => {
   } catch (err) {
     console.error('Google auth error:', err)
     res.status(500).json({ message: 'Google authentication failed' })
+  }
+}
+
+// PUT /api/auth/change-password
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current password and new password are required' })
+    }
+    if (typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({ message: 'New password must be at least 8 characters long' })
+    }
+
+    const user = await User.findById(req.user.userId).select('+passwordHash')
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    // Google-only users don't have a password
+    if (!user.passwordHash) {
+      return res.status(400).json({ message: 'Cannot change password for accounts created via Google OAuth' })
+    }
+
+    const isMatch = await user.comparePassword(currentPassword)
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' })
+    }
+
+    user.passwordHash = newPassword
+    await user.save()
+
+    res.json({ message: 'Password updated successfully' })
+  } catch (err) {
+    console.error('Change password error:', err)
+    res.status(500).json({ message: 'Server error' })
   }
 }

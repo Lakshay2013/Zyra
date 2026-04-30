@@ -175,16 +175,22 @@ exports.webhook = async (req, res) => {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET
     const signature = req.headers['x-razorpay-signature']
 
-    // If webhook secret is configured, verify signature
-    if (webhookSecret && signature) {
-      const expectedSig = crypto
-        .createHmac('sha256', webhookSecret)
-        .update(JSON.stringify(req.body))
-        .digest('hex')
+    // Verify webhook signature — reject if no secret is configured
+    if (!webhookSecret) {
+      console.warn('[Payment] Webhook rejected: RAZORPAY_WEBHOOK_SECRET not configured')
+      return res.status(403).json({ message: 'Webhook secret not configured — refusing unsigned requests' })
+    }
+    if (!signature) {
+      return res.status(400).json({ message: 'Missing x-razorpay-signature header' })
+    }
 
-      if (expectedSig !== signature) {
-        return res.status(400).json({ message: 'Invalid webhook signature' })
-      }
+    const expectedSig = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(JSON.stringify(req.body))
+      .digest('hex')
+
+    if (expectedSig !== signature) {
+      return res.status(400).json({ message: 'Invalid webhook signature' })
     }
 
     const event = req.body.event
