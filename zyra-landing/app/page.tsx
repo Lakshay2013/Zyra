@@ -438,19 +438,19 @@ export default function HomePage() {
           <div className="flex flex-wrap gap-16 md:gap-32">
             {[
               { title: 'PLATFORM', links: [
-                { label: 'Semantic Proxy', href: null },
-                { label: 'API Architecture', href: null },
-                { label: 'Observability', href: null },
+                { label: 'Semantic Proxy', href: '/platform' },
+                { label: 'API Architecture', href: '/architecture' },
+                { label: 'Observability', href: '/observability' },
               ]},
               { title: 'COMPANY', links: [
                 { label: 'Pricing', href: '#pricing' },
-                { label: 'Documentation', href: null },
+                { label: 'Documentation', href: '/docs' },
                 { label: 'Terms of Service', href: '/terms' },
               ]},
               { title: 'LEGAL', links: [
                 { label: 'Privacy Policy', href: '/privacy' },
-                { label: 'Security', href: null },
-                { label: 'Status', href: null },
+                { label: 'Security', href: '/security' },
+                { label: 'Status', href: '/status' },
               ]},
               { title: 'CONNECT', links: [
                 { label: 'GitHub (Open Source)', href: 'https://github.com/Lakshay2013/Zyra' },
