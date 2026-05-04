@@ -1,0 +1,57 @@
+# Quick start
+
+Get from zero to your first optimized LLM request with the Zyra SDK. This guide mirrors the core flow from the main documentation hub with copy-paste-friendly steps.
+
+## Prerequisites
+
+- Node.js 18 or newer
+- A Zyra API key from the [dashboard](/register) after sign-up
+- Provider keys configured in Zyra (OpenAI, Anthropic, etc.) so routing has destinations
+
+## Install
+
+```bash
+npm install zyra-sdk
+```
+
+Zyra is published as the `zyra-sdk` package on npm—use your preferred package manager (`pnpm`, `yarn`) as needed.
+
+## Minimal client
+
+Point the client at your Zyra deployment and pass the API key Zyra issued (not your raw provider key in application code).
+
+```ts
+import Zyra from "zyra-sdk";
+
+const client = new Zyra({ apiKey: process.env.ZYRA_KEY });
+
+const res = await client.chat.completions.create({
+  model: "auto",
+  messages: [{ role: "user", content: "Hello" }],
+});
+
+console.log(res.choices[0]?.message?.content);
+```
+
+Using `model: "auto"` delegates routing to Zyra so the cost engine can pick a capable, cheaper model when appropriate.
+
+## Authentication
+
+1. Log in to the dashboard and open **API keys** (or equivalent).
+2. Create a key and store it as `ZYRA_KEY` (or load from your secrets manager).
+3. Never commit keys; use `.env.local` for development and hosted secrets in production.
+
+The SDK sends this key on each request; Zyra validates it before applying policies, logging, and provider routing.
+
+## Environment variables
+
+| Variable   | Required | Notes                                      |
+| ---------- | -------- | ------------------------------------------ |
+| `ZYRA_KEY` | Yes      | Zyra-issued API key                        |
+| Base URL   | Optional | Defaults to Zyra cloud; self-host if needed |
+
+## Next steps
+
+- Read [Cost optimization](/docs/concepts/cost-optimization) to understand how requests are scored and routed.
+- Read [Quality Guard](/docs/concepts/quality-guard) for safety rails around downgrades.
+- See [Chat completions](/docs/api/chat-completions) for HTTP-level details beyond the SDK.

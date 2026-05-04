@@ -1,0 +1,46 @@
+# `POST /v1/chat/completions`
+
+Zyra exposes an **OpenAI-compatible** chat completions route. Existing OpenAI SDKs and integrations can often point their base URL (or equivalent) at Zyra with minimal changes.
+
+## Authentication
+
+Send your Zyra API key using the same header pattern as other OpenAI-compatible gateways:
+
+```http
+POST /v1/chat/completions
+Content-Type: application/json
+x-zyra-api-key: <your-zyra-key>
+```
+
+Exact header name may match your deployment’s compatibility layer; the dashboard documents the live value for your environment.
+
+## Request body
+
+The body follows the familiar chat completions shape: `model`, `messages`, optional `temperature`, `max_tokens`, `stream`, `tools`, and related fields. Using `model: "auto"` (or your deployment's equivalent) asks Zyra to pick routing.
+
+```json
+{
+  "model": "auto",
+  "messages": [
+    { "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user", "content": "Summarize this in three bullets." }
+  ]
+}
+```
+
+## Streaming
+
+When `stream: true`, Zyra forwards provider-style SSE chunks where supported. Clients should handle partial deltas the same way they would against OpenAI’s streaming API.
+
+## Responses
+
+Successful responses mirror OpenAI’s `chat.completion` schema: `choices`, `usage`, `id`, and timestamps. Logs in the dashboard attach routing metadata—actual provider, estimated cost savings, and policy outcomes.
+
+## Errors
+
+Expect standard HTTP statuses: **`401`** for invalid keys, **`429`** under rate limits, **`5xx`** for upstream outages (often paired with automatic retries/failover depending on configuration).
+
+## Related
+
+- [Quick start](/docs/quickstart) for SDK setup.
+- [Cost optimization](/docs/concepts/cost-optimization) for what happens behind this endpoint.
