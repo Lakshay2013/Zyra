@@ -521,3 +521,56 @@ input:focus, textarea:focus {
   background: #27272A; border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+/* ================================================
+   DOCS (MDX + heading anchors + pretty code)
+   ================================================ */
+.docs-mdx h2,
+.docs-mdx h3 {
+  position: relative;
+}
+
+.docs-mdx .docs-heading-anchor {
+  text-decoration: none;
+  margin-left: 0.35rem;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+  color: rgba(255, 166, 158, 0.45);
+}
+
+.docs-mdx .docs-heading-anchor-hash {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.docs-mdx h2:hover .docs-heading-anchor,
+.docs-mdx h2:focus-within .docs-heading-anchor,
+.docs-mdx h3:hover .docs-heading-anchor,
+.docs-mdx h3:focus-within .docs-heading-anchor,
+.docs-mdx .docs-heading-anchor:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+
+.docs-mdx .docs-heading-anchor:focus-visible {
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(255, 166, 158, 0.35);
+}
+
+.docs-mdx pre[data-theme],
+.docs-mdx figure[data-rehype-pretty-code-figure] {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.docs-mdx pre[data-theme] code {
+  display: grid;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.docs-mdx pre[data-theme][data-language] figure,
+.docs-mdx figure[data-rehype-pretty-code-figure] pre {
+  overflow-x: auto;
+}
