@@ -769,3 +769,122 @@ exports.embeddings = async (req, res) => {
     res.status(status).json(err.response?.data || { error: { message: 'Embeddings request failed' } })
   }
 }
+
+/**
+ * POST /v1/messages — Anthropic-native format passthrough
+ *
+ * Allows users to point their Anthropic client at Zyra:
+ *   import anthropic
+ *   client = anthropic.Anthropic(base_url="https://api.zyra.dev/v1", api_key=ZYRA_KEY)
+ *   client.messages.create(model="claude-sonnet-4-5", ...)
+ *
+ * Zyra forwards to Anthropic, logs the interaction, and returns the response
+ * in the original Anthropic format. No response format conversion needed.
+ */
+exports.anthropicMessages = async (req, res) => {
+  const start = Date.now()
+  const org = req.org
+
+  if (org.currentMonthlyLogs >= org.monthlyLogLimit) {
+    return res.status(429).json({ error: { message: 'Monthly request limit reached. Please upgrade your plan.' } })
+  }
+
+  const provider = 'anthropic'
+  const model = req.body.model || 'claude-sonnet-4-5'
+  const userId = req.headers['x-user-id'] || 'anonymous'
+
+  // Resolve provider key (user passes ZYRA_KEY to auth, but may pass their anthropic key as x-anthropic-api-key)
+  let providerApiKey = req.headers['x-anthropic-api-key'] || null
+  if (!providerApiKey) {
+    const encryptedKey = org.providerKeys?.anthropic
+    if (encryptedKey) {
+      const { decrypt } = require('../utils/crypto')
+      providerApiKey = decrypt(encryptedKey)
+    }
+  }
+
+  if (!providerApiKey) {
+    return res.status(400).json({
+      error: {
+        message: 'No Anthropic API key found. Add your Anthropic key in Organization Settings or pass x-anthropic-api-key header.',
+        type: 'configuration_error'
+      }
+    })
+  }
+
+  const isStream = req.body.stream === true
+
+  try {
+    let responseBody, statusCode
+
+    if (isStream) {
+      const streamResult = await handleStreaming(
+        provider,
+        PROVIDERS.anthropic.chatPath,
+        providerApiKey,
+        req.body,
+        req,
+        res
+      )
+
+      // Async log for stream
+      if (!streamResult.error) {
+        const tokens = streamResult.usage
+        const cost = calculateCost(model, tokens.prompt, tokens.completion)
+        try {
+          const logQueue = getLogQueue()
+          await logQueue.add('log-interaction', {
+            orgId: org._id.toString(), userId, model, provider,
+            prompt: extractPrompt({ messages: req.body.messages }),
+            response: streamResult.content,
+            tokens, cost, latency: Date.now() - start, statusCode: 200,
+            cached: false, sdk_language: 'proxy',
+            optimizer: { wasOptimized: false }, reliability: { retryCount: 0, fallbackUsed: false }
+          })
+        } catch {}
+      }
+      return
+    }
+
+    // Buffered request
+    const config = {
+      method: 'POST',
+      url: `${PROVIDERS.anthropic.baseUrl}${PROVIDERS.anthropic.chatPath}`,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': providerApiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      data: req.body,
+      timeout: 60000
+    }
+
+    const result = await executeWithRetry(config, { maxRetries: 2, baseDelay: 500, fallbacks: [], provider, model })
+    statusCode = result.response.status
+    responseBody = result.response.data
+
+    res.status(statusCode).json(responseBody)
+
+    // Async log
+    const latency = Date.now() - start
+    const tokens = extractTokens(provider, responseBody)
+    const cost = calculateCost(model, tokens.prompt, tokens.completion)
+    try {
+      const logQueue = getLogQueue()
+      await logQueue.add('log-interaction', {
+        orgId: org._id.toString(), userId, model, provider,
+        prompt: extractPrompt({ messages: req.body.messages }),
+        response: extractResponse(provider, responseBody),
+        tokens, cost, latency, statusCode,
+        cached: false, sdk_language: 'proxy',
+        optimizer: { wasOptimized: false, originalModel: model, optimizedModel: null, savings: 0 },
+        reliability: { retryCount: result.retryCount || 0, fallbackUsed: false, fallbackProvider: null }
+      })
+    } catch {}
+
+  } catch (err) {
+    const status = err.response?.status || 502
+    const body = err.response?.data || { error: { message: 'Failed to reach Anthropic', type: 'provider_error' } }
+    if (!res.headersSent) res.status(status).json(body)
+  }
+}

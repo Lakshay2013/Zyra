@@ -1,0 +1,42 @@
+#!/usr/bin/env node
+'use strict'
+
+/**
+ * Zyra CLI
+ *
+ * Usage:
+ *   npx zyra init          - Auto-patch project imports
+ *   npx zyra --help
+ */
+
+const [,, command, ...args] = process.argv
+
+switch (command) {
+  case 'init':
+    require('../cli/init')()
+    break
+  case '--help':
+  case '-h':
+  case undefined:
+    printHelp()
+    break
+  default:
+    console.error(`Unknown command: ${command}`)
+    printHelp()
+    process.exit(1)
+}
+
+function printHelp() {
+  console.log(`
+  Zyra CLI — Universal LLM auto-logging
+
+  Usage:
+    npx zyra init       Detect OpenAI/Anthropic usage and auto-patch imports
+    npx zyra --help     Show this help
+
+  Environment variables:
+    ZYRA_KEY            Your Zyra API key (required for logging)
+    ZYRA_DISABLE=true   Disable all logging globally
+    ZYRA_API_URL        Override the Zyra API endpoint (default: https://api.zyra.dev)
+  `)
+}

@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "zyra"
+version = "0.2.0"
+description = "Universal LLM auto-logging and cost optimization proxy. Drop-in for OpenAI and Anthropic."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.8"
+keywords = ["zyra", "ai", "llm", "openai", "anthropic", "proxy", "observability", "cost"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = []   # Zero required dependencies — openai/anthropic are optional
+
+[project.optional-dependencies]
+openai = ["openai>=1.0.0"]
+anthropic = ["anthropic>=0.20.0"]
+all = ["openai>=1.0.0", "anthropic>=0.20.0"]
+
+[project.scripts]
+zyra = "zyra._cli:main"
+
+[project.urls]
+Homepage = "https://zyra.dev"
+Documentation = "https://docs.zyra.dev"
+Repository = "https://github.com/zyra-dev/zyra-python"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["zyra*"]

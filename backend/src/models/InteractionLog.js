@@ -81,7 +81,10 @@ const interactionLogSchema = new mongoose.Schema({
     fallbackProvider: { type: String, default: null }
   },
   // Response status
-  statusCode: { type: Number, default: 200 }
+  statusCode: { type: Number, default: 200 },
+  // Universal log fields (set by non-proxy integrations)
+  sdk_language: { type: String, default: null },        // 'python' | 'node' | 'go' | 'proxy' | etc.
+  model_requested: { type: String, default: null }       // Original model before Zyra routing
 }, { timestamps: true })
 
 // Index for fast queries
