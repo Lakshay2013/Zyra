@@ -13,7 +13,7 @@
     "./logger": "./src/logger.js"
   },
   "scripts": {
-    "test": "node --test tests/",
+    "test": "node --test tests/*.test.js",
     "test:log": "node tests/log-dispatch.test.js",
     "test:proxy": "node tests/proxy-passthrough.test.js",
     "test:auto": "node tests/auto-patch.test.js"

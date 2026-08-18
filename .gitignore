@@ -24,21 +24,15 @@ Thumbs.db
 # Planning / development artifacts
 .planning/
 stitch-designs/
-error.txt
-error_utf8.txt
-
 # Backend test scripts (not for production)
-backend/dashboard-test.js
-backend/integration-test.js
-backend/prelaunch-test.js
-backend/test-all.js
-backend/get-key.js
-backend/get-users.js
-backend/fails-only.log
-backend/failures.txt
-backend/integration-results.log
-backend/test-output.log
-backend/test-results.txt
+backend/scripts/dashboard-test.js
+backend/scripts/integration-test.js
+backend/scripts/prelaunch-test.js
+backend/scripts/test-all.js
+backend/scripts/get-key.js
+backend/scripts/get-users.js
+backend/scripts/*.log
+backend/scripts/*.txt
 
 # Stitch design files
 zyra-landing/stitch_landing.html

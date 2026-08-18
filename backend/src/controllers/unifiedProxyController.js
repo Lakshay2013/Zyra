@@ -513,23 +513,23 @@ exports.chatCompletions = async (req, res) => {
       res.json(cached)
 
       // Async log cache hit
-        try {
-          const tokens = extractTokens(provider, cached)
-          const cost = 0 // Cache hits are free
-          const logQueue = getLogQueue()
-          await logQueue.add('log-interaction', {
-            orgId: org._id.toString(),
-            userId: req.headers['x-user-id'] || 'anonymous',
-            model, provider,
-            prompt: promptText,
-            response: extractResponse(provider, cached),
-            tokens, cost, latency: Date.now() - start,
-            statusCode: 200,
-            optimizer: { ...optimizerResult, wasOptimized: false },
-            reliability: { retryCount: 0, fallbackUsed: false, fallbackProvider: null },
-            cached: true
-          })
-        } catch {}
+      try {
+        const tokens = extractTokens(provider, cached)
+        const cost = 0 // Cache hits are free
+        const logQueue = getLogQueue()
+        await logQueue.add('log-interaction', {
+          orgId: org._id.toString(),
+          userId: req.headers['x-user-id'] || 'anonymous',
+          model, provider,
+          prompt: promptText,
+          response: extractResponse(provider, cached),
+          tokens, cost, latency: Date.now() - start,
+          statusCode: 200,
+          optimizer: { ...optimizerResult, wasOptimized: false },
+          reliability: { retryCount: 0, fallbackUsed: false, fallbackProvider: null },
+          cached: true
+        })
+      } catch {}
       return
     }
   }

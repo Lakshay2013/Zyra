@@ -4,15 +4,55 @@ import { useState, useRef } from "react"
 import toast from 'react-hot-toast'
 import api from "@/lib/api"
 
+interface ChatResponse {
+  choices?: { message?: { content?: string } }[]
+  response?: string
+  text?: string
+  provider?: string
+  model?: string
+  debug?: {
+    provider?: string
+    model?: string
+    complexity?: string
+    estimatedCost?: number
+    originalCost?: number
+    savings?: number
+    cached?: boolean
+    qualityRetry?: boolean
+  }
+  usage?: {
+    prompt_tokens?: number
+    completion_tokens?: number
+    total_tokens?: number
+    estimatedCost?: number
+  }
+}
+
+interface DebugInfo {
+  provider: string
+  model: string
+  complexity: string
+  cost: number
+  originalCost: number
+  savings: number
+  latency: number
+  cached: boolean
+  qualityCheck: string
+  tokens: {
+    prompt: number
+    completion: number
+    total: number
+  }
+}
+
 export default function PlaygroundPage() {
   const [model, setModel] = useState('auto')
   const [streaming, setStreaming] = useState(false)
   const [debug, setDebug] = useState(true)
   const [prompt, setPrompt] = useState('')
   const [response, setResponse] = useState('')
-  const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null)
   const [loading, setLoading] = useState(false)
-  const [latency, setLatency] = useState(0)
   const responseRef = useRef<HTMLDivElement>(null)
 
   const models = [
@@ -33,22 +73,20 @@ export default function PlaygroundPage() {
     const start = Date.now()
 
     try {
-      const token = localStorage.getItem('zyra_token')
-      const orgData = JSON.parse(localStorage.getItem('zyra_org') || '{}')
-      
       const res = await api.post('/v1/chat/completions', {
-        model: model === 'auto' ? 'gpt-4o-mini' : model,
+        model,
         messages: [{ role: 'user', content: prompt.trim() }],
         max_tokens: 1024,
+        stream: streaming,
       }, {
         headers: {
           // Use the stored Zyra API key if available, otherwise fallback to JWT auth
+          ...(debug ? { 'x-zyra-debug': 'true' } : {}),
           ...(localStorage.getItem('zyra_api_key') ? { 'x-zyra-api-key': localStorage.getItem('zyra_api_key') } : {})
         }
       })
 
-      setLatency(Date.now() - start)
-      const data = res.data
+      const data = res.data as ChatResponse
 
       if (data.choices?.[0]?.message?.content) {
         setResponse(data.choices[0].message.content)
@@ -76,9 +114,12 @@ export default function PlaygroundPage() {
           total: data.usage?.total_tokens || 0,
         }
       })
-    } catch (err: any) {
-      setResponse(`Error: ${err.response?.data?.error || err.message}`)
-      setLatency(Date.now() - start)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Request failed'
+      const apiError = typeof err === 'object' && err !== null && 'response' in err
+        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+        : null
+      setResponse(`Error: ${apiError || message}`)
     } finally {
       setLoading(false)
     }
@@ -261,7 +302,7 @@ export default function PlaygroundPage() {
                     {debugLines.map((line, i) => (
                       <div key={i} className="flex" style={{ paddingLeft: 16, lineHeight: 2 }}>
                         <span style={{ color: '#534341', width: 28, display: 'inline-block', textAlign: 'right', marginRight: 16, userSelect: 'none' }}>{String(i + 1).padStart(2, '0')}</span>
-                        <span style={{ color: '#ffa69e' }}>"{line.key}"</span>
+                        <span style={{ color: '#ffa69e' }}>{`"${line.key}"`}</span>
                         <span style={{ color: '#71717a' }}>: </span>
                         <span style={{ color: line.key === 'savings' || line.key === 'cached' ? '#9be8cb' : '#e5e2e3' }}>{line.value}</span>
                         {i < debugLines.length - 1 && <span style={{ color: '#71717a' }}>,</span>}
@@ -272,7 +313,7 @@ export default function PlaygroundPage() {
                 ) : (
                   <div style={{ color: '#534341' }}>
                     <span>{'{'}</span><br/>
-                    <span style={{ paddingLeft: 16, display: 'inline-block' }}>"status": "awaiting_execution"</span><br/>
+                    <span style={{ paddingLeft: 16, display: 'inline-block' }}>{'"status": "awaiting_execution"'}</span><br/>
                     <span>{'}'}</span>
                   </div>
                 )}

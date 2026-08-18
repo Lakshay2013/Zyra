@@ -15,7 +15,8 @@ if (mongoose.connection.readyState === 0) {
 const worker = new Worker('interaction-logs', async (job) => {
   const {
     orgId, userId, model, prompt, response, tokens, cost, latency,
-    statusCode, optimizer, reliability, provider, cached
+    statusCode, optimizer, reliability, provider, cached,
+    sdk_language, model_requested
   } = job.data
 
   try {
@@ -31,6 +32,8 @@ const worker = new Worker('interaction-logs', async (job) => {
       cached: cached || false,
       latency,
       statusCode: statusCode || 200,
+      sdk_language: sdk_language || null,
+      model_requested: model_requested || null,
       optimizer: optimizer || {},
       reliability: reliability || {}
     })

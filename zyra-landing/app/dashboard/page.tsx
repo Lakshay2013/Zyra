@@ -100,7 +100,7 @@ export default function DashboardOverview() {
             SYSTEM_OVERVIEW
           </h1>
           <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: '#71717a', marginTop: 8 }}>
-            CLUSTER_ID: <span style={{ color: '#ffa69e' }}>ALPHA-PROD-092</span> // NODE_STATUS: <span style={{ color: '#9be8cb' }}>HEALTHY</span>
+            CLUSTER_ID: <span style={{ color: '#ffa69e' }}>ALPHA-PROD-092</span> {'//'} NODE_STATUS: <span style={{ color: '#9be8cb' }}>HEALTHY</span>
           </p>
         </div>
         <div className="flex gap-2">

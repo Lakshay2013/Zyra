@@ -72,7 +72,7 @@ export default function ProvidersPage() {
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#9be8cb' }}>Systems Operational</span>
             </span>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#71717a' }}>
-              PROVIDERS: {configuredCount}/{providerList.length} // FALLBACK_CHAIN: {configuredCount} DEEP
+              PROVIDERS: {configuredCount}/{providerList.length} {'//'} FALLBACK_CHAIN: {configuredCount} DEEP
             </span>
           </div>
         </div>
@@ -121,7 +121,7 @@ export default function ProvidersPage() {
         </div>
 
         {/* Provider Rows */}
-        {providerList.map((p, i) => (
+        {providerList.map((p) => (
           <div key={p.id} className="grid grid-cols-12 gap-4 px-6 py-5 items-center transition-colors hover:bg-[#201f20]" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>
             <div className="col-span-3 flex items-center gap-3">
               <span className="material-symbols-outlined" style={{ fontSize: 18, color: p.configured ? '#ffa69e' : '#534341' }}>{p.icon}</span>
