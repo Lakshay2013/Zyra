@@ -1,12 +1,33 @@
-# Zyra — AI Cost Optimization Proxy
+# Zyra — Secure LLM Logging, Risk Monitoring & Cost Analytics
 
-> **v0.1.0-beta.** An OpenAI-compatible gateway that sits between your app and the
-> LLM providers, routing each request to the cheapest model that can handle it,
-> with retries, cross-provider fallback, response caching, idempotency, and
-> pre-flight security checks.
+> **v0.1.0-beta.** A multi-tenant SaaS platform that logs every LLM interaction,
+> analyses it for security risks (prompt injection, jailbreaks, PII, sensitive
+> keywords, abuse), assigns a risk score, and tracks token usage and cost —
+> behind one lightweight SDK, vendor-agnostic across OpenAI / Anthropic / Groq /
+> Gemini.
+>
+> It also ships a **cost-aware routing engine**: point your OpenAI or Anthropic
+> client at Zyra, send `model: "auto"`, and Zyra routes each request to the
+> cheapest capable model. No other code changes.
 
-Point your existing OpenAI (or Anthropic) client at Zyra, send `model: "auto"`,
-and Zyra picks the model. No other code changes.
+Reference paper: `docs/zyra-paper-v1.docx`.
+**Demoing this to faculty?** → `docs/FACULTY_DEMO_GUIDE.md` + `docs/DEMO_CHEAT_SHEET.md` + `docs/TEACHER_QA.md`.
+Paper ↔ code mapping → `docs/PAPER_COMPLIANCE.md`.
+
+---
+
+## Security & risk (the paper's core contribution)
+
+| Capability | How it works |
+|---|---|
+| **Pre-flight blocking** | When enabled, prompts matching prompt-injection / jailbreak / PII rules are rejected with HTTP 403 **before any provider is contacted**. Toggles: `policies.blockInjection` (default on), `blockJailbreak` (default off), `blockPII` (default off). |
+| **PII detection + masking** | email · phone · Aadhaar · PAN · credit card · SSN · API keys · passwords · JWT. Matched values are **masked before storage** (`john@x.com → j***@x.com`); only categories are ever logged. |
+| **Risk score** | Every interaction is scored asynchronously: `R = 0.35·I + 0.30·J + 0.20·P + 0.15·A` (injection, jailbreak, PII, abuse-frequency), 0–100, with severity bands. `R > 80` raises an admin dashboard notification. |
+| **Risk reports & audit log** | A `RiskReport` per analysed interaction; an `AuditLog` for auth / API-key / policy / provider-config events. |
+
+Detection is **deterministic rule/regex** — fast and explainable, not an ML
+classifier. Novel phrasings can slip past pre-flight blocking; they are still
+logged and risk-scored post-hoc.
 
 ---
 
@@ -86,13 +107,13 @@ curl localhost:5001/health      # {"status":"ok","workers":{"logs":true,"risk":t
 Databases only:
 
 ```bash
-docker compose up -d ai-shield-mongo ai-shield-redis
+docker compose up -d zyra-mongo zyra-redis
 ```
 
 ## Quick start (local dev)
 
 ```bash
-docker compose up -d ai-shield-mongo ai-shield-redis   # Mongo :27018, Redis :6380
+docker compose up -d zyra-mongo zyra-redis   # Mongo :27018, Redis :6380
 
 cd backend && npm install && cp .env.example .env
 npm run dev        # API  → :5000
@@ -103,6 +124,21 @@ cd ../zyra-landing && npm install
 cp .env.production.example .env.local   # set NEXT_PUBLIC_API_URL=http://localhost:5000
 npm run dev        # dashboard → :3000
 ```
+
+## Demo mode (no provider keys needed)
+
+```bash
+cd backend && npm run demo:seed     # two demo tenants + ~100 synthetic
+                                    # interactions through the REAL pipeline
+#   login: admin@zyrademoco.demo / demo-password-123
+npm run demo:reset                  # removes ONLY isDemo data
+node scripts/demo-e2e.js            # 17 live end-to-end checks
+```
+
+With `Organization.demoMode` on (the demo seed sets it), every LLM call is served
+by a built-in **simulator** — routing, cost, risk analysis and logging still run
+for real; responses are templated and flagged (`simulated: true`,
+`x-zyra-simulated` header). Toggle it in **Settings → Policies**.
 
 ---
 
@@ -151,37 +187,64 @@ curl localhost:5000/v1/chat/completions \
 
 Response headers in debug mode: `x-zyra-model`, `x-zyra-provider`,
 `x-zyra-cost`, `x-zyra-savings`, `x-zyra-complexity`, `x-zyra-cached`,
-`x-zyra-fallback`, `x-zyra-quality-retry`.
+`x-zyra-fallback`, `x-zyra-quality-retry`, `x-zyra-simulated`.
+
+### Explicit logging (no proxy)
+
+```js
+await client.log({ userId: "USR001", prompt, response,
+                   model: "gpt-4o", promptTokens, completionTokens });
+```
+```python
+from zyra import log
+log(user_id="USR001", prompt=prompt, response=response,
+    model="gpt-4o", prompt_tokens=pt, completion_tokens=ct)
+```
+`prompt` / `response` are masked before storage and feed the risk score, exactly
+like a proxied request.
 
 ---
 
 ## Dashboard
 
 `Register → verify email (OTP) → login → API Keys → Providers → Settings →
-Playground → Logs → Dashboard.`
+Playground → Security & Risk → Cost Analytics → Logs → Audit.`
 
-- **Providers** — add/remove provider keys; **Test All** makes a real 1-token
-  request against each configured provider and reports connected/failed + latency;
-  drag the fallback order and save it.
-- **Settings → Cost Optimization** — toggle auto-optimization, set the quality-tier floor.
-- **Settings → Reliability** — toggle retries, set max retries (0–5).
-- **Settings → Policies** — PII blocking, injection blocking, max tokens per request.
-- **Playground** — send real requests, see requested vs. selected model, provider,
-  cost, savings, complexity, fallback.
+- **Playground** — send a request, see security outcome (SAFE / BLOCKED + matched
+  patterns), requested vs. selected model, provider, complexity, baseline vs.
+  optimized cost, savings. Attack presets built in.
+- **Security & Risk** — the risk formula, stat grid (injections / jailbreaks /
+  PII / sensitive / blocked / critical), risk trend, `RiskReport` table with the
+  `I J P A` component columns, click-through detail with the weighted breakdown
+  and the masked interaction.
+- **Cost Analytics** — token split, *Without Zyra vs With Zyra* comparison, cost
+  over time, cost by model / user, routing swaps.
+- **Audit Log** (admin) — auth / API-key / policy / provider-config events.
+- **Providers** — add/remove keys; **Test All** makes a real 1-token request per
+  provider; drag the fallback order.
+- **Settings** — Cost Optimization (auto + tier floor), Reliability (retries
+  0–5), Policies (PII / injection / **jailbreak** blocking, **sensitive
+  keywords**, max tokens, **demo mode**).
 
 ---
 
 ## Testing
 
 ```bash
-cd backend && npm test          # ~86 unit + integration tests (node:test)
+cd backend && npm test          # 131 unit + integration tests (node:test)
                                 # provider HTTP is mocked with nock — no real API calls
-cd sdk && npm test              # Node SDK tests (mock gateway)
-cd sdk-python && python -m unittest discover -s tests
+cd sdk && npm test              # 12 Node SDK tests (mock gateway)
+cd sdk-python && python -m unittest discover -s tests   # 7 Python SDK tests
 
-cd backend && npm run test:providers   # OPTIONAL: real calls, only runs providers
-                                       # whose OPENAI_API_KEY / ANTHROPIC_API_KEY /
-                                       # GROQ_API_KEY / GEMINI_API_KEY is set
+# reproducible evaluations (see docs/PAPER_COMPLIANCE.md)
+cd backend
+npm run eval:security           # detector precision / recall vs the paper's numbers
+npm run test:cost-accuracy      # cost formula deviation
+BENCH_N=2000 npm run benchmark:logging   # logging success rate + latency
+
+npm run test:providers          # OPTIONAL: real calls, only providers whose
+                                # OPENAI_API_KEY / ANTHROPIC_API_KEY / GROQ_API_KEY /
+                                # GEMINI_API_KEY is set
 ```
 
 ---
