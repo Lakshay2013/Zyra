@@ -1,7 +1,9 @@
 const InteractionLog = require('../models/InteractionLog')
+const Organization = require('../models/Organization')
 const { calculateCost, getProvider } = require('../utils/costCalculator')
 const { getRiskQueue } = require('../config/queue')
 const { reserveMonthlyLog } = require('../services/usageLimiter')
+const { analyze } = require('../services/securityAnalyzer')
 
 exports.ingest = async (req, res) => {
   try {
@@ -25,21 +27,38 @@ exports.ingest = async (req, res) => {
     const totalTokens = tokens?.total || promptTokens + completionTokens
     const cost = calculateCost(model, promptTokens, completionTokens)
 
-    // Save log
+    const sensitiveKeywords = org.policies?.sensitiveKeywords || []
+    const sec = analyze({ prompt, response: response || '', userId, orgId: org._id, sensitiveKeywords })
+
+    // Save log — masked text only (paper: mask before storage)
     const log = await InteractionLog.create({
       orgId: org._id,
       userId,
       model,
       provider: getProvider(model) || 'unknown',
-      prompt,
-      response: response || '',
+      prompt: sec.maskedPrompt,
+      response: sec.maskedResponse,
       tokens: {
         prompt: promptTokens,
         completion: completionTokens,
         total: totalTokens
       },
       cost,
-      latency: latency || 0
+      latency: latency || 0,
+      analyzed: false,
+      flags: sec.flags,
+      riskDetails: {
+        injectionScore: sec.components.injection,
+        jailbreakScore: sec.components.jailbreak,
+        piiScore: sec.components.pii,
+        abuseScore: sec.components.abuse,
+        sensitiveScore: sec.sensitive.score,
+        piiTypes: sec.pii.types,
+        injectionMatches: sec.injection.matches,
+        jailbreakMatches: sec.jailbreak.matches,
+        abuseIssues: sec.abuse.issues,
+        sensitiveKeywords: sec.sensitive.matches,
+      },
     })
 
     // Queue risk analysis

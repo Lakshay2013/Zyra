@@ -26,6 +26,18 @@ const organizationSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Demo mode: serve all LLM calls from the built-in simulator (no external
+  // provider keys needed). Routing / cost / risk / logging all run for real.
+  demoMode: {
+    type: Boolean,
+    default: false
+  },
+  // Marks organisations/data created by the demo seed so `demo:reset` can
+  // remove them without touching real tenants.
+  isDemo: {
+    type: Boolean,
+    default: false
+  },
   providerKeys: {
     openai: { type: String, default: null },
     anthropic: { type: String, default: null },
@@ -35,7 +47,11 @@ const organizationSchema = new mongoose.Schema({
   policies: {
     blockPII: { type: Boolean, default: false },
     blockInjection: { type: Boolean, default: true },
-    maxTokensPerRequest: { type: Number, default: 2000 }
+    blockJailbreak: { type: Boolean, default: false },
+    maxTokensPerRequest: { type: Number, default: 2000 },
+    // Org-specific watch-words for the sensitive-keyword detector (in addition
+    // to the built-in list).
+    sensitiveKeywords: { type: [String], default: [] }
   },
   // Cost optimizer settings
   optimizer: {

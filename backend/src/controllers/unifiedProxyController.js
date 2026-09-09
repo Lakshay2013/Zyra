@@ -25,6 +25,7 @@ const { decrypt } = require('../utils/crypto')
 const { calculateCost, getProvider: getModelProvider, MODEL_TO_PROVIDER, matchModel, estimateCost } = require('../utils/costCalculator')
 const { detectInjection } = require('../utils/injectionDetector')
 const { detectPII } = require('../utils/piiDetector')
+const { detectJailbreak } = require('../utils/jailbreakDetector')
 const { getRiskQueue, getLogQueue } = require('../config/queue')
 const { reserveMonthlyLog, releaseMonthlyLog } = require('../services/usageLimiter')
 const idempotency = require('../services/idempotency')
@@ -33,6 +34,7 @@ const { executeWithRetry } = require('../services/retryHandler')
 const { validateResponse, getQualityFallbackModel } = require('../services/qualityGuard')
 const { buildCacheKey, getFromCache, setInCache } = require('../services/cacheLayer')
 const geminiAdapter = require('../services/providers/gemini')
+const simulator = require('../services/providers/simulator')
 
 // ──────────────────────────────────────────────────────────────
 // PROVIDER CONFIGS
@@ -125,7 +127,7 @@ const autoRoute = (org, promptText) => {
   }
 
   for (const p of preferredOrder) {
-    if (org.providerKeys?.[p]) {
+    if (org.demoMode || org.providerKeys?.[p]) {
       return {
         provider: p,
         model: defaultModels[p],
@@ -423,6 +425,36 @@ const handleGeminiStreaming = async (model, requestBody, providerApiKey, res) =>
   }
 }
 
+/**
+ * Emit a simulated OpenAI-compatible SSE stream (demo mode). One content chunk
+ * then [DONE]; usage attached to the final chunk.
+ */
+const emitSimulatedStream = (model, requestBody, promptText, res) => {
+  const sim = simulator.generate({ ...requestBody, model }, promptText)
+  const content = sim.data.choices[0].message.content
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  })
+  const base = { id: sim.data.id, object: 'chat.completion.chunk', created: sim.data.created, model }
+  res.write(`data: ${JSON.stringify({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content }, finish_reason: null }] })}\n\n`)
+  res.write(`data: ${JSON.stringify({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }], usage: sim.data.usage })}\n\n`)
+  res.write('data: [DONE]\n\n')
+  res.end()
+  return {
+    error: false,
+    statusCode: 200,
+    content,
+    usage: {
+      prompt: sim.data.usage.prompt_tokens,
+      completion: sim.data.usage.completion_tokens,
+      total: sim.data.usage.total_tokens,
+    },
+    model,
+  }
+}
+
 // ──────────────────────────────────────────────────────────────
 // MAIN UNIFIED PROXY HANDLER
 // ──────────────────────────────────────────────────────────────
@@ -535,28 +567,67 @@ exports.chatCompletions = async (req, res) => {
   debugInfo.resolvedProvider = provider
   debugInfo.complexity = optimizerResult.complexity
 
-  // ── Step 3: Firewall ──
-  if (org.policies?.blockInjection) {
-    if (promptText) {
-      const injectionResult = detectInjection(promptText)
-      if (injectionResult.hasInjection) {
-        return res.status(403).json({
-          error: {
-            message: 'Request blocked by Zyra Firewall: prompt injection detected.',
-            type: 'firewall_error',
-            matches: injectionResult.matches
-          }
-        })
-      }
+  // ── Step 3: Pre-flight firewall ──
+  // Injection / jailbreak / PII checks run BEFORE the request is sent to any
+  // provider. When a policy blocks, the provider is never contacted AND a
+  // security event is still recorded (statusCode 403) so it appears in the
+  // logs + risk dashboard.
+  const preflightUserId = req.headers['x-user-id'] || requestBody.user || 'anonymous'
+
+  const recordBlockedEvent = async (blockType, note) => {
+    try {
+      const logQueue = getLogQueue()
+      await logQueue.add('log-interaction', {
+        orgId: org._id.toString(),
+        userId: preflightUserId,
+        model, provider: provider || null,
+        prompt: promptText,
+        response: `[BLOCKED pre-flight: ${blockType}] ${note}`,
+        tokens: { prompt: estimatedTokens, completion: 0, total: estimatedTokens },
+        cost: 0, latency: Date.now() - start, statusCode: 403,
+        cached: false,
+        optimizer: { ...optimizerResult, wasOptimized: false },
+        reliability: { retryCount: 0, fallbackUsed: false, fallbackProvider: null },
+        blocked: true, blockReason: blockType,
+      })
+    } catch (e) {
+      console.error('[UnifiedProxy] blocked-event log failed:', e.message)
+    }
+  }
+
+  if (promptText && org.policies?.blockInjection) {
+    const injectionResult = detectInjection(promptText)
+    if (injectionResult.hasInjection) {
+      await recordBlockedEvent('injection', `matches: ${injectionResult.matches.join(', ')}`)
+      return res.status(403).json({
+        error: {
+          message: 'Request blocked by Zyra Firewall: prompt injection detected.',
+          type: 'firewall_error',
+          matches: injectionResult.matches
+        }
+      })
+    }
+  }
+
+  if (promptText && org.policies?.blockJailbreak) {
+    const jb = detectJailbreak(promptText)
+    if (jb.hasJailbreak) {
+      await recordBlockedEvent('jailbreak', `patterns: ${jb.matches.join(', ')}`)
+      return res.status(403).json({
+        error: {
+          message: 'Request blocked by Zyra Firewall: jailbreak attempt detected.',
+          type: 'firewall_error',
+          matches: jb.matches
+        }
+      })
     }
   }
 
   // ── Step 3b: PII pre-flight ──
-  // Runs BEFORE the request is sent to any provider. If policy blocks PII and
-  // PII is detected, the provider is never contacted.
-  if (org.policies?.blockPII && promptText) {
+  if (promptText && org.policies?.blockPII) {
     const piiResult = detectPII(promptText)
     if (piiResult.hasPII) {
+      await recordBlockedEvent('pii', `types: ${piiResult.types.join(', ')}`)
       return res.status(403).json({
         error: {
           message: 'Request blocked by Zyra: PII detected in prompt. The request was not sent to any provider.',
@@ -649,7 +720,10 @@ exports.chatCompletions = async (req, res) => {
   }
 
   // ── Step 5: Resolve API key ──
-  let providerApiKey = resolveProviderKey(req, org, provider)
+  // Demo mode serves every call from the built-in simulator, so no provider key
+  // is required — but routing, cost, risk and logging still run for real.
+  const demoMode = org.demoMode === true
+  let providerApiKey = demoMode ? 'demo-simulator' : resolveProviderKey(req, org, provider)
   if (!providerApiKey) {
     await releaseIdem()
     return res.status(400).json({
@@ -660,7 +734,7 @@ exports.chatCompletions = async (req, res) => {
     })
   }
 
-  const chatPath = PROVIDERS[provider].chatPath
+  const chatPath = PROVIDERS[provider]?.chatPath || '/v1/chat/completions'
   const userId = req.headers['x-user-id'] || requestBody.user || 'anonymous'
 
   // ── Step 5b: Atomically reserve one unit of monthly usage ──
@@ -689,9 +763,14 @@ exports.chatCompletions = async (req, res) => {
         requestBody.stream_options = { include_usage: true }
       }
 
-      const streamResult = provider === 'gemini'
-        ? await handleGeminiStreaming(model, requestBody, providerApiKey, res)
-        : await handleStreaming(provider, chatPath, providerApiKey, requestBody, req, res)
+      let streamResult
+      if (demoMode) {
+        streamResult = emitSimulatedStream(model, requestBody, promptText, res)
+      } else if (provider === 'gemini') {
+        streamResult = await handleGeminiStreaming(model, requestBody, providerApiKey, res)
+      } else {
+        streamResult = await handleStreaming(provider, chatPath, providerApiKey, requestBody, req, res)
+      }
 
       if (streamResult.error) {
         await releaseMonthlyLog(org._id.toString())
@@ -714,7 +793,7 @@ exports.chatCompletions = async (req, res) => {
             orgId: org._id.toString(), userId, model, provider,
             prompt: promptText, response: streamResult.content,
             tokens, cost, latency: Date.now() - start, statusCode: 200,
-            cached: false,
+            cached: false, simulated: demoMode,
             optimizer: {
               originalModel: optimizerResult.originalModel,
               optimizedModel: optimizerResult.wasOptimized ? model : null,
@@ -749,6 +828,13 @@ exports.chatCompletions = async (req, res) => {
   const maxRetries = enableRetry ? (org.reliability?.maxRetries ?? 2) : 0
 
   try {
+    if (demoMode) {
+      const sim = simulator.generate(requestBody, promptText)
+      statusCode = sim.status
+      responseBody = sim.data
+      finalModel = model
+      finalProvider = provider
+    } else {
     const result = await executeWithRetry(primaryConfig, {
       maxRetries, baseDelay: 500, fallbacks,
       provider, model
@@ -760,10 +846,12 @@ exports.chatCompletions = async (req, res) => {
     fallbackProvider = result.fallbackProvider
     finalModel = result.model
     finalProvider = result.provider
+    }
 
     // Normalize Gemini's native response into OpenAI shape so the rest of the
     // pipeline (quality guard, cache, logging, client) sees one format.
-    if (finalProvider === 'gemini' && statusCode >= 200 && statusCode < 400) {
+    // (Skipped in demo mode — the simulator already returns OpenAI shape.)
+    if (!demoMode && finalProvider === 'gemini' && statusCode >= 200 && statusCode < 400) {
       responseBody = geminiAdapter.toOpenAIResponse(responseBody, finalModel)
     }
   } catch (err) {
@@ -787,7 +875,14 @@ exports.chatCompletions = async (req, res) => {
       console.warn(`[QualityGuard] Failed (${quality.reason}). Retrying with higher tier...`)
 
       const upgrade = getQualityFallbackModel(finalModel, org)
-      if (upgrade) {
+      if (upgrade && demoMode) {
+        const sim = simulator.generate({ ...requestBody, model: upgrade.model }, promptText)
+        responseBody = sim.data
+        statusCode = sim.status
+        finalModel = upgrade.model
+        finalProvider = upgrade.provider
+        qualityRetried = true
+      } else if (upgrade) {
         try {
           const upgradeKey = resolveProviderKey(req, org, upgrade.provider)
           if (upgradeKey) {
@@ -825,6 +920,7 @@ exports.chatCompletions = async (req, res) => {
     res.set('x-zyra-cached', 'false')
     if (fallbackUsed) res.set('x-zyra-fallback', fallbackProvider)
     if (qualityRetried) res.set('x-zyra-quality-retry', 'true')
+    if (demoMode) res.set('x-zyra-simulated', 'true')
   }
 
   // ── Send response ──
@@ -868,6 +964,7 @@ exports.chatCompletions = async (req, res) => {
       response: extractResponse(finalProvider, responseBody),
       tokens, cost, latency, statusCode,
       cached: false,
+      simulated: demoMode,
       optimizer: {
         originalModel: optimizerResult.originalModel,
         optimizedModel: optimizerResult.wasOptimized ? finalModel : null,

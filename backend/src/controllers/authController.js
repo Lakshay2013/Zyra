@@ -3,6 +3,7 @@ const { OAuth2Client } = require('google-auth-library')
 const User = require('../models/User')
 const Organization = require('../models/Organization')
 const { sendOtpEmail } = require('../utils/mailer')
+const { recordAudit } = require('../services/audit')
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
@@ -63,6 +64,8 @@ exports.register = async (req, res) => {
 
     await sendOtpEmail(email, otpCode)
 
+    recordAudit({ req, orgId: org._id, userId: user._id, actorEmail: email, actorRole: 'admin', category: 'auth', action: 'register', meta: { orgName } })
+
     res.status(201).json({
       message: 'Account created. OTP sent to email.',
       requiresOtp: true,
@@ -104,6 +107,8 @@ exports.login = async (req, res) => {
 
     const token = signToken(user._id, user.orgId, user.role)
 
+    recordAudit({ req, orgId: user.orgId, userId: user._id, actorEmail: user.email, actorRole: user.role, category: 'auth', action: 'login' })
+
     res.json({
       message: 'Login successful',
       token,
@@ -129,7 +134,7 @@ exports.login = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('name email role isActive isEmailVerified')
-    const org = await Organization.findById(req.user.orgId).select('name plan monthlyLogLimit currentMonthlyLogs optimizer reliability cache')
+    const org = await Organization.findById(req.user.orgId).select('name plan monthlyLogLimit currentMonthlyLogs optimizer reliability cache policies demoMode isDemo')
 
     res.json({ user, org })
   } catch (err) {
@@ -160,6 +165,8 @@ exports.verifyOtp = async (req, res) => {
 
     const org = await Organization.findById(user.orgId)
     const token = signToken(user._id, org._id, user.role)
+
+    recordAudit({ req, orgId: org._id, userId: user._id, actorEmail: user.email, actorRole: user.role, category: 'auth', action: 'otp_verify' })
 
     res.json({
       message: 'Email verified successfully',
@@ -213,6 +220,8 @@ exports.googleLogin = async (req, res) => {
 
     const token = signToken(user._id, org._id, user.role)
 
+    recordAudit({ req, orgId: org._id, userId: user._id, actorEmail: user.email, actorRole: user.role, category: 'auth', action: 'google_login' })
+
     res.json({
       message: 'Google login successful',
       token,
@@ -254,6 +263,8 @@ exports.changePassword = async (req, res) => {
 
     user.passwordHash = newPassword
     await user.save()
+
+    recordAudit({ req, orgId: req.user.orgId, userId: user._id, actorEmail: user.email, actorRole: req.user.role, category: 'auth', action: 'change_password' })
 
     res.json({ message: 'Password updated successfully' })
   } catch (err) {

@@ -158,7 +158,15 @@ exports.getSavings = async (req, res) => {
           },
           totalRequests: { $sum: 1 },
           totalCost: { $sum: '$cost' },
-          originalCostSum: { $sum: { $ifNull: ['$optimizer.originalCost', '$cost'] } }
+          originalCostSum: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ['$optimizer.wasOptimized', true] }, { $gt: [{ $ifNull: ['$optimizer.originalCost', 0] }, 0] }] },
+                '$optimizer.originalCost',
+                '$cost',
+              ],
+            },
+          }
         }
       }
     ])

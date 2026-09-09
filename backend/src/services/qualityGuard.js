@@ -73,10 +73,11 @@ const getQualityFallbackModel = (currentModel, org) => {
   if (higherTier === currentTier) return null
 
   const candidates = getCheapestInTier(higherTier, 500) // use a mid-range token estimate
+  const demoMode = org.demoMode === true
 
-  // Find one the org has keys for
+  // Find one the org has keys for (demo mode: simulator emulates any provider)
   for (const candidate of candidates) {
-    if (org.providerKeys?.[candidate.provider]) {
+    if (demoMode || org.providerKeys?.[candidate.provider]) {
       return { model: candidate.model, provider: candidate.provider }
     }
   }
