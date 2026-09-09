@@ -14,6 +14,9 @@ process.env.MONGO_URI = process.env.MONGO_URI_TEST || 'mongodb://127.0.0.1:27018
 // integration tests are deterministic. Idempotency tests opt back in.
 process.env.REDIS_HOST = process.env.REDIS_HOST_TEST || '127.0.0.1'
 process.env.REDIS_PORT = process.env.REDIS_PORT_TEST || '6380'
+// Isolate the BullMQ keyspace so a test run never shares queues with a running
+// dev/docker worker on the same Redis.
+process.env.BULLMQ_PREFIX = process.env.BULLMQ_PREFIX || 'zyra-test'
 
 const mongoose = require('mongoose')
 const crypto = require('crypto')
@@ -33,6 +36,17 @@ async function clearDb () {
   await connectDb()
   const collections = await mongoose.connection.db.collections()
   await Promise.all(collections.map((c) => c.deleteMany({})))
+}
+
+/** Obliterate the (prefixed, test-only) BullMQ queues so jobs don't leak between tests. */
+async function clearQueues () {
+  try {
+    const { getLogQueue, getRiskQueue } = require('../src/config/queue')
+    await Promise.all([
+      getLogQueue().obliterate({ force: true }),
+      getRiskQueue().obliterate({ force: true }),
+    ])
+  } catch { /* redis not up / queue unused — fine */ }
 }
 
 async function disconnectDb () {
@@ -101,6 +115,6 @@ async function flushTestRedis () {
 }
 
 module.exports = {
-  connectDb, clearDb, disconnectDb, createOrgWithKey, fakeProviderKeys, mongoose,
+  connectDb, clearDb, clearQueues, disconnectDb, createOrgWithKey, fakeProviderKeys, mongoose,
   initTestRedis, flushTestRedis, isRedisReady,
 }

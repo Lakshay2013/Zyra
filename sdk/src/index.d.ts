@@ -50,8 +50,22 @@ export interface ZyraOptions {
 // Extends the OpenAI client, so `client.chat.completions.create(...)`,
 // streaming, and all OpenAI-compatible params work unchanged.
 
+export interface ZyraLogEntry {
+  userId?: string;
+  prompt: string;
+  response: string;
+  model: string;
+  promptTokens?: number;
+  completionTokens?: number;
+  provider?: string;
+  latencyMs?: number;
+  status?: 'success' | 'error';
+}
+
 export class Zyra extends OpenAI {
   constructor(options: ZyraOptions);
+  /** Explicitly log an interaction made outside the proxy. Fire-and-forget. */
+  log(entry: ZyraLogEntry): Promise<void>;
 }
 
 export default Zyra;

@@ -2,7 +2,7 @@ const { Worker } = require('bullmq')
 const InteractionLog = require('../models/InteractionLog')
 const RiskReport = require('../models/RiskReport')
 const Notification = require('../models/Notification')
-const { connection } = require('../config/queue')
+const { connection, prefix } = require('../config/queue')
 const { computeRisk } = require('../services/riskEngine')
 require('dotenv').config()
 
@@ -113,7 +113,7 @@ const processRiskJob = async (job) => {
 
 /** Start the BullMQ worker. Called only by src/workers/index.js. */
 const start = () => {
-  const worker = new Worker('risk-analysis', processRiskJob, { connection })
+  const worker = new Worker('risk-analysis', processRiskJob, { connection, prefix })
   worker.on('failed', (job, err) => console.error(`❌ Job ${job?.id} failed:`, err.message))
   console.log('🚀 Risk worker started')
   return worker

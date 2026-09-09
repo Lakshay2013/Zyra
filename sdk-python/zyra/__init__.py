@@ -15,10 +15,10 @@ Zero-code auto-patch (patches all clients globally):
 """
 
 from zyra.client import Zyra, AsyncZyra
-from zyra.logger import dispatch_log
+from zyra.logger import dispatch_log, log
 
 __version__ = "0.2.0"
-__all__ = ["Zyra", "AsyncZyra", "dispatch_log", "auto_patch"]
+__all__ = ["Zyra", "AsyncZyra", "dispatch_log", "log", "auto_patch"]
 
 
 def auto_patch():

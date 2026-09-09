@@ -119,7 +119,53 @@ class Zyra extends OpenAIClient {
       ...rest,
     })
 
-    this._zyra = { apiKey, debug, routing }
+    this._zyra = { apiKey, debug, routing, baseURL: baseURL || DEFAULT_BASE_URL }
+  }
+
+  /**
+   * Explicitly log an LLM interaction you made yourself (not through the proxy).
+   * Fire-and-forget: resolves immediately, never throws.
+   *
+   *   await zyra.log({
+   *     userId: "USR001",
+   *     prompt, response,
+   *     model: "gpt-4o",
+   *     promptTokens, completionTokens,
+   *   })
+   *
+   * @param {Object} entry
+   * @param {string} [entry.userId]
+   * @param {string} entry.prompt
+   * @param {string} entry.response
+   * @param {string} entry.model
+   * @param {number} [entry.promptTokens]
+   * @param {number} [entry.completionTokens]
+   * @param {string} [entry.provider]
+   * @param {number} [entry.latencyMs]
+   * @returns {Promise<void>}
+   */
+  async log(entry = {}) {
+    if (process.env.ZYRA_DISABLE === 'true') return
+    const base = this._zyra.baseURL.replace(/\/v1\/?$/, '')
+    try {
+      await fetch(`${base}/v1/log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-zyra-api-key': this._zyra.apiKey },
+        body: JSON.stringify({
+          userId: entry.userId,
+          prompt: entry.prompt,
+          response: entry.response,
+          model: entry.model,
+          promptTokens: entry.promptTokens,
+          completionTokens: entry.completionTokens,
+          provider: entry.provider,
+          latencyMs: entry.latencyMs,
+          status: entry.status || 'success',
+        }),
+      })
+    } catch {
+      // never surface logging failures to the caller
+    }
   }
 }
 

@@ -2,13 +2,13 @@
 # MongoDB + Redis + API + BullMQ worker
 #
 #   docker compose up -d --build        → start everything
-#   docker compose up -d ai-shield-mongo ai-shield-redis   → databases only
+#   docker compose up -d zyra-mongo zyra-redis   → databases only
 #
 # The API and worker share the same image; only the start command differs.
 
 services:
   # ── MongoDB ──
-  ai-shield-mongo:
+  zyra-mongo:
     image: mongo:7
     container_name: zyra-mongodb
     ports:
@@ -23,7 +23,7 @@ services:
       retries: 5
 
   # ── Redis ──
-  ai-shield-redis:
+  zyra-redis:
     image: redis:7-alpine
     container_name: zyra-redis
     ports:
@@ -51,13 +51,13 @@ services:
       - ./backend/.env
     environment:
       - NODE_ENV=production
-      - MONGO_URI=mongodb://ai-shield-mongo:27017/ai-shield
-      - REDIS_HOST=ai-shield-redis
+      - MONGO_URI=mongodb://zyra-mongo:27017/zyra
+      - REDIS_HOST=zyra-redis
       - REDIS_PORT=6379
     depends_on:
-      ai-shield-mongo:
+      zyra-mongo:
         condition: service_healthy
-      ai-shield-redis:
+      zyra-redis:
         condition: service_healthy
     restart: unless-stopped
 
@@ -74,13 +74,13 @@ services:
       - ./backend/.env
     environment:
       - NODE_ENV=production
-      - MONGO_URI=mongodb://ai-shield-mongo:27017/ai-shield
-      - REDIS_HOST=ai-shield-redis
+      - MONGO_URI=mongodb://zyra-mongo:27017/zyra
+      - REDIS_HOST=zyra-redis
       - REDIS_PORT=6379
     depends_on:
-      ai-shield-mongo:
+      zyra-mongo:
         condition: service_healthy
-      ai-shield-redis:
+      zyra-redis:
         condition: service_healthy
       zyra-backend:
         condition: service_started

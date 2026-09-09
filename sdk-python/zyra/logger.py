@@ -80,6 +80,46 @@ def dispatch_log(
     t.start()
 
 
+def log(
+    *,
+    prompt: str,
+    response: str,
+    model: str,
+    user_id: Optional[str] = None,
+    prompt_tokens: int = 0,
+    completion_tokens: int = 0,
+    provider: Optional[str] = None,
+    latency_ms: int = 0,
+    zyra_key: Optional[str] = None,
+    status: str = "success",
+) -> None:
+    """
+    Explicitly log an LLM interaction you made yourself (paper §SDK Integration).
+    Non-blocking, never raises.
+
+        from zyra import log
+        log(user_id="USR001", prompt=prompt, response=response,
+            model="gpt-4o", prompt_tokens=pt, completion_tokens=ct)
+    """
+    if os.environ.get("ZYRA_DISABLE") == "true":
+        return
+    key = zyra_key or os.environ.get("ZYRA_KEY", "")
+    if not key:
+        return
+    payload = {
+        "userId": user_id,
+        "prompt": prompt,
+        "response": response,
+        "model": model,
+        "promptTokens": prompt_tokens,
+        "completionTokens": completion_tokens,
+        "provider": provider,
+        "latencyMs": latency_ms,
+        "status": status,
+    }
+    threading.Thread(target=_send, args=(key, payload), daemon=True).start()
+
+
 def _send(key: str, payload: dict) -> None:
     """Internal: performs the HTTP POST. Must not raise."""
     try:

@@ -1,7 +1,7 @@
 const { Worker } = require('bullmq')
 const InteractionLog = require('../models/InteractionLog')
 const Organization = require('../models/Organization')
-const { connection, getRiskQueue } = require('../config/queue')
+const { connection, prefix, getRiskQueue } = require('../config/queue')
 const { analyze } = require('../services/securityAnalyzer')
 require('dotenv').config()
 
@@ -92,7 +92,7 @@ const start = () => {
       console.error('❌ Failed to process log job:', err.message)
       throw err
     }
-  }, { connection })
+  }, { connection, prefix })
   worker.on('failed', (job, err) => console.error(`❌ Job ${job?.id} failed:`, err.message))
   console.log('🚀 Log worker initialized')
   return worker
