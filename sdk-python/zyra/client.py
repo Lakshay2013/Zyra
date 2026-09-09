@@ -31,6 +31,18 @@ def _load_openai():
     return openai
 
 
+def _resolve_base_url(base_url: Optional[str]) -> str:
+    """Return the Zyra gateway base URL, always ending in exactly one /v1.
+
+    Works whether the caller passes ``https://api.zyra.dev``, ``.../v1``, or
+    nothing at all (falling back to ZYRA_API_URL then localhost).
+    """
+    raw = (base_url or os.environ.get("ZYRA_API_URL") or "http://localhost:5000").rstrip("/")
+    if raw.endswith("/v1"):
+        return raw
+    return raw + "/v1"
+
+
 class Zyra:
     """Drop-in wrapper around openai.OpenAI routed through Zyra."""
 
@@ -53,7 +65,7 @@ class Zyra:
 
         return openai.OpenAI(
             api_key="zyra-passthrough",
-            base_url=base_url or os.environ.get("ZYRA_API_URL", "http://localhost:5000").rstrip("/") + "/v1",
+            base_url=_resolve_base_url(base_url),
             default_headers=default_headers,
             **kwargs,
         )
@@ -81,7 +93,7 @@ class AsyncZyra:
 
         return openai.AsyncOpenAI(
             api_key="zyra-passthrough",
-            base_url=base_url or os.environ.get("ZYRA_API_URL", "http://localhost:5000").rstrip("/") + "/v1",
+            base_url=_resolve_base_url(base_url),
             default_headers=default_headers,
             **kwargs,
         )

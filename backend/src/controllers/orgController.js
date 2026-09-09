@@ -1,6 +1,7 @@
 const Organization = require('../models/Organization')
 const User = require('../models/User')
 const { encrypt } = require('../utils/crypto')
+const { testAll } = require('../services/providerTester')
 
 // GET /api/org/settings — get org profile for configuration page
 exports.getSettings = async (req, res) => {
@@ -83,6 +84,22 @@ exports.updateProviders = async (req, res) => {
     res.json({ message: 'Providers updated successfully' })
   } catch (err) {
     console.error('updateProviders error:', err)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+// POST /api/org/providers/test — run a real minimal request against each configured provider
+exports.testProviders = async (req, res) => {
+  try {
+    const org = await Organization.findById(req.user.orgId).select('providerKeys')
+    const results = await testAll(org.providerKeys || {})
+    const summary = {
+      tested: results.filter(r => r.error !== 'not configured').length,
+      passed: results.filter(r => r.ok).length,
+    }
+    res.json({ results, summary, testedAt: new Date().toISOString() })
+  } catch (err) {
+    console.error('testProviders error:', err)
     res.status(500).json({ message: 'Server error' })
   }
 }

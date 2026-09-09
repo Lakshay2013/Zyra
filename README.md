@@ -1,144 +1,224 @@
 # Zyra — AI Cost Optimization Proxy
 
-> **v0.1.0-beta** — Currently in early access. Core proxy, dashboard, and SDK are functional.
+> **v0.1.0-beta.** An OpenAI-compatible gateway that sits between your app and the
+> LLM providers, routing each request to the cheapest model that can handle it,
+> with retries, cross-provider fallback, response caching, idempotency, and
+> pre-flight security checks.
 
-Zyra is an AI cost optimization proxy that sits between your application and LLM providers. It intelligently routes every API request to the cheapest model that can handle the task, reducing spend by up to 90% without requiring any code changes.
+Point your existing OpenAI (or Anthropic) client at Zyra, send `model: "auto"`,
+and Zyra picks the model. No other code changes.
 
-## The Problem
+---
 
-Most teams default to expensive models like GPT-4 for every request, even when simpler models would produce identical results. This leads to runaway costs, unpredictable billing, and vendor lock-in to a single provider.
+## What Zyra actually does
 
-## How Zyra Solves It
+| Capability | How it works | Honest limitations |
+|---|---|---|
+| **Cost routing** | Classifies each prompt as `simple` / `standard` / `complex`, maps that to a quality tier, and picks the cheapest model **in that tier among the providers you've configured a key for**. Only switches if it saves money. | Complexity classification is **heuristic** (length + keyword regexes), not an ML model. The pricing table (`backend/src/utils/costCalculator.js`) is **hand-maintained**, not live. |
+| **Quality guard** | After a downgraded response comes back, checks for empty / very-short / refusal-pattern output and retries once on a higher tier. | Lightweight pattern matching. It is **not** a semantic quality score. |
+| **Reliability** | Bounded exponential backoff on `429/500/502/503/504` and connection errors. `401/403`/invalid-model are never retried. After retries are exhausted, falls back to the next provider in your configured order. | — |
+| **PII blocking** | When `blockPII` is on, prompts containing email / phone / credit-card / SSN / Aadhaar / PAN are rejected **before the request is sent to any provider** (HTTP 403, `pii_type` categories only — never the matched values). | Regex-based detection. |
+| **Prompt-injection blocking** | When `blockInjection` is on, prompts matching known jailbreak phrases are rejected pre-flight. | Keyword matching, not an ML classifier. |
+| **Idempotency** | `Idempotency-Key` header on `/v1/chat/completions`: a retried request replays the stored result instead of calling the provider again. Concurrent duplicates collapse to one provider call. Same key + different body → 422. | Requires Redis. Non-streaming requests only. 24h replay window. |
+| **Monthly limits** | Usage is reserved with a single atomic conditional MongoDB update, so concurrent requests can't both cross the plan boundary. | — |
+| **Response cache** | Exact-match (model + messages + params) cache in Redis, per-org TTL. | Exact match only — no semantic cache. |
+| **Observability** | Every request is logged async (BullMQ → MongoDB) with provider, model, tokens, cost, savings, retry/fallback flags. A risk score (PII/injection/abuse) is computed **post-hoc**. | Post-hoc risk analysis is separate from the pre-flight blocking above. |
 
-Zyra acts as a transparent proxy layer. You swap in the Zyra SDK (a drop-in replacement for your existing OpenAI/Anthropic client), and Zyra handles the rest:
+### Savings
 
-- **Cost Engine** — Evaluates the complexity of each request and routes it to the most cost-effective model that can deliver equivalent output quality.
-- **Quality Guard** — Ensures complex reasoning tasks stay on premium models. Only downgrades when the output quality will remain the same.
-- **Automatic Fallbacks** — If a provider goes down or hits rate limits, Zyra fails over to backup providers with sub-second detection. Your requests are never lost.
-- **Security Layer** — Every request is evaluated for prompt injection, PII leakage, and anomalous payloads before it leaves your infrastructure.
-- **Real-Time Observability** — A dashboard that tracks cost per request, savings over time, provider distribution, and threat interception across your entire team.
+Zyra routes traffic toward lower-cost capable models. **How much you save
+depends entirely on your workload mix** — a stream of short classification calls
+saves a lot; a stream of hard reasoning tasks saves little or nothing. Zyra does
+not guarantee a fixed percentage.
+
+---
+
+## Supported providers
+
+| Provider | Endpoint used | Auth |
+|---|---|---|
+| OpenAI | `/v1/chat/completions` | `Authorization: Bearer` |
+| Anthropic | native `/v1/messages` (also accepts OpenAI-format requests, translated) | `x-api-key` |
+| Groq | `/openai/v1/chat/completions` | `Authorization: Bearer` |
+| Google Gemini | `generateContent` — full request/response translation (`contents`/`parts`, `systemInstruction`, `generationConfig`) | `x-goog-api-key` |
+
+You can also point a native **Anthropic** client at `POST /v1/messages` and Zyra
+forwards it transparently.
+
+---
 
 ## Architecture
 
 ```
-Your App --> Zyra Proxy --> [Cost Engine --> Quality Guard --> Router] --> Provider (OpenAI / Anthropic / Groq / Gemini)
+Your app ─▶ Zyra /v1  ─▶ auth (API key)
+                        ─▶ model resolution ("auto" | "gpt-4o" | "openai/gpt-4o")
+                        ─▶ pre-flight: injection + PII checks
+                        ─▶ idempotency check
+                        ─▶ response cache check
+                        ─▶ atomic usage reservation
+                        ─▶ cost optimizer (tier + cheapest capable model)
+                        ─▶ provider call ── retry ── fallback ── quality guard
+                        ─▶ cost calculation
+                        ─▶ response to caller
+                        ─▶ async: BullMQ ─▶ worker ─▶ MongoDB ─▶ risk analysis
 ```
 
-One endpoint. Your code calls Zyra the same way it calls OpenAI. Zyra intercepts the request, runs cost analysis, picks the optimal provider, and returns the response transparently.
+**Stack:** Next.js 16 dashboard · Node/Express 5 API · MongoDB/Mongoose ·
+Redis · BullMQ worker · Node & Python SDKs.
 
-## Technical Stack
+---
 
-**Frontend** (`/zyra-landing`)
-- Next.js 16 (App Router), Tailwind CSS v4, Framer Motion
-- Google OAuth and JWT-based authentication
-- Real-time analytics dashboard with cost tracking and traffic visualization
-
-**Backend** (`/backend`)
-- Node.js with Express 5
-- MongoDB for users, organizations, logs, and analytics
-- Redis for caching and rate limiting
-- Security middleware: Helmet, xss-clean, express-mongo-sanitize
-
-**SDK** (`/sdk`)
-- Drop-in replacement for OpenAI SDK
-- Automatic request routing through the Zyra proxy
-- TypeScript support with full type definitions
-
-## Quick Start (Local Development)
-
-### Prerequisites
-- Node.js >= 18
-- Docker (for MongoDB + Redis)
-
-### 1. Start databases
-```bash
-docker-compose up -d ai-shield-mongo ai-shield-redis
-```
-
-### 2. Backend
-```bash
-cd backend
-cp .env.example .env        # Edit with your secrets
-npm install
-npm run dev                  # Runs on localhost:5000
-```
-
-### 3. Frontend
-```bash
-cd zyra-landing
-cp .env.production.example .env.local   # Edit with your config
-npm install
-npm run dev                  # Runs on localhost:3000
-```
-
-### 4. Both (from root)
-```bash
-npm install
-npm run dev                  # Starts frontend + backend concurrently
-```
-
-## Production Deployment
-
-### Backend (Railway / Render)
-
-1. Create a new project on [Railway](https://railway.app) or [Render](https://render.com)
-2. Connect your GitHub repository
-3. Set the root directory to `backend`
-4. Add all environment variables from `backend/.env.production.example`
-5. Set the start command to `npm start`
-6. Add a MongoDB (Atlas) and Redis (Upstash or Railway) addon
-
-### Frontend (Vercel)
-
-1. Import your repository on [Vercel](https://vercel.com)
-2. Set the root directory to `zyra-landing`
-3. Add environment variables:
-   - `NEXT_PUBLIC_API_URL` = your deployed backend URL
-   - `NEXT_PUBLIC_GOOGLE_CLIENT_ID` = your Google OAuth client ID
-4. Deploy
-
-### Full Stack (Docker)
+## Quick start (Docker — full stack)
 
 ```bash
-docker-compose up --build -d
+cp backend/.env.example backend/.env      # then edit JWT_SECRET, ENCRYPTION_KEY, SMTP…
+docker compose up -d --build
 ```
 
-## How It Works in Practice
+This starts **MongoDB, Redis, the API (`:5000`), and the BullMQ worker
+(`:5001/health`)**. Check them:
 
-```javascript
-import Zyra from "zyra-sdk";
+```bash
+curl localhost:5000/health      # {"status":"ok","mongo":true,"redis":true}
+curl localhost:5001/health      # {"status":"ok","workers":{"logs":true,"risk":true}}
+```
 
-const client = new Zyra({ apiKey: process.env.ZYRA_KEY });
+Databases only:
+
+```bash
+docker compose up -d ai-shield-mongo ai-shield-redis
+```
+
+## Quick start (local dev)
+
+```bash
+docker compose up -d ai-shield-mongo ai-shield-redis   # Mongo :27018, Redis :6380
+
+cd backend && npm install && cp .env.example .env
+npm run dev        # API  → :5000
+npm run worker     # worker → :5001   (separate terminal)
+npm run seed:dev   # prints a demo login + a ready Zyra API key + a JWT
+
+cd ../zyra-landing && npm install
+cp .env.production.example .env.local   # set NEXT_PUBLIC_API_URL=http://localhost:5000
+npm run dev        # dashboard → :3000
+```
+
+---
+
+## Using it
+
+### Node SDK
+
+```js
+import Zyra from "zyra-sdk";              // or: const { Zyra } = require("zyra-sdk")
+
+const client = new Zyra({
+  apiKey: process.env.ZYRA_API_KEY,
+  baseURL: "http://localhost:5000/v1",
+  debug: true,                            // returns x-zyra-* routing headers
+});
 
 const res = await client.chat.completions.create({
-  model: "auto",  // Zyra picks the cheapest capable model
+  model: "auto",                          // Zyra picks the model
   messages: [{ role: "user", content: "Hello" }],
 });
 ```
 
-That is the entire integration. No configuration files, no routing logic, no provider management. Zyra handles model selection, cost tracking, and failover automatically.
+`Zyra` extends the OpenAI client, so streaming and every OpenAI-compatible
+parameter work unchanged. Routing constraints:
 
-## Environment Variables
+```js
+new Zyra({ apiKey, routing: { maxCost: 0.01, providers: ["openai", "groq"], mode: "constrained" } })
+```
 
-### Backend (`backend/.env`)
+### Python SDK
 
-| Variable | Required | Description |
+```python
+from zyra import Zyra                      # pip install 'zyra[openai]'
+client = Zyra(api_key="sk-live-...", base_url="http://localhost:5000")
+res = client.chat.completions.create(model="auto", messages=[{"role": "user", "content": "Hi"}])
+```
+
+### Raw HTTP
+
+```bash
+curl localhost:5000/v1/chat/completions \
+  -H "x-zyra-api-key: $ZYRA_API_KEY" \
+  -H "x-zyra-debug: true" \
+  -d '{"model":"auto","messages":[{"role":"user","content":"Hello"}]}'
+```
+
+Response headers in debug mode: `x-zyra-model`, `x-zyra-provider`,
+`x-zyra-cost`, `x-zyra-savings`, `x-zyra-complexity`, `x-zyra-cached`,
+`x-zyra-fallback`, `x-zyra-quality-retry`.
+
+---
+
+## Dashboard
+
+`Register → verify email (OTP) → login → API Keys → Providers → Settings →
+Playground → Logs → Dashboard.`
+
+- **Providers** — add/remove provider keys; **Test All** makes a real 1-token
+  request against each configured provider and reports connected/failed + latency;
+  drag the fallback order and save it.
+- **Settings → Cost Optimization** — toggle auto-optimization, set the quality-tier floor.
+- **Settings → Reliability** — toggle retries, set max retries (0–5).
+- **Settings → Policies** — PII blocking, injection blocking, max tokens per request.
+- **Playground** — send real requests, see requested vs. selected model, provider,
+  cost, savings, complexity, fallback.
+
+---
+
+## Testing
+
+```bash
+cd backend && npm test          # ~86 unit + integration tests (node:test)
+                                # provider HTTP is mocked with nock — no real API calls
+cd sdk && npm test              # Node SDK tests (mock gateway)
+cd sdk-python && python -m unittest discover -s tests
+
+cd backend && npm run test:providers   # OPTIONAL: real calls, only runs providers
+                                       # whose OPENAI_API_KEY / ANTHROPIC_API_KEY /
+                                       # GROQ_API_KEY / GEMINI_API_KEY is set
+```
+
+---
+
+## Environment variables
+
+### `backend/.env` (see `.env.example` / `.env.production.example`)
+
+| Variable | Required | Notes |
 |---|---|---|
-| `MONGO_URI` | Yes | MongoDB connection string |
-| `REDIS_HOST` | Yes | Redis hostname |
-| `REDIS_PORT` | Yes | Redis port |
-| `JWT_SECRET` | Yes | Secret for JWT signing |
-| `ENCRYPTION_KEY` | Yes | 64-char hex key for encrypting stored provider keys |
-| `FRONTEND_URL` | Yes | Frontend URL(s) for CORS (comma-separated) |
-| `GOOGLE_CLIENT_ID` | No | Google OAuth client ID |
-| `NODE_ENV` | No | `development` or `production` |
+| `MONGO_URI` | yes | |
+| `JWT_SECRET` | yes | |
+| `ENCRYPTION_KEY` | yes | 64 hex chars — encrypts stored provider keys at rest |
+| `REDIS_HOST` / `REDIS_PORT` | yes | rate limiting, cache, idempotency, BullMQ. `REDIS_PASSWORD` switches to `rediss://` |
+| `FRONTEND_URL` | yes | comma-separated CORS origins |
+| `WORKER_HEALTH_PORT` | no | default `5001` |
+| `SMTP_HOST/PORT/USER/PASS` | prod | signup OTP emails (dev logs the code instead) |
+| `GOOGLE_CLIENT_ID` | no | "Sign in with Google" |
+| `RAZORPAY_KEY_ID/SECRET/WEBHOOK_SECRET` | no | only for paid plans; billing endpoints return 503 without them |
 
-### Frontend (`zyra-landing/.env.local`)
+### `zyra-landing/.env.local`
 
-| Variable | Required | Description |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | Yes | Backend API URL |
-| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | No | Google OAuth client ID |
+| Variable | Required |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | yes |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | no |
+
+---
+
+## Deployment notes
+
+- **API** and **worker** run the same image, different commands
+  (`node src/index.js` vs `node src/workers/index.js`). Both must run in production —
+  without the worker, logs and analytics never persist.
+- Managed MongoDB (Atlas) + managed Redis (Upstash/Railway). Set `REDIS_PASSWORD`
+  for TLS.
+- The frontend deploys to Vercel with root `zyra-landing`.
 
 ## License
 

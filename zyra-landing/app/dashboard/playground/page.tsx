@@ -29,6 +29,7 @@ interface ChatResponse {
 }
 
 interface DebugInfo {
+  requestedModel: string
   provider: string
   model: string
   complexity: string
@@ -37,6 +38,7 @@ interface DebugInfo {
   savings: number
   latency: number
   cached: boolean
+  fallback: string | null
   qualityCheck: string
   tokens: {
     prompt: number
@@ -87,6 +89,8 @@ export default function PlaygroundPage() {
       })
 
       const data = res.data as ChatResponse
+      // Zyra reports its routing decision via x-zyra-* response headers (debug mode).
+      const h = res.headers as Record<string, string>
 
       if (data.choices?.[0]?.message?.content) {
         setResponse(data.choices[0].message.content)
@@ -98,16 +102,19 @@ export default function PlaygroundPage() {
         setResponse(JSON.stringify(data, null, 2))
       }
 
+      const num = (v: string | undefined) => (v == null ? 0 : parseFloat(v) || 0)
       setDebugInfo({
-        provider: data.provider || data.debug?.provider || 'unknown',
-        model: data.model || data.debug?.model || model,
-        complexity: data.debug?.complexity || 'unknown',
-        cost: data.debug?.estimatedCost || data.usage?.estimatedCost || 0,
-        originalCost: data.debug?.originalCost || 0,
-        savings: data.debug?.savings || 0,
+        requestedModel: model,
+        provider: h['x-zyra-provider'] || data.provider || 'unknown',
+        model: h['x-zyra-model'] || data.model || model,
+        complexity: h['x-zyra-complexity'] || 'unknown',
+        cost: num(h['x-zyra-cost']),
+        originalCost: num(h['x-zyra-cost']) + num(h['x-zyra-savings']),
+        savings: num(h['x-zyra-savings']),
         latency: Date.now() - start,
-        cached: data.debug?.cached || false,
-        qualityCheck: data.debug?.qualityRetry ? 'retried' : 'passed',
+        cached: h['x-zyra-cached'] === 'true',
+        fallback: h['x-zyra-fallback'] || null,
+        qualityCheck: h['x-zyra-quality-retry'] === 'true' ? 'retried' : 'passed',
         tokens: {
           prompt: data.usage?.prompt_tokens || 0,
           completion: data.usage?.completion_tokens || 0,
@@ -126,14 +133,16 @@ export default function PlaygroundPage() {
   }
 
   const debugLines = debugInfo ? [
+    { key: 'requested_model', value: `"${debugInfo.requestedModel}"` },
+    { key: 'selected_model', value: `"${debugInfo.model}"` },
     { key: 'provider', value: `"${debugInfo.provider}"` },
-    { key: 'model', value: `"${debugInfo.model}"` },
     { key: 'complexity', value: `"${debugInfo.complexity}"` },
-    { key: 'cost', value: `"$${debugInfo.cost?.toFixed(6) || '0.000000'}"` },
-    { key: 'original_cost', value: `"$${debugInfo.originalCost?.toFixed(6) || '0.000000'}"` },
+    { key: 'actual_cost', value: `"$${debugInfo.cost?.toFixed(6) || '0.000000'}"` },
+    { key: 'baseline_cost', value: `"$${debugInfo.originalCost?.toFixed(6) || '0.000000'}"` },
     { key: 'savings', value: `"$${debugInfo.savings?.toFixed(6) || '0.000000'}"` },
     { key: 'latency_ms', value: `${debugInfo.latency}` },
     { key: 'cached', value: `${debugInfo.cached}` },
+    { key: 'fallback', value: debugInfo.fallback ? `"${debugInfo.fallback}"` : 'null' },
     { key: 'quality_check', value: `"${debugInfo.qualityCheck}"` },
     { key: 'tokens_in', value: `${debugInfo.tokens?.prompt || 0}` },
     { key: 'tokens_out', value: `${debugInfo.tokens?.completion || 0}` },

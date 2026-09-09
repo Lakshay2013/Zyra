@@ -5,29 +5,29 @@ import OpenAI from 'openai';
 export class ZyraError extends Error {
   type: string;
   status: number;
-  details: any;
-  constructor(message?: string, type?: string, status?: number, details?: any);
+  details: unknown;
+  constructor(message?: string, type?: string, status?: number, details?: unknown);
 }
 
 export class ZyraTimeoutError extends ZyraError {
-  constructor(message?: string, details?: any);
+  constructor(message?: string, details?: unknown);
 }
 
 export class ZyraRoutingError extends ZyraError {
-  constructor(message?: string, details?: any);
+  constructor(message?: string, details?: unknown);
 }
 
 export class ProviderError extends ZyraError {
   provider: string;
-  constructor(message?: string, provider?: string, status?: number, details?: any);
+  constructor(message?: string, provider?: string, status?: number, details?: unknown);
 }
 
 export class ZyraFirewallError extends ZyraError {
-  constructor(message?: string, details?: any);
+  constructor(message?: string, details?: unknown);
 }
 
 export class ZyraRateLimitError extends ZyraError {
-  constructor(message?: string, details?: any);
+  constructor(message?: string, details?: unknown);
 }
 
 // ── Routing Config ──
@@ -38,8 +38,6 @@ export interface ZyraRouting {
   mode?: 'auto' | 'constrained' | 'strict';
 }
 
-// ── Zyra Options ──
-
 export interface ZyraOptions {
   apiKey: string;
   baseURL?: string;
@@ -48,44 +46,12 @@ export interface ZyraOptions {
   defaultHeaders?: Record<string, string>;
 }
 
-// ── Debug Info ──
-
-export interface ZyraDebugInfo {
-  model: string;
-  provider: string;
-  cost: number;
-  savings: number;
-  complexity: string;
-  cached: boolean;
-  fallback?: string;
-  qualityRetry?: boolean;
-}
-
-// ── Middleware ──
-
-export type ZyraMiddleware = (req: any, next: (req: any) => Promise<any>) => Promise<any>;
-
 // ── Main Client ──
+// Extends the OpenAI client, so `client.chat.completions.create(...)`,
+// streaming, and all OpenAI-compatible params work unchanged.
 
 export class Zyra extends OpenAI {
   constructor(options: ZyraOptions);
-  use(fn: ZyraMiddleware): this;
-  get debug(): ZyraDebugInfo | null;
 }
 
-// ── Legacy ──
-
-export class AIShield {
-  constructor(options: { apiKey: string; baseUrl?: string });
-  log(data: { userId: string; model: string; prompt: string; response?: string; tokens?: any; latency?: number }): Promise<void>;
-  shutdown(): Promise<void>;
-}
-
-export class OpenAIShield {
-  constructor(openaiClient: any, shield: AIShield);
-  chat: {
-    completions: {
-      create(params: any, options?: { userId?: string }): Promise<any>;
-    };
-  };
-}
+export default Zyra;

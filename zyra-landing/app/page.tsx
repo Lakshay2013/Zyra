@@ -22,7 +22,7 @@ const res = await client.chat.completions.create({
 const FAQ_DATA = [
   { q: 'How does Zyra reduce costs without changing my code?', a: 'Zyra acts as a transparent proxy that intercepts your API calls and intelligently routes them to the most cost-effective model that can handle the task. Your code stays exactly the same — just swap the SDK client.' },
   { q: 'Will response quality degrade?', a: 'No. Zyra\'s Quality Guard evaluates task complexity and only downgrades the model when it determines the output quality will remain equivalent. Complex reasoning tasks stay on premium models.' },
-  { q: 'What providers does Zyra support?', a: 'OpenAI, Anthropic, Groq, Mistral, and more. We continuously add new providers and models as they become available. You can also configure custom provider endpoints.' },
+  { q: 'What providers does Zyra support?', a: 'OpenAI, Anthropic, Groq, and Google Gemini. Point your existing OpenAI or Anthropic client at Zyra and it routes across whichever providers you have configured.' },
   { q: 'What happens if a provider goes down?', a: 'Zyra automatically fails over to backup providers with sub-second detection. Your requests are never lost — the fallback logic is built into the routing layer.' },
 ]
 
@@ -30,7 +30,7 @@ const TRAFFIC_DATA = [
   { id: 'REQ_99AD2X', from: 'GPT-4o', to: 'Claude Haiku', before: '$0.012', after: '$0.003', pct: '75%', status: 'Routed' },
   { id: 'REQ_88BBY', from: 'GPT-4o', to: 'Groq Llama 3', before: '$0.010', after: '$0.002', pct: '80%', status: 'Routed' },
   { id: 'REQ_77CCZ', from: 'GPT-4o', to: 'GPT-4o', before: '$0.018', after: '$0.018', pct: '0%', status: 'Maintained' },
-  { id: 'REQ_82DK2', from: 'GPT-4o', to: 'Mixtral 8x7B', before: '$0.015', after: '$0.003', pct: '80%', status: 'Fallback' },
+  { id: 'REQ_82DK2', from: 'GPT-4o', to: 'Gemini 2.0 Flash', before: '$0.015', after: '$0.003', pct: '80%', status: 'Fallback' },
 ]
 
 export default function HomePage() {
@@ -83,7 +83,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-gray-400 text-lg max-w-2xl mb-12 leading-relaxed mx-auto reveal" style={{ transitionDelay: '200ms' }}>
-            <WordReveal text="Route every request intelligently and save up to 90% across providers." delay={400} />
+            <WordReveal text="Route every request to the cheapest capable model across providers. Savings scale with your workload and model mix." delay={400} />
           </p>
 
           <div className="flex items-center gap-4 reveal" style={{ transitionDelay: '400ms' }}>

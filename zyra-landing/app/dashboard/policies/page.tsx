@@ -5,12 +5,73 @@ import api from "@/lib/api"
 import toast from "react-hot-toast"
 import Link from "next/link"
 
+function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ width: 44, height: 24, borderRadius: 12, position: 'relative', cursor: 'pointer', background: on ? '#ffa69e' : '#353436', transition: 'background 0.2s', flexShrink: 0 }}
+    >
+      <span style={{ position: 'absolute', top: 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', left: on ? 23 : 3 }} />
+    </button>
+  )
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile')
   const [orgData, setOrgData] = useState<any>(null)
   const [profile, setProfile] = useState({ displayName: '', username: '', email: '', bio: '' })
-  const [prefs, setPrefs] = useState({ autoDeployLogs: true, telemetryMode: false })
   const [loading, setLoading] = useState(true)
+
+  // ── Policies / Optimizer / Reliability ──
+  const [policies, setPolicies] = useState<any>(null)
+  const [optimizer, setOptimizer] = useState<any>(null)
+  const [reliability, setReliability] = useState<any>(null)
+  const [savingSection, setSavingSection] = useState<string | null>(null)
+
+  const loadPolicies = async () => {
+    try { const r = await api.get('/api/org/policies'); setPolicies(r.data.policies) } catch (e) { console.error(e) }
+  }
+  const loadOptimizer = async () => {
+    try { const r = await api.get('/api/org/optimizer'); setOptimizer(r.data.optimizer) } catch (e) { console.error(e) }
+  }
+  const loadReliability = async () => {
+    try { const r = await api.get('/api/org/reliability'); setReliability(r.data.reliability) } catch (e) { console.error(e) }
+  }
+
+  const savePolicies = async () => {
+    setSavingSection('policies')
+    try {
+      const r = await api.put('/api/org/policies', {
+        blockPII: policies.blockPII,
+        blockInjection: policies.blockInjection,
+        maxTokensPerRequest: Number(policies.maxTokensPerRequest),
+      })
+      setPolicies(r.data.policies)
+      toast.success('Security policies saved')
+    } catch { toast.error('Failed to save policies') } finally { setSavingSection(null) }
+  }
+  const saveOptimizer = async () => {
+    setSavingSection('optimizer')
+    try {
+      const r = await api.put('/api/org/optimizer', {
+        autoOptimize: optimizer.autoOptimize,
+        qualityTier: optimizer.qualityTier,
+      })
+      setOptimizer(r.data.optimizer)
+      toast.success('Optimization settings saved')
+    } catch { toast.error('Failed to save optimizer') } finally { setSavingSection(null) }
+  }
+  const saveReliability = async () => {
+    setSavingSection('reliability')
+    try {
+      const r = await api.put('/api/org/reliability', {
+        enableRetry: reliability.enableRetry,
+        maxRetries: Number(reliability.maxRetries),
+      })
+      setReliability(r.data.reliability)
+      toast.success('Reliability settings saved')
+    } catch { toast.error('Failed to save reliability') } finally { setSavingSection(null) }
+  }
 
   // Team state
   const [members, setMembers] = useState<any[]>([])
@@ -88,10 +149,16 @@ export default function SettingsPage() {
     setActiveTab(tab)
     if (tab === 'team' && members.length === 0) loadMembers()
     if (tab === 'billing' && !billing) loadBilling()
+    if (tab === 'policies' && !policies) loadPolicies()
+    if (tab === 'optimization' && !optimizer) loadOptimizer()
+    if (tab === 'reliability' && !reliability) loadReliability()
   }
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: 'person' },
+    { id: 'optimization', label: 'Cost Optimization', icon: 'savings' },
+    { id: 'reliability', label: 'Reliability', icon: 'shield_with_heart' },
+    { id: 'policies', label: 'Policies', icon: 'policy' },
     { id: 'security', label: 'Security', icon: 'shield' },
     { id: 'team', label: 'Team', icon: 'group' },
     { id: 'billing', label: 'Billing', icon: 'payments' },
@@ -217,69 +284,202 @@ export default function SettingsPage() {
                 />
               </div>
 
-              {/* System Preferences */}
-              <div className="mt-8">
-                <h2 style={{ fontSize: 22, fontWeight: 700, color: '#e5e2e3' }}>System Preferences</h2>
-                <p style={{ fontSize: 13, color: '#71717a', marginTop: 4 }}>Default behavior for terminal and logs.</p>
+              {/* Save */}
+              <div className="flex items-center justify-end p-4 mt-4" style={cardStyle}>
+                <button onClick={handleSaveProfile} style={{
+                  background: '#ffa69e', color: '#3b0908', padding: '10px 24px', borderRadius: 8,
+                  fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer'
+                }}>Save Changes</button>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════ COST OPTIMIZATION TAB ═══════════ */}
+          {activeTab === 'optimization' && (
+            <div className="space-y-6">
+              <div>
+                <h2 style={{ fontSize: 22, fontWeight: 700, color: '#e5e2e3' }}>Cost Optimization</h2>
+                <p style={{ fontSize: 13, color: '#71717a', marginTop: 4 }}>
+                  When enabled, Zyra classifies each request's complexity and routes it to the cheapest capable model
+                  among the providers you've configured. It never routes above the quality tier you set here.
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: 'Auto-Deploy Logs', desc: 'Stream logs immediately after build', key: 'autoDeployLogs' },
-                  { label: 'Telemetry Mode', desc: 'Send anonymous performance metrics', key: 'telemetryMode' },
-                ].map(pref => (
-                  <div key={pref.key} className="p-5 flex items-center justify-between" style={cardStyle}>
+              {!optimizer ? (
+                <div style={{ ...cardStyle, padding: 24, color: '#71717a', fontSize: 13 }}>Loading…</div>
+              ) : (
+                <>
+                  <div className="p-5 flex items-center justify-between" style={cardStyle}>
                     <div>
-                      <p style={{ fontSize: 12, fontWeight: 700, color: '#e5e2e3', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{pref.label}</p>
-                      <p style={{ fontSize: 11, color: '#71717a', marginTop: 2 }}>{pref.desc}</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>Auto Optimization</p>
+                      <p style={{ fontSize: 12, color: '#71717a', marginTop: 2 }}>
+                        {optimizer.autoOptimize ? 'Active — requests are routed to cheaper capable models.' : 'Off — requests go to exactly the model you specify.'}
+                      </p>
                     </div>
-                    <button
-                      onClick={() => setPrefs({ ...prefs, [pref.key]: !(prefs as any)[pref.key] })}
-                      style={{
-                        width: 44, height: 24, borderRadius: 12, position: 'relative', cursor: 'pointer',
-                        background: (prefs as any)[pref.key] ? '#ffa69e' : '#353436',
-                        transition: 'background 0.2s',
-                      }}
-                    >
-                      <span style={{
-                        position: 'absolute', top: 3, width: 18, height: 18, borderRadius: '50%',
-                        background: '#fff', transition: 'left 0.2s',
-                        left: (prefs as any)[pref.key] ? 23 : 3,
-                      }} />
-                    </button>
+                    <Toggle on={!!optimizer.autoOptimize} onClick={() => setOptimizer({ ...optimizer, autoOptimize: !optimizer.autoOptimize })} />
                   </div>
-                ))}
+
+                  <div className="p-5 space-y-3" style={cardStyle}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>Quality Tier Floor</p>
+                    <p style={{ fontSize: 12, color: '#71717a' }}>The lowest tier Zyra is allowed to route to. Downgrades never go below this.</p>
+                    {[
+                      { id: 'economy', label: 'Economy', desc: 'Cheapest models (e.g. GPT-3.5, Claude Haiku, Llama 8B). Best for classification, extraction, short answers.' },
+                      { id: 'standard', label: 'Standard', desc: 'Balanced models (e.g. GPT-4o-mini, Claude Sonnet, Llama 70B). Good default for most workloads.' },
+                      { id: 'premium', label: 'Premium', desc: 'Most capable models (e.g. GPT-4o, Claude Opus, Gemini Pro). Optimizer only saves within this tier.' },
+                    ].map((tier) => (
+                      <button
+                        key={tier.id}
+                        onClick={() => setOptimizer({ ...optimizer, qualityTier: tier.id })}
+                        className="w-full text-left p-4 flex items-start gap-3"
+                        style={{
+                          borderRadius: 8, background: '#131314',
+                          border: optimizer.qualityTier === tier.id ? '1px solid #ffa69e' : '1px solid rgba(83,67,65,0.15)',
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 18, color: optimizer.qualityTier === tier.id ? '#ffa69e' : '#534341' }}>
+                          {optimizer.qualityTier === tier.id ? 'radio_button_checked' : 'radio_button_unchecked'}
+                        </span>
+                        <span>
+                          <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>{tier.label}</span>
+                          <span style={{ display: 'block', fontSize: 11, color: '#71717a', marginTop: 2 }}>{tier.desc}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3 p-4" style={{ background: '#1c1b1c', borderRadius: 12 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#71717a' }}>info</span>
+                    <span style={{ fontSize: 12, color: '#71717a' }}>
+                      Complexity classification is heuristic (length + keyword based), not an ML model. Savings depend on your
+                      workload mix — Zyra routes toward lower-cost capable models, it doesn't guarantee a fixed percentage.
+                    </span>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button onClick={saveOptimizer} disabled={savingSection === 'optimizer'} style={{
+                      background: '#ffa69e', color: '#3b0908', padding: '10px 24px', borderRadius: 8,
+                      fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', opacity: savingSection === 'optimizer' ? 0.6 : 1,
+                    }}>{savingSection === 'optimizer' ? 'Saving…' : 'Save Optimization Settings'}</button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ═══════════ RELIABILITY TAB ═══════════ */}
+          {activeTab === 'reliability' && (
+            <div className="space-y-6">
+              <div>
+                <h2 style={{ fontSize: 22, fontWeight: 700, color: '#e5e2e3' }}>Reliability</h2>
+                <p style={{ fontSize: 13, color: '#71717a', marginTop: 4 }}>
+                  Control retry and fallback behaviour. Retries use bounded exponential backoff and only apply to transient
+                  errors (429, 5xx, timeouts). The provider fallback order is configured on the Providers page.
+                </p>
               </div>
 
-              {/* Performance Strip */}
-              <div className="flex items-center gap-8 p-4 mt-4" style={{ background: '#1c1b1c', borderRadius: 12 }}>
-                {[
-                  { label: 'CPU_LOAD', value: '0.04ms' },
-                  { label: 'UPTIME_STREAK', value: '99.998%' },
-                  { label: 'NET_THROUGHPUT', value: '1.2GB/s' },
-                  { label: 'SESSION_TOKEN', value: '#FF29..X0' },
-                ].map((m, i) => (
-                  <div key={i} className="flex flex-col">
-                    <span style={{ fontSize: 9, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', marginBottom: 2 }}>{m.label}</span>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 700, color: '#e5e2e3' }}>{m.value}</span>
+              {!reliability ? (
+                <div style={{ ...cardStyle, padding: 24, color: '#71717a', fontSize: 13 }}>Loading…</div>
+              ) : (
+                <>
+                  <div className="p-5 flex items-center justify-between" style={cardStyle}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>Automatic Retries</p>
+                      <p style={{ fontSize: 12, color: '#71717a', marginTop: 2 }}>Retry transient provider failures before falling back.</p>
+                    </div>
+                    <Toggle on={reliability.enableRetry !== false} onClick={() => setReliability({ ...reliability, enableRetry: !(reliability.enableRetry !== false) })} />
                   </div>
-                ))}
+
+                  <div className="p-5 space-y-3" style={cardStyle}>
+                    <div className="flex items-center justify-between">
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>Max Retries</p>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 16, fontWeight: 700, color: '#ffa69e' }}>{reliability.maxRetries ?? 2}</span>
+                    </div>
+                    <input
+                      type="range" min={0} max={5} step={1}
+                      value={reliability.maxRetries ?? 2}
+                      onChange={(e) => setReliability({ ...reliability, maxRetries: Number(e.target.value) })}
+                      style={{ width: '100%', accentColor: '#ffa69e' }}
+                    />
+                    <p style={{ fontSize: 11, color: '#71717a' }}>Per-provider retry attempts (0–5) before Zyra moves to the next provider in the fallback order.</p>
+                  </div>
+
+                  <a href="/dashboard/providers" className="flex items-center gap-3 p-4" style={{ ...cardStyle, textDecoration: 'none' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#ffa69e' }}>dns</span>
+                    <span style={{ fontSize: 12, color: '#e5e2e3' }}>Configure provider fallback order →</span>
+                  </a>
+
+                  <div className="flex justify-end">
+                    <button onClick={saveReliability} disabled={savingSection === 'reliability'} style={{
+                      background: '#ffa69e', color: '#3b0908', padding: '10px 24px', borderRadius: 8,
+                      fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', opacity: savingSection === 'reliability' ? 0.6 : 1,
+                    }}>{savingSection === 'reliability' ? 'Saving…' : 'Save Reliability Settings'}</button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ═══════════ POLICIES TAB ═══════════ */}
+          {activeTab === 'policies' && (
+            <div className="space-y-6">
+              <div>
+                <h2 style={{ fontSize: 22, fontWeight: 700, color: '#e5e2e3' }}>Security Policies</h2>
+                <p style={{ fontSize: 13, color: '#71717a', marginTop: 4 }}>
+                  Pre-flight checks that run before a request is sent to any provider. Blocked requests never reach the provider.
+                </p>
               </div>
 
-              {/* Save / Discard */}
-              <div className="flex items-center justify-between p-4 mt-4" style={cardStyle}>
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#ffb4ab' }}>warning</span>
-                  <span style={{ fontSize: 12, color: '#71717a' }}>Modifying these parameters may affect system integrity across active deployments.</span>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={() => toast.success('Changes discarded')} style={{ fontSize: 11, fontWeight: 700, color: '#71717a', padding: '10px 20px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>Discard</button>
-                  <button onClick={handleSaveProfile} style={{
-                    background: '#ffa69e', color: '#3b0908', padding: '10px 24px', borderRadius: 8,
-                    fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer'
-                  }}>Save Changes</button>
-                </div>
-              </div>
+              {!policies ? (
+                <div style={{ ...cardStyle, padding: 24, color: '#71717a', fontSize: 13 }}>Loading…</div>
+              ) : (
+                <>
+                  <div className="p-5 flex items-center justify-between" style={cardStyle}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>Block PII</p>
+                      <p style={{ fontSize: 12, color: '#71717a', marginTop: 2 }}>
+                        Reject prompts containing emails, phone numbers, credit cards, SSN, Aadhaar or PAN. Pattern-based detection.
+                      </p>
+                    </div>
+                    <Toggle on={!!policies.blockPII} onClick={() => setPolicies({ ...policies, blockPII: !policies.blockPII })} />
+                  </div>
+
+                  <div className="p-5 flex items-center justify-between" style={cardStyle}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>Block Prompt Injection</p>
+                      <p style={{ fontSize: 12, color: '#71717a', marginTop: 2 }}>
+                        Reject prompts matching known injection / jailbreak phrases. Keyword matching, not an ML classifier.
+                      </p>
+                    </div>
+                    <Toggle on={!!policies.blockInjection} onClick={() => setPolicies({ ...policies, blockInjection: !policies.blockInjection })} />
+                  </div>
+
+                  <div className="p-5 space-y-3" style={cardStyle}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>Max Tokens Per Request</p>
+                    <p style={{ fontSize: 12, color: '#71717a' }}>Zyra clamps <code>max_tokens</code> on every forwarded request to this ceiling.</p>
+                    <input
+                      type="number" min={1} max={32000}
+                      value={policies.maxTokensPerRequest ?? 2000}
+                      onChange={(e) => setPolicies({ ...policies, maxTokensPerRequest: e.target.value })}
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3 p-4" style={{ background: '#1c1b1c', borderRadius: 12 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#71717a' }}>info</span>
+                    <span style={{ fontSize: 12, color: '#71717a' }}>
+                      A deeper risk score (PII / injection / abuse) is also computed asynchronously after each request and shown in Logs.
+                      That analysis is post-hoc; only the toggles above block requests before they leave Zyra.
+                    </span>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button onClick={savePolicies} disabled={savingSection === 'policies'} style={{
+                      background: '#ffa69e', color: '#3b0908', padding: '10px 24px', borderRadius: 8,
+                      fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', opacity: savingSection === 'policies' ? 0.6 : 1,
+                    }}>{savingSection === 'policies' ? 'Saving…' : 'Save Policies'}</button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

@@ -24,7 +24,7 @@
 
 const { getLogQueue } = require('../config/queue')
 const { calculateCost } = require('../utils/costCalculator')
-const Organization = require('../models/Organization')
+const { reserveMonthlyLog } = require('../services/usageLimiter')
 
 const VALID_LANGUAGES = new Set(['python', 'node', 'go', 'ruby', 'java', 'php', 'proxy', 'curl', 'other'])
 const VALID_STATUSES = new Set(['success', 'error'])
@@ -37,11 +37,12 @@ exports.universalLog = async (req, res) => {
     const org = req.org
     if (!org) return
 
-    // Silently drop if org is over log limit
-    if (org.currentMonthlyLogs >= org.monthlyLogLimit) return
-
     // Check kill switch
     if (process.env.ZYRA_DISABLE === 'true') return
+
+    // Atomically reserve a usage unit; silently drop if over the limit
+    const reservation = await reserveMonthlyLog(org._id.toString())
+    if (!reservation.ok) return
 
     const {
       timestamp,
@@ -100,9 +101,6 @@ exports.universalLog = async (req, res) => {
       },
       reliability: { retryCount: 0, fallbackUsed: false, fallbackProvider: null }
     })
-
-    // Increment org log count (best-effort)
-    Organization.findByIdAndUpdate(org._id, { $inc: { currentMonthlyLogs: 1 } }).catch(() => {})
 
   } catch (err) {
     // Silently swallow — never crash the caller

@@ -61,7 +61,9 @@ const worker = new Worker('risk-analysis', async (job) => {
 }, { connection })
 
 worker.on('failed', (job, err) => {
-  console.error(`❌ Job ${job.id} failed:`, err.message)
+  console.error(`❌ Job ${job?.id} failed:`, err.message)
 })
 
 console.log('🚀 Risk worker started')
+
+module.exports = { riskWorker: worker }

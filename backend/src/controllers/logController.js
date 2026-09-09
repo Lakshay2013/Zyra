@@ -1,7 +1,7 @@
 const InteractionLog = require('../models/InteractionLog')
-const Organization = require('../models/Organization')
 const { calculateCost, getProvider } = require('../utils/costCalculator')
 const { getRiskQueue } = require('../config/queue')
+const { reserveMonthlyLog } = require('../services/usageLimiter')
 
 exports.ingest = async (req, res) => {
   try {
@@ -12,9 +12,10 @@ exports.ingest = async (req, res) => {
       return res.status(400).json({ message: 'userId, model, and prompt are required' })
     }
 
-    // Check org log limit
+    // Atomically reserve one unit of monthly usage
     const org = req.org
-    if (org.currentMonthlyLogs >= org.monthlyLogLimit) {
+    const reservation = await reserveMonthlyLog(org._id.toString())
+    if (!reservation.ok) {
       return res.status(429).json({ message: 'Monthly log limit reached. Please upgrade your plan.' })
     }
 
@@ -39,11 +40,6 @@ exports.ingest = async (req, res) => {
       },
       cost,
       latency: latency || 0
-    })
-
-    // Increment org log count
-    await Organization.findByIdAndUpdate(org._id, {
-      $inc: { currentMonthlyLogs: 1 }
     })
 
     // Queue risk analysis

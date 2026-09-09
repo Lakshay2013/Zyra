@@ -1,22 +1,27 @@
 {
   "name": "zyra-sdk",
   "version": "0.2.0",
-  "description": "Official Zyra SDK — AI cost optimizer proxy client. Drop-in replacement for the OpenAI SDK. Auto-logs all LLM calls to Zyra.",
+  "description": "Official Zyra SDK — AI cost optimization proxy client. Drop-in replacement for the OpenAI SDK.",
   "main": "src/index.js",
   "types": "src/index.d.ts",
   "bin": {
     "zyra": "./bin/zyra"
   },
+  "files": [
+    "src",
+    "bin",
+    "cli"
+  ],
   "exports": {
-    ".": "./src/index.js",
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
     "./auto": "./src/auto.js",
     "./logger": "./src/logger.js"
   },
   "scripts": {
-    "test": "node --test tests/*.test.js",
-    "test:log": "node tests/log-dispatch.test.js",
-    "test:proxy": "node tests/proxy-passthrough.test.js",
-    "test:auto": "node tests/auto-patch.test.js"
+    "test": "node --test --test-force-exit \"tests/**/*.test.js\""
   },
   "keywords": [
     "zyra",
@@ -30,7 +35,10 @@
     "observability"
   ],
   "license": "MIT",
-  "dependencies": {
+  "peerDependencies": {
+    "openai": ">=4"
+  },
+  "devDependencies": {
     "openai": "^6.33.0"
   }
 }

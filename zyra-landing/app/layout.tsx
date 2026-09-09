@@ -5,11 +5,11 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'react-hot-toast'
 
 export const metadata: Metadata = {
-  title: 'Zyra AI Proxy (Beta) — Reduce AI Costs by 90%',
+  title: 'Zyra AI Proxy (Beta) — Cut AI Costs with Smart Routing',
   description: 'Zyra intelligently routes your AI requests across providers to cut costs, improve reliability, and give you full control — without changing your code. Currently in Beta.',
   keywords: ['AI cost optimization', 'LLM proxy', 'reduce OpenAI costs', 'AI routing infrastructure', 'AI cost reduction'],
   openGraph: {
-    title: 'Zyra AI Proxy (Beta) — Reduce AI Costs by 90%',
+    title: 'Zyra AI Proxy (Beta) — Cut AI Costs with Smart Routing',
     description: 'Zyra intelligently routes your AI requests across providers to cut costs, improve reliability, and give you full control — without changing your code. Currently in Beta.',
     type: 'website',
   },

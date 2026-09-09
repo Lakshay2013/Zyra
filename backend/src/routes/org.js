@@ -11,6 +11,7 @@ router.put('/settings', restrictTo('admin'), orgController.updateSettings)
 
 router.get('/providers', orgController.getProviders)
 router.put('/providers', restrictTo('admin'), orgController.updateProviders)
+router.post('/providers/test', orgController.testProviders)
 
 router.get('/policies', orgController.getPolicies)
 router.put('/policies', restrictTo('admin'), orgController.updatePolicies)

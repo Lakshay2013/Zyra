@@ -3,11 +3,24 @@ const crypto = require('crypto')
 const Payment = require('../models/Payment')
 const Organization = require('../models/Organization')
 
-// ── Razorpay instance ──
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-})
+// ── Razorpay instance (lazy) ──
+// Instantiated on first use so the API can boot without billing credentials
+// configured (local dev, tests, deployments that don't sell plans).
+let _razorpay = null
+const getRazorpay = () => {
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    const e = new Error('Billing is not configured on this server (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET missing).')
+    e.statusCode = 503
+    throw e
+  }
+  if (!_razorpay) {
+    _razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    })
+  }
+  return _razorpay
+}
 
 // ── Plan pricing config (amounts in paise) ──
 const PLANS = {
@@ -55,7 +68,7 @@ exports.createOrder = async (req, res) => {
     }
 
     // Create Razorpay order
-    const order = await razorpay.orders.create({
+    const order = await getRazorpay().orders.create({
       amount: planConfig.amount,
       currency: 'INR',
       receipt: `zyra_${req.user.orgId}_${Date.now()}`,
@@ -89,7 +102,7 @@ exports.createOrder = async (req, res) => {
     })
   } catch (err) {
     console.error('[Payment] Create order error:', err.message, err.statusCode, JSON.stringify(err.error || {}))
-    res.status(500).json({ message: 'Failed to create payment order', detail: err.message })
+    res.status(err.statusCode === 503 ? 503 : 500).json({ message: err.statusCode === 503 ? err.message : 'Failed to create payment order', detail: err.message })
   }
 }
 

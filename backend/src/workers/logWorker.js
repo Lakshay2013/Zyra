@@ -1,6 +1,5 @@
 const { Worker } = require('bullmq')
 const InteractionLog = require('../models/InteractionLog')
-const Organization = require('../models/Organization')
 const { connection, getRiskQueue } = require('../config/queue')
 require('dotenv').config()
 
@@ -38,9 +37,9 @@ const worker = new Worker('interaction-logs', async (job) => {
       reliability: reliability || {}
     })
 
-    await Organization.findByIdAndUpdate(orgId, {
-      $inc: { currentMonthlyLogs: 1 }
-    })
+    // NOTE: monthly usage is reserved atomically at request time in the proxy
+    // (services/usageLimiter.reserveMonthlyLog), not here — incrementing again
+    // would double-count.
 
     const riskQueue = getRiskQueue()
     await riskQueue.add('analyze', { logId: log._id.toString() })
@@ -58,3 +57,5 @@ worker.on('failed', (job, err) => {
 })
 
 console.log('🚀 Log worker initialized')
+
+module.exports = { logWorker: worker }

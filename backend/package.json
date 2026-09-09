@@ -8,7 +8,12 @@
     "start": "node src/index.js",
     "start:prod": "NODE_ENV=production node src/index.js",
     "dev": "nodemon src/index.js",
-    "worker": "nodemon src/workers/index.js"
+    "worker": "nodemon src/workers/index.js",
+    "seed:dev": "node scripts/seed-dev.js",
+    "test": "node --test --test-force-exit --test-concurrency=1 \"tests/unit/**/*.test.js\" \"tests/integration/**/*.test.js\"",
+    "test:unit": "node --test --test-force-exit \"tests/unit/**/*.test.js\"",
+    "test:integration": "node --test --test-force-exit --test-concurrency=1 \"tests/integration/**/*.test.js\"",
+    "test:providers": "node scripts/provider-smoke.js"
   },
   "keywords": [
     "zyra",
@@ -43,6 +48,9 @@
     "razorpay": "^2.9.6"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "mongodb-memory-server": "^10.4.3",
+    "nock": "^13.5.6",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
   }
 }

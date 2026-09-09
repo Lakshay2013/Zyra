@@ -49,6 +49,22 @@ const getRedis = () => {
 
 const isRedisReady = () => redisAvailable
 
+/** Eagerly open the Redis connection (call once at startup). */
+const initRedis = () => {
+  try { getRedis() } catch {}
+}
+
+/** Actively PING Redis. Returns true only if the server responds PONG. */
+const pingRedis = async () => {
+  try {
+    const r = getRedis()
+    const pong = await r.ping()
+    return pong === 'PONG'
+  } catch {
+    return false
+  }
+}
+
 /**
  * Build a deterministic cache key from model + messages.
  * SHA-256 of the canonical JSON.
@@ -98,4 +114,4 @@ const setInCache = async (key, responseBody, ttl = 300) => {
   }
 }
 
-module.exports = { buildCacheKey, getFromCache, setInCache, getRedis, isRedisReady }
+module.exports = { buildCacheKey, getFromCache, setInCache, getRedis, isRedisReady, initRedis, pingRedis }

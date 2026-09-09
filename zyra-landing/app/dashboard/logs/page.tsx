@@ -7,24 +7,36 @@ import toast from 'react-hot-toast'
 export default function LogsPage() {
   const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [selectedLog, setSelectedLog] = useState<any>(null)
   const [filter, setFilter] = useState({ page: 1, limit: 20 })
   const [totalCount, setTotalCount] = useState(0)
+  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
-  useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        const res = await api.get(`/api/logs?page=${filter.page}&limit=${filter.limit}`)
-        setLogs(res.data.logs || res.data || [])
-        setTotalCount(res.data.total || res.data.logs?.length || 0)
-      } catch (err) {
-        console.error('Failed to load logs', err)
-      } finally {
-        setLoading(false)
-      }
+  const fetchLogs = async (opts: { silent?: boolean } = {}) => {
+    if (opts.silent) setRefreshing(true)
+    try {
+      const res = await api.get(`/api/logs?page=${filter.page}&limit=${filter.limit}`)
+      setLogs(res.data.logs || res.data || [])
+      setTotalCount(res.data.pagination?.total ?? res.data.total ?? res.data.logs?.length ?? 0)
+      setLastUpdated(new Date())
+    } catch (err) {
+      console.error('Failed to load logs', err)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
     }
-    fetchLogs()
-  }, [filter.page])
+  }
+
+  useEffect(() => { fetchLogs() }, [filter.page])
+
+  // Real polling — only when auto-refresh is on and on the first page.
+  useEffect(() => {
+    if (!autoRefresh || filter.page !== 1) return
+    const id = setInterval(() => fetchLogs({ silent: true }), 10000)
+    return () => clearInterval(id)
+  }, [autoRefresh, filter.page, filter.limit])
 
   if (loading) {
     return (
@@ -44,12 +56,24 @@ export default function LogsPage() {
             LOG_STREAM
           </h1>
           <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#71717a', marginTop: 8 }}>
-            LIVE MONITORING: PRODUCTION-ALPHA-V2
+            {autoRefresh && filter.page === 1
+              ? `AUTO-REFRESH: ON (10s)${lastUpdated ? ` // UPDATED ${lastUpdated.toLocaleTimeString()}` : ''}`
+              : 'AUTO-REFRESH: OFF'}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ffa69e', animation: 'pulse 2s infinite' }} />
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#ffa69e', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>LIVE</span>
+          <button
+            onClick={() => fetchLogs({ silent: true })}
+            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a1a1aa', background: '#2a2a2b', padding: '6px 12px', borderRadius: 8, cursor: 'pointer' }}
+          >{refreshing ? 'Refreshing…' : 'Refresh'}</button>
+          <button
+            onClick={() => setAutoRefresh((v) => !v)}
+            className="flex items-center gap-2"
+            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: autoRefresh ? '#9be8cb' : '#71717a', cursor: 'pointer' }}
+          >
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: autoRefresh ? '#9be8cb' : '#534341', animation: autoRefresh ? 'pulse 2s infinite' : 'none' }} />
+            {autoRefresh ? 'LIVE' : 'PAUSED'}
+          </button>
         </div>
       </div>
 

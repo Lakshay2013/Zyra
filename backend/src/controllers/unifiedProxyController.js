@@ -24,11 +24,15 @@ const Organization = require('../models/Organization')
 const { decrypt } = require('../utils/crypto')
 const { calculateCost, getProvider: getModelProvider, MODEL_TO_PROVIDER, matchModel, estimateCost } = require('../utils/costCalculator')
 const { detectInjection } = require('../utils/injectionDetector')
+const { detectPII } = require('../utils/piiDetector')
 const { getRiskQueue, getLogQueue } = require('../config/queue')
+const { reserveMonthlyLog, releaseMonthlyLog } = require('../services/usageLimiter')
+const idempotency = require('../services/idempotency')
 const { optimizeRequest, calculateActualSavings, estimateTokenCount } = require('../services/costOptimizer')
 const { executeWithRetry } = require('../services/retryHandler')
 const { validateResponse, getQualityFallbackModel } = require('../services/qualityGuard')
 const { buildCacheKey, getFromCache, setInCache } = require('../services/cacheLayer')
+const geminiAdapter = require('../services/providers/gemini')
 
 // ──────────────────────────────────────────────────────────────
 // PROVIDER CONFIGS
@@ -50,10 +54,13 @@ const PROVIDERS = {
   },
   gemini: {
     baseUrl: 'https://generativelanguage.googleapis.com',
-    authHeader: 'Authorization',
+    authHeader: 'x-goog-api-key',
+    // Gemini is translated by services/providers/gemini.js — path is model-specific
+    // and built there, so this is only a nominal value.
     chatPath: '/v1beta/models',
     completionsPath: null,
-    embeddingsPath: null
+    embeddingsPath: null,
+    translated: true
   },
   groq: {
     baseUrl: 'https://api.groq.com/openai',
@@ -139,13 +146,23 @@ const resolveProviderKey = (req, org, provider) => {
   // Don't use the Zyra API key as the provider key
   if (key && key.includes('zyra')) key = null
 
+  if (key && provider === 'gemini') {
+    // A caller-supplied Authorization/x-api-key header is an OpenAI/Anthropic key,
+    // not a Google key — never forward it to Gemini.
+    key = req.headers['x-goog-api-key'] || null
+  }
+
   if (!key) {
     const encryptedKey = org.providerKeys?.[provider]
     if (encryptedKey) {
       const decrypted = decrypt(encryptedKey)
-      key = providerConfig.authHeader === 'Authorization' && !decrypted.startsWith('Bearer ')
-        ? `Bearer ${decrypted}`
-        : decrypted
+      if (provider === 'gemini') {
+        key = decrypted.replace(/^Bearer\s+/i, '')
+      } else {
+        key = providerConfig.authHeader === 'Authorization' && !decrypted.startsWith('Bearer ')
+          ? `Bearer ${decrypted}`
+          : decrypted
+      }
     }
   }
 
@@ -194,6 +211,10 @@ const extractTokens = (provider, responseBody) => {
 }
 
 const buildRequestConfig = (provider, path, providerApiKey, requestBody) => {
+  if (provider === 'gemini') {
+    return geminiAdapter.buildGeminiRequestConfig(requestBody.model, requestBody, providerApiKey, { stream: false })
+  }
+
   const providerConfig = PROVIDERS[provider]
   const upstreamUrl = `${providerConfig.baseUrl}${path}`
 
@@ -355,6 +376,53 @@ const handleStreaming = (provider, path, providerApiKey, requestBody, req, res) 
   })
 }
 
+/**
+ * Stream a Gemini response as OpenAI-compatible SSE.
+ *
+ * Gemini's SSE framing differs from OpenAI's, so for the MVP we make one
+ * buffered `generateContent` call and re-emit it as a single content chunk
+ * followed by `[DONE]`. The client sees a valid OpenAI stream; only the
+ * token-by-token cadence is lost.
+ */
+const handleGeminiStreaming = async (model, requestBody, providerApiKey, res) => {
+  const config = geminiAdapter.buildGeminiRequestConfig(model, requestBody, providerApiKey, { stream: false })
+  try {
+    const result = await axios(config)
+    const normalized = geminiAdapter.toOpenAIResponse(result.data, model)
+    const content = normalized.choices?.[0]?.message?.content || ''
+    const id = normalized.id
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive'
+    })
+    const base = { id, object: 'chat.completion.chunk', created: normalized.created, model }
+    res.write(`data: ${JSON.stringify({ ...base, choices: [{ index: 0, delta: { role: 'assistant', content }, finish_reason: null }] })}\n\n`)
+    res.write(`data: ${JSON.stringify({ ...base, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }], usage: normalized.usage })}\n\n`)
+    res.write('data: [DONE]\n\n')
+    res.end()
+
+    return {
+      error: false,
+      statusCode: 200,
+      content,
+      usage: {
+        prompt: normalized.usage.prompt_tokens,
+        completion: normalized.usage.completion_tokens,
+        total: normalized.usage.total_tokens
+      },
+      model
+    }
+  } catch (err) {
+    const status = err.response?.status || 502
+    if (!res.headersSent) {
+      res.status(status).json(err.response?.data || { error: { message: 'Gemini stream failed', type: 'provider_error' } })
+    }
+    return { error: true, statusCode: status }
+  }
+}
+
 // ──────────────────────────────────────────────────────────────
 // MAIN UNIFIED PROXY HANDLER
 // ──────────────────────────────────────────────────────────────
@@ -383,7 +451,8 @@ exports.chatCompletions = async (req, res) => {
   const isStream = req.body.stream === true
   const debugInfo = {}
 
-  // ── Step 1: Check org limits ──
+  // ── Step 1: Fast limit pre-check (authoritative atomic reservation happens
+  //            just before the provider call, in reserveMonthlyLog) ──
   if (org.currentMonthlyLogs >= org.monthlyLogLimit) {
     return res.status(429).json({ error: { message: 'Monthly request limit reached. Please upgrade your plan.', type: 'rate_limit_error' } })
   }
@@ -482,9 +551,53 @@ exports.chatCompletions = async (req, res) => {
     }
   }
 
+  // ── Step 3b: PII pre-flight ──
+  // Runs BEFORE the request is sent to any provider. If policy blocks PII and
+  // PII is detected, the provider is never contacted.
+  if (org.policies?.blockPII && promptText) {
+    const piiResult = detectPII(promptText)
+    if (piiResult.hasPII) {
+      return res.status(403).json({
+        error: {
+          message: 'Request blocked by Zyra: PII detected in prompt. The request was not sent to any provider.',
+          type: 'pii_error',
+          // Report the categories found, never the matched values themselves.
+          pii_types: piiResult.types
+        }
+      })
+    }
+  }
+
   const maxTokens = org.policies?.maxTokensPerRequest || 4096
   if (!requestBody.max_tokens || requestBody.max_tokens > maxTokens) {
     requestBody.max_tokens = maxTokens
+  }
+
+  // ── Step 3c: Idempotency ──
+  // For non-stream requests carrying an Idempotency-Key, replay a stored result
+  // instead of calling the provider again.
+  const idemKey = !isStream
+    ? (req.headers['idempotency-key'] || req.headers['x-idempotency-key'] || null)
+    : null
+  let idemHandle = { mode: 'disabled' }
+  if (idemKey) {
+    idemHandle = await idempotency.begin(org._id.toString(), idemKey, req.body)
+    if (idemHandle.mode === 'replay') {
+      if (isDebug) res.set('x-zyra-idempotent-replay', 'true')
+      return res.status(idemHandle.status).json(idemHandle.body)
+    }
+    if (idemHandle.mode === 'mismatch') {
+      return res.status(422).json({ error: { message: 'Idempotency-Key already used with a different request body.', type: 'idempotency_error' } })
+    }
+    if (idemHandle.mode === 'conflict') {
+      return res.status(409).json({ error: { message: 'A request with this Idempotency-Key is still being processed.', type: 'idempotency_error' } })
+    }
+  }
+  const finalizeIdem = async (status, body) => {
+    if (idemHandle.mode === 'proceed') await idemHandle.finalize(status, body)
+  }
+  const releaseIdem = async () => {
+    if (idemHandle.mode === 'proceed' && idemHandle.release) await idemHandle.release()
   }
 
   // ── Step 4: Cache check ──
@@ -511,6 +624,7 @@ exports.chatCompletions = async (req, res) => {
       }
 
       res.json(cached)
+      await finalizeIdem(200, cached)
 
       // Async log cache hit
       try {
@@ -537,6 +651,7 @@ exports.chatCompletions = async (req, res) => {
   // ── Step 5: Resolve API key ──
   let providerApiKey = resolveProviderKey(req, org, provider)
   if (!providerApiKey) {
+    await releaseIdem()
     return res.status(400).json({
       error: {
         message: `No API key configured for provider "${provider}". Add it in Organization Settings.`,
@@ -547,6 +662,15 @@ exports.chatCompletions = async (req, res) => {
 
   const chatPath = PROVIDERS[provider].chatPath
   const userId = req.headers['x-user-id'] || requestBody.user || 'anonymous'
+
+  // ── Step 5b: Atomically reserve one unit of monthly usage ──
+  // This is the authoritative limit check — two concurrent requests cannot both
+  // cross the boundary because the guard and the increment are one operation.
+  const reservation = await reserveMonthlyLog(org._id.toString())
+  if (!reservation.ok) {
+    await releaseIdem()
+    return res.status(429).json({ error: { message: 'Monthly request limit reached. Please upgrade your plan.', type: 'rate_limit_error' } })
+  }
 
   // ── Step 6: Execute ──
   if (isStream) {
@@ -565,7 +689,13 @@ exports.chatCompletions = async (req, res) => {
         requestBody.stream_options = { include_usage: true }
       }
 
-      const streamResult = await handleStreaming(provider, chatPath, providerApiKey, requestBody, req, res)
+      const streamResult = provider === 'gemini'
+        ? await handleGeminiStreaming(model, requestBody, providerApiKey, res)
+        : await handleStreaming(provider, chatPath, providerApiKey, requestBody, req, res)
+
+      if (streamResult.error) {
+        await releaseMonthlyLog(org._id.toString())
+      }
 
       if (!streamResult.error) {
         // Async log
@@ -599,6 +729,7 @@ exports.chatCompletions = async (req, res) => {
       }
     } catch (err) {
       console.error('[UnifiedProxy] Stream error:', err.message)
+      await releaseMonthlyLog(org._id.toString())
       if (!res.headersSent) {
         res.status(502).json({ error: { message: 'Failed to stream from provider', type: 'provider_error' } })
       }
@@ -629,10 +760,20 @@ exports.chatCompletions = async (req, res) => {
     fallbackProvider = result.fallbackProvider
     finalModel = result.model
     finalProvider = result.provider
+
+    // Normalize Gemini's native response into OpenAI shape so the rest of the
+    // pipeline (quality guard, cache, logging, client) sees one format.
+    if (finalProvider === 'gemini' && statusCode >= 200 && statusCode < 400) {
+      responseBody = geminiAdapter.toOpenAIResponse(responseBody, finalModel)
+    }
   } catch (err) {
     console.error('[UnifiedProxy] All attempts failed:', err.message)
     statusCode = err.response?.status || 502
     responseBody = err.response?.data || { error: { message: 'Failed to reach upstream provider', type: 'provider_error' } }
+    // Provider never produced a usable response — refund the reserved usage unit
+    // and drop the idempotency lock so a genuine retry can proceed.
+    await releaseMonthlyLog(org._id.toString())
+    await releaseIdem()
     return res.status(statusCode).json(responseBody)
   }
 
@@ -653,7 +794,9 @@ exports.chatCompletions = async (req, res) => {
             const upgradeBody = { ...requestBody, model: upgrade.model }
             const upgradeConfig = buildRequestConfig(upgrade.provider, PROVIDERS[upgrade.provider].chatPath, upgradeKey, upgradeBody)
             const upgradeResult = await axios(upgradeConfig)
-            responseBody = upgradeResult.data
+            responseBody = upgrade.provider === 'gemini'
+              ? geminiAdapter.toOpenAIResponse(upgradeResult.data, upgrade.model)
+              : upgradeResult.data
             statusCode = upgradeResult.status
             finalModel = upgrade.model
             finalProvider = upgrade.provider
@@ -686,6 +829,15 @@ exports.chatCompletions = async (req, res) => {
 
   // ── Send response ──
   res.status(statusCode).json(responseBody)
+
+  // Store the result for idempotent replay. If the provider returned an error
+  // status, drop the lock instead so a retry with the same key can try again.
+  if (statusCode >= 200 && statusCode < 400) {
+    await finalizeIdem(statusCode, responseBody)
+  } else {
+    await releaseMonthlyLog(org._id.toString())
+    await releaseIdem()
+  }
 
   // ── Step 9: Cache store ──
   if (cacheEnabled && statusCode >= 200 && statusCode < 400) {
