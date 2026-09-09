@@ -74,14 +74,14 @@ const calculateCost = (model, promptTokens, completionTokens) => {
   const pricing = getPricing(model)
   const promptCost = (promptTokens / 1000) * pricing.prompt
   const completionCost = (completionTokens / 1000) * pricing.completion
-  return parseFloat((promptCost + completionCost).toFixed(6))
+  return parseFloat((promptCost + completionCost).toFixed(9))
 }
 
 // Estimate cost before a request (we don't know completion tokens yet, so estimate)
 const estimateCost = (model, estimatedPromptTokens, estimatedCompletionTokens = null) => {
   const pricing = getPricing(model)
   const compTokens = estimatedCompletionTokens || Math.round(estimatedPromptTokens * 1.5)
-  return parseFloat(((estimatedPromptTokens / 1000) * pricing.prompt + (compTokens / 1000) * pricing.completion).toFixed(6))
+  return parseFloat(((estimatedPromptTokens / 1000) * pricing.prompt + (compTokens / 1000) * pricing.completion).toFixed(9))
 }
 
 // Get the tier a model belongs to

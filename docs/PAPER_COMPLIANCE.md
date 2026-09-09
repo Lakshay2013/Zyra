@@ -48,15 +48,18 @@ Status column updated as work proceeds. `baseline` = state at commit `1fc25fa` b
 
 ## Paper-reported experimental results (NOT to be presented as current results without reproduction)
 
-| Metric | Paper value | Reproduction plan | Current local result |
+| Metric | Paper value | How to reproduce | Current local result |
 |---|---|---|---|
-| Logging success rate | 99.96% (9,996 / 10,000) | `npm run benchmark:logging` | _TBD_ |
-| Avg logging time | 47 ms | same | _TBD_ |
-| Prompt injection precision | 96.0% | `npm run eval:security` | _TBD_ |
-| Jailbreak precision | 94.4% | same | _TBD_ |
-| PII / sensitive detection | 98.0% | same | _TBD_ |
-| Cost estimation error | < ±2% | `npm run test:cost-accuracy` | _TBD_ |
-| Dashboard load | < 2 s | manual / lighthouse | _TBD_ |
+| Logging success rate | 99.96% (9,996 / 10,000) | `BENCH_N=2000 npm run benchmark:logging` | **100%** logs persisted (500–2000 req runs, local Docker) |
+| Avg logging time | 47 ms | same | Logging is async (BullMQ enqueue only, ~2–5 ms). Full request-path overhead ≈ **110–125 ms p50** on local Windows Docker (Express + API-key lookup + Redis rate-limit + enqueue + simulator). Not the same quantity the paper measures. |
+| Prompt injection precision | 96.0% | `npm run eval:security` | **84.6%** precision / 100% recall on the 45-prompt public set (FPs are cross-fires with jailbreak on multi-vector prompts) |
+| Jailbreak precision | 94.4% | same | **91.7%** precision / 100% recall |
+| PII / sensitive detection | 98.0% | same | **100%** precision & recall (PII + sensitive-keyword) on the public set |
+| Benign false-positive rate | — | same | **0 / 12** benign prompts flagged |
+| Cost estimation (formula) | error < ±2% vs invoices | `npm run test:cost-accuracy` | `calculateCost` implements `(pt·Pp + ct·Pc)/1000` with **0.0000%** deviation from hand computation over 60 model×case checks. Error vs a real provider invoice is **not reproducible offline** (needs live billing) — the ±2% figure stays paper-reported. |
+| Dashboard load | < 2 s | manual | _to verify in browser_ |
+
+> Reproduced numbers are on a **small public synthetic set** (`scripts/eval-security.js`) and a **local single-box Docker** stack, and are reported exactly as produced. The paper's figures are on the authors' larger private test set and their deployment — kept as "PAPER-REPORTED" throughout the demo.
 
 ## Risk severity bands (implementation choice — paper table is an image, not machine-readable)
 

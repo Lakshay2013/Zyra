@@ -68,6 +68,8 @@ services:
     pull_policy: never
     container_name: zyra-worker
     command: ["node", "src/workers/index.js"]
+    ports:
+      - "5001:5001"   # worker health endpoint (README: curl localhost:5001/health)
     env_file:
       - ./backend/.env
     environment:
