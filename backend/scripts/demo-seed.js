@@ -114,8 +114,10 @@ async function seedInteraction (org, { prompt, model, provider, userId, cost, da
       model,
       provider,
       prompt,
-      response: blocked ? `[BLOCKED pre-flight: ${blockReason}]` : `Simulated answer for: ${prompt.slice(0, 60)}`,
-      tokens: { prompt: Math.round(rand(40, 400)), completion: Math.round(rand(30, 600)), total: 0 },
+      response: blocked
+        ? `[BLOCKED pre-flight: ${blockReason} — request never sent to a provider]`
+        : 'Simulated response from Zyra demo mode. No external LLM was called; the interaction is logged, risk-scored and cost-estimated exactly like a real request.',
+      tokens: (() => { const p = Math.round(rand(40, 400)), c = Math.round(rand(30, 600)); return { prompt: p, completion: c, total: p + c } })(),
       cost,
       latency: Math.round(rand(180, 1400)),
       statusCode: statusCode || (blocked ? 403 : 200),
@@ -168,15 +170,17 @@ async function seedTraffic (org, { users, volume, includeAttacks }) {
   if (!includeAttacks) return n
 
   // A handful of each attack type, recent
+  // blockReason mirrors what the org's pre-flight policy would do (blockInjection
+  // + blockPII are on in the demo org; blockJailbreak is off).
   const attacks = [
-    { s: S.injection, count: 4 },
-    { s: S.jailbreak, count: 4 },
-    { s: S.pii, count: 3 },
-    { s: S.sensitive, count: 3 },
-    { s: S.abuse, count: 3 },
-    { s: S.combined, count: 3 }, // each exceeds risk 80 → 3 admin notifications
+    { s: S.injection, count: 4, blockReason: 'injection' },
+    { s: S.jailbreak, count: 4, blockReason: null },
+    { s: S.pii, count: 3, blockReason: 'pii' },
+    { s: S.sensitive, count: 3, blockReason: null },
+    { s: S.abuse, count: 3, blockReason: null },
+    { s: S.combined, count: 3, blockReason: 'injection' }, // each exceeds risk 80 → 3 admin notifications
   ]
-  for (const { s, count } of attacks) {
+  for (const { s, count, blockReason } of attacks) {
     for (let i = 0; i < count; i++) {
       const m = pick(MODELS)
       await seedInteraction(org, {
@@ -184,8 +188,10 @@ async function seedTraffic (org, { users, volume, includeAttacks }) {
         model: m.model,
         provider: m.provider,
         userId: pick(uids),
-        cost: parseFloat(rand(0.0005, 0.01).toFixed(6)),
+        cost: blockReason ? 0 : parseFloat(rand(0.0005, 0.01).toFixed(6)),
         daysAgo: rand(0, 6),
+        blocked: !!blockReason,
+        blockReason,
       })
       n++
     }

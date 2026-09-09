@@ -5,13 +5,17 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Logo } from '@/components/ui/logo'
 import { isAuthenticated, clearAuth, getUser } from '@/lib/auth'
+import api from '@/lib/api'
 
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: 'dashboard', href: '/dashboard' },
-  { label: 'Providers', icon: 'dns', href: '/dashboard/providers' },
   { label: 'Playground', icon: 'terminal', href: '/dashboard/playground' },
-  { label: 'API Keys', icon: 'vpn_key', href: '/dashboard/apikeys' },
+  { label: 'Security & Risk', icon: 'security', href: '/dashboard/security' },
+  { label: 'Cost Analytics', icon: 'savings', href: '/dashboard/cost' },
   { label: 'Logs', icon: 'query_stats', href: '/dashboard/logs' },
+  { label: 'Audit Log', icon: 'history', href: '/dashboard/audit' },
+  { label: 'Providers', icon: 'dns', href: '/dashboard/providers' },
+  { label: 'API Keys', icon: 'vpn_key', href: '/dashboard/apikeys' },
   { label: 'Settings', icon: 'settings', href: '/dashboard/policies' },
   { label: 'Billing', icon: 'payments', href: '/dashboard/billing' },
 ]
@@ -24,9 +28,13 @@ const BOTTOM_ITEMS = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [orgData, setOrgData] = useState({ name: 'PROJECT_ALPHA', plan: 'Pro' })
+  const [orgData, setOrgData] = useState({ name: 'ZYRA', plan: 'Free' })
   const [authChecked, setAuthChecked] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [demoMode, setDemoMode] = useState(false)
+  const [notifs, setNotifs] = useState<any[]>([])
+  const [unread, setUnread] = useState(0)
+  const [notifOpen, setNotifOpen] = useState(false)
 
   // Auth guard: redirect to /login if not authenticated
   useEffect(() => {
@@ -42,12 +50,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (savedOrg) {
       try {
         const parsed = JSON.parse(savedOrg)
-        setOrgData({ name: parsed.name || 'PROJECT_ALPHA', plan: parsed.plan || 'Free' })
+        setOrgData({ name: parsed.name || 'ZYRA', plan: parsed.plan || 'Free' })
       } catch (e) {
         console.error('Failed to parse org data', e)
       }
     }
   }, [])
+
+  // Real org state (demo mode) + notifications
+  const loadNotifs = async () => {
+    try {
+      const res = await api.get('/api/security/notifications')
+      setNotifs(res.data.notifications || [])
+      setUnread(res.data.unreadCount || 0)
+    } catch { /* not fatal */ }
+  }
+  useEffect(() => {
+    if (!authChecked) return
+    api.get('/api/auth/me').then((r) => {
+      if (r.data?.org) {
+        setDemoMode(!!r.data.org.demoMode)
+        setOrgData((d) => ({ ...d, name: r.data.org.name || d.name, plan: r.data.org.plan || d.plan }))
+      }
+    }).catch(() => {})
+    loadNotifs()
+    const id = setInterval(loadNotifs, 20000)
+    return () => clearInterval(id)
+  }, [authChecked])
+
+  const markAllRead = async () => {
+    try { await api.post('/api/security/notifications/all/read'); setUnread(0); setNotifs((n) => n.map((x) => ({ ...x, read: true }))) } catch {}
+  }
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -186,14 +219,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Logo className="text-xl" />
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex gap-6 mr-4" style={{ fontWeight: 500 }}>
-              <Link href="/dashboard" style={{ color: pathname === '/dashboard' ? '#ffa69e' : '#a1a1aa', fontWeight: pathname === '/dashboard' ? 700 : 400, fontSize: 14 }}>Dashboard</Link>
-              <Link href="/dashboard/providers" style={{ color: pathname.startsWith('/dashboard/providers') ? '#ffa69e' : '#a1a1aa', fontWeight: pathname.startsWith('/dashboard/providers') ? 700 : 400, fontSize: 14 }}>Providers</Link>
-            </div>
+            {demoMode && (
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', color: '#3b0908', background: '#ffa69e', padding: '4px 10px', borderRadius: 6, textTransform: 'uppercase' }}>
+                Demo Mode
+              </span>
+            )}
             <div className="flex items-center gap-1">
-              <button aria-label="Notifications" className="p-2 transition-colors hover:bg-zinc-800" style={{ borderRadius: 8, color: '#a1a1aa' }}>
-                <span className="material-symbols-outlined">notifications</span>
-              </button>
+              <div className="relative">
+                <button aria-label="Notifications" onClick={() => setNotifOpen((v) => !v)} className="p-2 transition-colors hover:bg-zinc-800 relative" style={{ borderRadius: 8, color: unread > 0 ? '#ffa69e' : '#a1a1aa' }}>
+                  <span className="material-symbols-outlined">notifications</span>
+                  {unread > 0 && (
+                    <span style={{ position: 'absolute', top: 4, right: 4, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 99, background: '#ffb4ab', color: '#3b0908', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{unread}</span>
+                  )}
+                </button>
+                {notifOpen && (
+                  <div style={{ position: 'absolute', right: 0, top: '110%', width: 340, maxHeight: 420, overflowY: 'auto', background: '#201f20', border: '1px solid rgba(83,67,65,0.3)', borderRadius: 12, zIndex: 60, boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
+                    <div className="flex justify-between items-center px-4 py-3" style={{ borderBottom: '1px solid rgba(83,67,65,0.2)' }}>
+                      <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 700, color: '#e5e2e3', textTransform: 'uppercase' }}>Notifications</span>
+                      {unread > 0 && <button onClick={markAllRead} style={{ fontSize: 10, color: '#ffa69e', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Mark all read</button>}
+                    </div>
+                    {notifs.length === 0 ? (
+                      <div style={{ padding: 24, textAlign: 'center', color: '#71717a', fontSize: 12 }}>No notifications</div>
+                    ) : notifs.map((n) => (
+                      <Link key={n._id} href="/dashboard/security" onClick={() => setNotifOpen(false)} className="block px-4 py-3 hover:bg-[#2a2a2b]" style={{ borderBottom: '1px solid rgba(83,67,65,0.12)', opacity: n.read ? 0.55 : 1 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: n.severity === 'critical' ? '#ffb4ab' : '#e5e2e3' }}>{n.title}</div>
+                        <div style={{ fontSize: 11, color: '#71717a', marginTop: 2 }}>{n.message}</div>
+                        <div style={{ fontSize: 10, color: '#534341', marginTop: 4, fontFamily: "'JetBrains Mono', monospace" }}>{new Date(n.createdAt).toLocaleString()}</div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Link href="/dashboard/policies" aria-label="Settings" className="p-2 transition-colors hover:bg-zinc-800" style={{ borderRadius: 8, color: '#a1a1aa' }}>
                 <span className="material-symbols-outlined">settings</span>
               </Link>

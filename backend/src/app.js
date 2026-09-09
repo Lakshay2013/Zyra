@@ -44,7 +44,7 @@ app.use(cors({
   exposedHeaders: [
     'x-zyra-model', 'x-zyra-provider', 'x-zyra-cost', 'x-zyra-savings',
     'x-zyra-complexity', 'x-zyra-cached', 'x-zyra-fallback', 'x-zyra-quality-retry',
-    'x-zyra-idempotent-replay',
+    'x-zyra-idempotent-replay', 'x-zyra-simulated',
   ],
 }))
 

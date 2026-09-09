@@ -80,9 +80,10 @@ export default function LogsPage() {
       {/* ── METRIC STRIP ── */}
       <div className="flex items-center gap-12 mt-6 p-4" style={{ background: '#1c1b1c', borderRadius: 12 }}>
         {[
-          { label: 'Throughput', value: `${logs.length}`, unit: 'logs' },
+          { label: 'On Page', value: `${logs.length}`, unit: 'logs' },
+          { label: 'Total', value: `${totalCount}`, unit: '' },
           { label: 'Avg Latency', value: logs.length > 0 ? `${Math.round(logs.reduce((sum: number, l: any) => sum + (l.latency || 0), 0) / logs.length)}` : '—', unit: 'ms' },
-          { label: 'Error Rate', value: logs.length > 0 ? `${((logs.filter((l: any) => l.riskScore > 5).length / logs.length) * 100).toFixed(2)}%` : '0%', unit: '', error: true },
+          { label: 'Flagged', value: logs.length > 0 ? `${((logs.filter((l: any) => (l.flags || []).length > 0).length / logs.length) * 100).toFixed(0)}%` : '0%', unit: '', error: true },
           { label: 'Page', value: `${filter.page}`, unit: '' },
         ].map((m, i) => (
           <div key={i} className="flex flex-col">
@@ -123,12 +124,16 @@ export default function LogsPage() {
                 </div>
                 {[
                   { key: 'timestamp', value: `"${new Date(log.createdAt).toISOString()}"` },
-                  { key: 'level', value: `"${log.riskScore > 5 ? 'WARN' : 'INFO'}"`, warn: log.riskScore > 5 },
+                  { key: 'level', value: `"${log.blocked ? 'BLOCKED' : (log.flags || []).length ? 'FLAGGED' : 'INFO'}"`, warn: log.blocked || (log.flags || []).length > 0 },
                   { key: 'model', value: `"${log.model || 'unknown'}"` },
+                  { key: 'provider', value: `"${log.provider || 'unknown'}"` },
                   { key: 'user', value: `"${log.userId || 'anonymous'}"` },
                   { key: 'tokens', value: `${log.tokens?.total || 0}` },
-                  ...(log.estimatedCost ? [{ key: 'cost', value: `"$${log.estimatedCost.toFixed(6)}"` }] : []),
-                  ...(log.riskScore ? [{ key: 'risk_score', value: `${log.riskScore}`, warn: log.riskScore > 5 }] : []),
+                  { key: 'cost', value: `"$${Number(log.cost || 0).toFixed(6)}"` },
+                  ...(log.simulated ? [{ key: 'simulated', value: 'true' }] : []),
+                  ...((log.flags || []).length ? [{ key: 'flags', value: `["${log.flags.join('", "')}"]`, warn: true }] : []),
+                  ...(log.riskScore ? [{ key: 'risk_score', value: `${log.riskScore}`, warn: log.riskScore >= 50 }] : []),
+                  ...(log.severity && log.severity !== 'low' ? [{ key: 'severity', value: `"${log.severity}"`, warn: true }] : []),
                 ].map((line, i) => (
                   <div key={i} className="flex" style={{ paddingLeft: 0, lineHeight: 1.9 }}>
                     <span style={{ color: '#534341', width: 28, display: 'inline-block', textAlign: 'right', marginRight: 16, userSelect: 'none' }}>{(idx * 10 + i + 2).toString().padStart(2, '0')}</span>

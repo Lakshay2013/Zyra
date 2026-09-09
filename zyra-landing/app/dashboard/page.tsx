@@ -82,13 +82,13 @@ export default function DashboardOverview() {
     };
   })
 
-  // Simulated metrics for the marquee (replace with real provider data)
+  // Real metrics from /api/analytics/overview
   const metrics = [
-    { label: 'Network Out', value: `${((stats?.totalTokens || 0) / 1000).toFixed(1)} kT`, mono: true },
+    { label: 'Total Tokens', value: `${((stats?.totalTokens || 0) / 1000).toFixed(1)} kT`, mono: true },
     { label: 'Total Cost', value: `$${(stats?.totalCost || 0).toFixed(2)}`, mono: true },
-    { label: 'Active Models', value: `${costBreakdown?.byModel?.length || 0}`, mono: true },
-    { label: 'Error Rate', value: `${stats?.totalLogs > 0 ? ((stats?.flaggedCount || 0) / stats.totalLogs * 100).toFixed(2) : '0.00'}%`, mono: true, error: true },
-    { label: 'Savings', value: `$${(stats?.totalSavings || 0).toFixed(2)}`, mono: true },
+    { label: 'Models Used', value: `${costBreakdown?.byModel?.length || 0}`, mono: true },
+    { label: 'High-risk %', value: `${stats?.totalLogs > 0 ? ((stats?.flaggedCount || 0) / stats.totalLogs * 100).toFixed(1) : '0.0'}%`, mono: true, error: true },
+    { label: 'Saved', value: `$${(stats?.totalSavings || 0).toFixed(2)}`, mono: true },
   ]
 
   return (
@@ -100,7 +100,8 @@ export default function DashboardOverview() {
             SYSTEM_OVERVIEW
           </h1>
           <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: '#71717a', marginTop: 8 }}>
-            CLUSTER_ID: <span style={{ color: '#ffa69e' }}>ALPHA-PROD-092</span> {'//'} NODE_STATUS: <span style={{ color: '#9be8cb' }}>HEALTHY</span>
+            LAST 30 DAYS {'//'} <span style={{ color: '#9be8cb' }}>{stats?.totalLogs?.toLocaleString() || 0}</span> INTERACTIONS
+            {stats?.simulatedCount > 0 ? <> {'//'} <span style={{ color: '#ffa69e' }}>DEMO MODE</span></> : null}
           </p>
         </div>
         <div className="flex gap-2">
@@ -150,10 +151,7 @@ export default function DashboardOverview() {
               <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase' }}>Live Traffic</span>
               <h2 style={{ fontSize: 24, fontWeight: 900, color: '#e5e2e3', marginTop: 4 }}>Throughput Density</h2>
             </div>
-            <div className="flex gap-1 items-center">
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ffcdc9', animation: 'pulse 2s infinite' }} />
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#ffcdc9', textTransform: 'uppercase' }}>Real-time</span>
-            </div>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#71717a', textTransform: 'uppercase' }}>30-day daily</span>
           </div>
 
           {/* Bar Chart */}
@@ -191,15 +189,15 @@ export default function DashboardOverview() {
           <div className="flex justify-between mt-4 pt-4" style={{ borderTop: '1px solid rgba(83,67,65,0.1)' }}>
             <div className="flex gap-8">
               <div>
-                <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 700 }}>Peak</div>
+                <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 700 }}>Peak / day</div>
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, color: '#e5e2e3' }}>
-                  {stats?.totalLogs ? `${(stats.totalLogs / 7).toFixed(0)} req/d` : '—'}
+                  {chartData.some(d => d.value) ? `${Math.max(...chartData.map(d => d.value))} req` : '—'}
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 700 }}>Average</div>
+                <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 700 }}>Active days</div>
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, color: '#e5e2e3' }}>
-                  {stats?.totalLogs ? `${Math.round(stats.totalLogs / 7)} req/d` : '—'}
+                  {chartData.filter(d => d.value > 0).length || '—'}
                 </div>
               </div>
             </div>

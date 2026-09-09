@@ -23,9 +23,13 @@ exports.getOverview = async (req, res) => {
           avgRiskScore: { $avg: '$riskScore' },
           totalCost: { $sum: '$cost' },
           totalTokens: { $sum: '$tokens.total' },
+          promptTokens: { $sum: '$tokens.prompt' },
+          completionTokens: { $sum: '$tokens.completion' },
+          avgLatency: { $avg: '$latency' },
           flaggedCount: {
             $sum: { $cond: [{ $gt: ['$riskScore', 50] }, 1, 0] }
           },
+          simulatedCount: { $sum: { $cond: [{ $eq: ['$simulated', true] }, 1, 0] } },
           totalSavings: { $sum: { $ifNull: ['$optimizer.savings', 0] } }
         }
       }
@@ -36,7 +40,11 @@ exports.getOverview = async (req, res) => {
       avgRiskScore: Math.round(stats?.avgRiskScore || 0),
       totalCost: parseFloat((stats?.totalCost || 0).toFixed(4)),
       totalTokens: stats?.totalTokens || 0,
+      promptTokens: stats?.promptTokens || 0,
+      completionTokens: stats?.completionTokens || 0,
+      avgLatency: Math.round(stats?.avgLatency || 0),
       flaggedCount: stats?.flaggedCount || 0,
+      simulatedCount: stats?.simulatedCount || 0,
       totalSavings: parseFloat((stats?.totalSavings || 0).toFixed(4))
     })
   } catch (err) {

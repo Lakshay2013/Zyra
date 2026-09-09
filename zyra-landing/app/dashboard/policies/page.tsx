@@ -44,7 +44,9 @@ export default function SettingsPage() {
       const r = await api.put('/api/org/policies', {
         blockPII: policies.blockPII,
         blockInjection: policies.blockInjection,
+        blockJailbreak: policies.blockJailbreak,
         maxTokensPerRequest: Number(policies.maxTokensPerRequest),
+        sensitiveKeywords: (policies.sensitiveKeywords || []),
       })
       setPolicies(r.data.policies)
       toast.success('Security policies saved')
@@ -429,6 +431,23 @@ export default function SettingsPage() {
                 </p>
               </div>
 
+              {orgData && (
+                <div className="p-5 flex items-center justify-between" style={{ ...cardStyle, border: '1px solid rgba(255,166,158,0.25)' }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#ffa69e' }}>Demo Mode</p>
+                    <p style={{ fontSize: 12, color: '#71717a', marginTop: 2 }}>
+                      Serve every LLM call from Zyra&apos;s built-in simulator — no provider API key required. Routing, cost, risk analysis and logging all still run for real; responses are templated and clearly flagged as simulated.
+                    </p>
+                  </div>
+                  <Toggle on={!!orgData.demoMode} onClick={async () => {
+                    const next = !orgData.demoMode
+                    setOrgData({ ...orgData, demoMode: next })
+                    try { await api.put('/api/org/settings', { demoMode: next }); toast.success(`Demo mode ${next ? 'on' : 'off'}`) }
+                    catch { toast.error('Failed'); setOrgData({ ...orgData, demoMode: !next }) }
+                  }} />
+                </div>
+              )}
+
               {!policies ? (
                 <div style={{ ...cardStyle, padding: 24, color: '#71717a', fontSize: 13 }}>Loading…</div>
               ) : (
@@ -437,7 +456,7 @@ export default function SettingsPage() {
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>Block PII</p>
                       <p style={{ fontSize: 12, color: '#71717a', marginTop: 2 }}>
-                        Reject prompts containing emails, phone numbers, credit cards, SSN, Aadhaar or PAN. Pattern-based detection.
+                        Reject prompts containing email, phone, Aadhaar, PAN, credit card, SSN, API keys, passwords or JWT tokens. Regex detection; matched values are never logged.
                       </p>
                     </div>
                     <Toggle on={!!policies.blockPII} onClick={() => setPolicies({ ...policies, blockPII: !policies.blockPII })} />
@@ -447,10 +466,34 @@ export default function SettingsPage() {
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>Block Prompt Injection</p>
                       <p style={{ fontSize: 12, color: '#71717a', marginTop: 2 }}>
-                        Reject prompts matching known injection / jailbreak phrases. Keyword matching, not an ML classifier.
+                        Reject prompts that try to override or exfiltrate the system prompt ("ignore previous instructions", "reveal system prompt"). Rule-based, not an ML classifier.
                       </p>
                     </div>
                     <Toggle on={!!policies.blockInjection} onClick={() => setPolicies({ ...policies, blockInjection: !policies.blockInjection })} />
+                  </div>
+
+                  <div className="p-5 flex items-center justify-between" style={cardStyle}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>Block Jailbreak</p>
+                      <p style={{ fontSize: 12, color: '#71717a', marginTop: 2 }}>
+                        Reject role-play / persona-hijack / "DAN"-style prompts that try to escape the safety policy. Off by default — when off, jailbreaks still flow through and raise the risk score.
+                      </p>
+                    </div>
+                    <Toggle on={!!policies.blockJailbreak} onClick={() => setPolicies({ ...policies, blockJailbreak: !policies.blockJailbreak })} />
+                  </div>
+
+                  <div className="p-5 space-y-3" style={cardStyle}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e2e3' }}>Sensitive Keywords</p>
+                    <p style={{ fontSize: 12, color: '#71717a' }}>
+                      Comma-separated watch-words. Flagged (not blocked) in the risk report, on top of the built-in list (confidential, credentials, private key…).
+                    </p>
+                    <input
+                      type="text"
+                      placeholder="project titan, acquisition, internal-only"
+                      value={(policies.sensitiveKeywords || []).join(', ')}
+                      onChange={(e) => setPolicies({ ...policies, sensitiveKeywords: e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean) })}
+                      style={inputStyle}
+                    />
                   </div>
 
                   <div className="p-5 space-y-3" style={cardStyle}>
@@ -467,8 +510,8 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-3 p-4" style={{ background: '#1c1b1c', borderRadius: 12 }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#71717a' }}>info</span>
                     <span style={{ fontSize: 12, color: '#71717a' }}>
-                      A deeper risk score (PII / injection / abuse) is also computed asynchronously after each request and shown in Logs.
-                      That analysis is post-hoc; only the toggles above block requests before they leave Zyra.
+                      The composite risk score R = 0.35·I + 0.30·J + 0.20·P + 0.15·A is computed asynchronously after every request
+                      (see Security &amp; Risk). The toggles above are the only checks that block a request before it leaves Zyra.
                     </span>
                   </div>
 
