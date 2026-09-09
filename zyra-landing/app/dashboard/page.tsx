@@ -148,8 +148,8 @@ export default function DashboardOverview() {
         }}>
           <div className="flex justify-between items-start mb-8">
             <div>
-              <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase' }}>Live Traffic</span>
-              <h2 style={{ fontSize: 24, fontWeight: 900, color: '#e5e2e3', marginTop: 4 }}>Throughput Density</h2>
+              <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase' }}>Interactions</span>
+              <h2 style={{ fontSize: 24, fontWeight: 900, color: '#e5e2e3', marginTop: 4 }}>Daily Throughput</h2>
             </div>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#71717a', textTransform: 'uppercase' }}>30-day daily</span>
           </div>
@@ -261,7 +261,7 @@ export default function DashboardOverview() {
             {stats?.totalSavings > 0 && (
               <div className="mt-2 flex items-center gap-1" style={{ fontSize: 10, color: '#9be8cb', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: 14 }}>trending_up</span>
-                {((stats?.totalSavings / Math.max(stats?.totalCost, 0.01)) * 100).toFixed(1)}% cost reduction
+                {((stats.totalSavings / Math.max(stats.totalCost + stats.totalSavings, 0.01)) * 100).toFixed(1)}% cost reduction
               </div>
             )}
           </div>
