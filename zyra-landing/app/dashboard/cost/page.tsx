@@ -1,11 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Server, Users } from 'lucide-react'
 import api from '@/lib/api'
-import { C, PageHeader, Card, Label, StatTile, MiniBars, EmptyState, Loading } from '@/components/dashboard/kit'
+import { PageHeader } from '@/components/ui/page-header'
+import { Card } from '@/components/ui/card'
+import { MetricCard } from '@/components/ui/metric'
+import { EmptyState, LoadingScreen } from '@/components/ui/empty-state'
+import { Table, THead, TH, TBody, TR, TD } from '@/components/ui/table'
 
 const money = (n: number, d = 4) => `$${Number(n || 0).toFixed(d)}`
-const compact = (n: number) => n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : `${n}`
+const compact = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : `${n}`)
 
 export default function CostDashboard() {
   const [ov, setOv] = useState<any>(null)
@@ -15,7 +20,7 @@ export default function CostDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    (async () => {
+    ;(async () => {
       try {
         const [a, b, c, d] = await Promise.all([
           api.get('/api/analytics/overview'),
@@ -29,7 +34,7 @@ export default function CostDashboard() {
     })()
   }, [])
 
-  if (loading) return <Loading label="Loading cost analytics…" />
+  if (loading) return <LoadingScreen label="Loading cost analytics" />
 
   const withoutZyra = cmp?.withoutZyra ?? 0
   const withZyra = cmp?.withZyra ?? 0
@@ -38,83 +43,88 @@ export default function CostDashboard() {
   const byModel: any[] = breakdown?.byModel || []
   const byUser: any[] = breakdown?.byUser || []
   const maxBar = Math.max(withoutZyra, withZyra, 0.0001)
+  const maxUsageCost = Math.max(...usage.map((u) => u.totalCost || 0), 0.0001)
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
-        title="COST_ANALYTICS"
-        subtitle={<>TOKEN BILLING: <span style={{ color: C.accent }}>Cost = (pt·Pp + ct·Pc) / 1000</span> {'//'} PRICING TABLE HAND-MAINTAINED</>}
+        title="Cost Analytics"
+        subtitle={<>Token billing: <span className="font-mono text-accent">Cost = (pt·Pp + ct·Pc) / 1000</span> · pricing table is hand-maintained</>}
       />
 
-      {/* ── TOKEN + COST TILES ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-        <StatTile label="Total Tokens" value={compact(ov?.totalTokens ?? 0)} hint={`${compact(ov?.promptTokens ?? 0)} prompt · ${compact(ov?.completionTokens ?? 0)} completion`} />
-        <StatTile label="Estimated Spend" value={money(withZyra, 2)} tone="accent" hint="with Zyra routing" />
-        <StatTile label="Would-be Spend" value={money(withoutZyra, 2)} hint="baseline model, no routing" />
-        <StatTile label="Saved" value={money(saved, 2)} unit={`(${pct}%)`} tone="good" />
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <MetricCard label="Total tokens" value={compact(ov?.totalTokens ?? 0)} hint={`${compact(ov?.promptTokens ?? 0)} prompt · ${compact(ov?.completionTokens ?? 0)} completion`} />
+        <MetricCard label="Estimated spend" value={money(withZyra, 2)} tone="accent" hint="with Zyra routing" />
+        <MetricCard label="Would-be spend" value={money(withoutZyra, 2)} hint="baseline model, no routing" />
+        <MetricCard label="Saved" value={money(saved, 2)} unit={`(${pct}%)`} tone="success" />
       </div>
 
-      {/* ── WITHOUT vs WITH ── */}
-      <Card className="mt-6">
-        <Label>Without Zyra  vs  With Zyra Optimization</Label>
-        <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* ── PRIMARY STORY: without vs with ── */}
+      <Card padding="lg">
+        <h2 className="type-h2 text-text">Without Zyra vs. with Zyra optimization</h2>
+        <div className="mt-5 flex flex-col gap-4">
           {[
-            { k: 'WITHOUT ZYRA', v: withoutZyra, color: C.faint },
-            { k: 'WITH ZYRA', v: withZyra, color: C.accent },
+            { k: 'Without Zyra', v: withoutZyra, className: 'bg-text-tertiary' },
+            { k: 'With Zyra', v: withZyra, className: 'bg-accent' },
           ].map((row) => (
             <div key={row.k}>
-              <div className="flex justify-between" style={{ fontFamily: C.mono, fontSize: 12, color: C.dim }}>
-                <span>{row.k}</span><span style={{ color: C.text }}>{money(row.v, 4)}</span>
+              <div className="flex justify-between text-[13px]">
+                <span className="text-text-secondary">{row.k}</span>
+                <span className="font-mono text-text">{money(row.v, 4)}</span>
               </div>
-              <div style={{ height: 22, background: C.bg, borderRadius: 6, marginTop: 6, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${Math.max((row.v / maxBar) * 100, 1)}%`, background: row.color, borderRadius: 6, transition: 'width .4s' }} />
+              <div className="mt-1.5 h-5 overflow-hidden rounded-[6px] bg-bg-subtle">
+                <div className={`h-full rounded-[6px] transition-[width] duration-500 ${row.className}`} style={{ width: `${Math.max((row.v / maxBar) * 100, 1)}%` }} />
               </div>
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 16, fontFamily: C.mono, fontSize: 12, color: C.green }}>
+        <div className="mt-4 text-[13px] font-medium text-success">
           → {pct}% reduction · {money(saved, 4)} saved over {cmp?.totalRequests ?? 0} requests ({cmp?.optimizedRequests ?? 0} routed, {cmp?.qualityRetries ?? 0} quality retries)
         </div>
-        <p style={{ fontSize: 10, color: C.faint, marginTop: 10, lineHeight: 1.5 }}>
+        <p className="mt-2 text-[12px] leading-relaxed text-text-tertiary">
           Baseline = the model each request would have used without routing. Savings depend entirely on workload mix — Zyra does not promise a fixed percentage.
         </p>
       </Card>
 
       {/* ── COST OVER TIME ── */}
-      <Card className="mt-6">
-        <div className="flex justify-between items-start mb-4">
-          <div><Label>Cost Over Time</Label><div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginTop: 4 }}>Daily spend &amp; savings</div></div>
+      <Card padding="lg">
+        <div className="mb-4">
+          <div className="type-meta text-text-tertiary">Cost over time</div>
+          <h2 className="type-h2 mt-1 text-text">Daily spend &amp; savings</h2>
         </div>
         {usage.length > 0 ? (
           <>
-            <MiniBars data={usage.map((u) => u.totalCost || 0)} height={72} color={C.accent} />
-            <div className="flex gap-6 mt-3" style={{ fontFamily: C.mono, fontSize: 11, color: C.dim }}>
-              <span><span style={{ color: C.accent }}>■</span> spend</span>
+            <div className="flex items-end gap-[3px]" style={{ height: 72 }}>
+              {usage.map((u, i) => (
+                <div key={i} className="flex-1" style={{ height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                  <div className="w-full rounded-t-[2px] bg-accent" style={{ height: `${Math.max(((u.totalCost || 0) / maxUsageCost) * 100, 2)}%`, opacity: 0.4 + ((u.totalCost || 0) / maxUsageCost) * 0.6 }} />
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex gap-6 text-[12px] text-text-tertiary">
               <span>peak {money(Math.max(...usage.map((u) => u.totalCost || 0)))}/day</span>
               <span>total saved {money(usage.reduce((s, u) => s + (u.savings || 0), 0))}</span>
             </div>
           </>
-        ) : <EmptyState icon="show_chart" title="No usage in the last 30 days" />}
+        ) : <EmptyState title="No usage in the last 30 days" />}
       </Card>
 
       {/* ── BY MODEL / BY USER ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <Card pad={0} style={{ overflow: 'hidden' }}>
-          <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(83,67,65,0.08)', background: C.panel2 }}>
-            <h3 style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 700, color: C.text, textTransform: 'uppercase' }}>Cost by Model</h3>
-          </div>
-          {byModel.length === 0 ? <EmptyState icon="dns" title="No model usage yet" /> : (
-            <div style={{ padding: 12 }}>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Card padding="none" className="overflow-hidden">
+          <div className="border-b border-border px-6 py-4"><h3 className="type-h3 text-text">Cost by model</h3></div>
+          {byModel.length === 0 ? <EmptyState icon={Server} title="No model usage yet" /> : (
+            <div className="space-y-3 p-4">
               {byModel.slice(0, 8).map((m) => {
                 const max = Math.max(...byModel.map((x) => x.totalCost), 0.0001)
                 return (
-                  <div key={m._id} style={{ padding: '8px 10px' }}>
-                    <div className="flex justify-between" style={{ fontFamily: C.mono, fontSize: 12 }}>
-                      <span style={{ color: C.text }}>{m._id || 'unknown'}</span>
-                      <span style={{ color: C.dim }}>{money(m.totalCost)} · {compact(m.totalTokens)}t</span>
+                  <div key={m._id}>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-text">{m._id || 'unknown'}</span>
+                      <span className="font-mono text-text-tertiary">{money(m.totalCost)} · {compact(m.totalTokens)}t</span>
                     </div>
-                    <div style={{ height: 5, background: C.bg, borderRadius: 99, marginTop: 4 }}>
-                      <div style={{ height: '100%', width: `${(m.totalCost / max) * 100}%`, background: C.accent, borderRadius: 99 }} />
+                    <div className="mt-1 h-1.5 rounded-full bg-bg-subtle">
+                      <div className="h-full rounded-full bg-accent" style={{ width: `${(m.totalCost / max) * 100}%` }} />
                     </div>
                   </div>
                 )
@@ -123,47 +133,44 @@ export default function CostDashboard() {
           )}
         </Card>
 
-        <Card pad={0} style={{ overflow: 'hidden' }}>
-          <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(83,67,65,0.08)', background: C.panel2 }}>
-            <h3 style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 700, color: C.text, textTransform: 'uppercase' }}>Most Expensive Users</h3>
-          </div>
-          {byUser.length === 0 ? <EmptyState icon="group" title="No user activity yet" /> : (
-            <table style={{ width: '100%', fontFamily: C.mono, fontSize: 12, borderCollapse: 'collapse' }}>
-              <tbody>
+        <Card padding="none" className="overflow-hidden">
+          <div className="border-b border-border px-6 py-4"><h3 className="type-h3 text-text">Most expensive users</h3></div>
+          {byUser.length === 0 ? <EmptyState icon={Users} title="No user activity yet" /> : (
+            <Table>
+              <TBody>
                 {byUser.slice(0, 8).map((u, i) => (
-                  <tr key={u._id} style={{ borderTop: i ? '1px solid rgba(83,67,65,0.06)' : 'none' }}>
-                    <td style={{ padding: '10px 16px', color: C.dim }}>{i + 1}</td>
-                    <td style={{ padding: '10px 12px', color: C.text }}>{u._id}</td>
-                    <td style={{ padding: '10px 12px', color: C.dim, textAlign: 'right' }}>{compact(u.totalTokens)}t</td>
-                    <td style={{ padding: '10px 16px', color: C.accent, textAlign: 'right' }}>{money(u.totalCost)}</td>
-                  </tr>
+                  <TR key={u._id}>
+                    <TD className="text-text-tertiary">{i + 1}</TD>
+                    <TD>{u._id}</TD>
+                    <TD align="right" className="text-text-tertiary">{compact(u.totalTokens)}t</TD>
+                    <TD align="right" className="font-mono text-accent">{money(u.totalCost)}</TD>
+                  </TR>
                 ))}
-              </tbody>
-            </table>
+              </TBody>
+            </Table>
           )}
         </Card>
       </div>
 
       {/* ── MODEL SWAPS ── */}
       {cmp?.modelSwaps?.length > 0 && (
-        <Card className="mt-6" pad={0} style={{ overflow: 'hidden' }}>
-          <div className="px-6 py-4" style={{ borderBottom: '1px solid rgba(83,67,65,0.08)', background: C.panel2 }}>
-            <h3 style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 700, color: C.text, textTransform: 'uppercase' }}>Routing Swaps</h3>
-          </div>
-          <table style={{ width: '100%', fontFamily: C.mono, fontSize: 12, borderCollapse: 'collapse' }}>
-            <thead><tr style={{ color: C.dim }}>{['From', '→', 'To', 'Requests', 'Saved'].map((h) => <th key={h} style={{ padding: '10px 14px', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left' }}>{h}</th>)}</tr></thead>
-            <tbody>
+        <Card padding="none" className="overflow-hidden">
+          <div className="border-b border-border px-6 py-4"><h3 className="type-h3 text-text">Routing swaps</h3></div>
+          <Table>
+            <THead>
+              <tr><TH>From</TH><TH>To</TH><TH align="right">Requests</TH><TH align="right">Saved</TH></tr>
+            </THead>
+            <TBody>
               {cmp.modelSwaps.map((s: any, i: number) => (
-                <tr key={i} style={{ borderTop: '1px solid rgba(83,67,65,0.06)' }}>
-                  <td style={{ padding: '10px 14px', color: C.dim }}>{s.from}</td>
-                  <td style={{ padding: '10px 14px', color: C.faint }}>→</td>
-                  <td style={{ padding: '10px 14px', color: C.text }}>{s.to}</td>
-                  <td style={{ padding: '10px 14px', color: C.dim }}>{s.requests}</td>
-                  <td style={{ padding: '10px 14px', color: C.green }}>{money(s.saved)}</td>
-                </tr>
+                <TR key={i}>
+                  <TD className="text-text-tertiary">{s.from}</TD>
+                  <TD>{s.to}</TD>
+                  <TD align="right" className="text-text-tertiary">{s.requests}</TD>
+                  <TD align="right" className="font-mono text-success">{money(s.saved)}</TD>
+                </TR>
               ))}
-            </tbody>
-          </table>
+            </TBody>
+          </Table>
         </Card>
       )}
     </div>

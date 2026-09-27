@@ -38,29 +38,29 @@ const SECTIONS = [
 
 export default function DocsPage() {
   return (
-    <div className="bg-brand-bg text-white min-h-screen font-sans">
-      <header className="fixed top-0 left-0 w-full z-50 backdrop-blur-xl bg-brand-bg/80 border-b border-white/[0.05]">
+    <div className="bg-bg text-text min-h-screen font-sans">
+      <header className="fixed top-0 left-0 w-full z-50 backdrop-blur-xl bg-bg/80 border-b border-border">
         <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-4">
-          <Link href="/" className="font-black text-xl tracking-tight text-brand-accent hover:opacity-80 transition-opacity">ZYRA</Link>
-          <Link href="/" className="flex items-center gap-2 text-[13px] text-gray-400 hover:text-white transition-colors"><ArrowLeft size={14} /> Back to Home</Link>
+          <Link href="/" className="font-black text-xl tracking-tight text-accent hover:opacity-80 transition-opacity">ZYRA</Link>
+          <Link href="/" className="flex items-center gap-2 text-[13px] text-text-secondary hover:text-text transition-colors"><ArrowLeft size={14} /> Back to Home</Link>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6 pt-32 pb-24">
         <div className="mb-20">
-          <div className="border border-white/10 text-gray-400 text-[10px] font-semibold uppercase tracking-[0.2em] px-4 py-1.5 rounded-full mb-8 inline-flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-brand-accent rounded-full" /> DOCS
+          <div className="border border-border text-text-secondary text-[10px] font-semibold uppercase tracking-[0.2em] px-4 py-1.5 rounded-full mb-8 inline-flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-accent rounded-full" /> DOCS
           </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-[-0.03em] leading-tight mb-6">Documentation</h1>
-          <p className="text-gray-400 text-[16px] leading-relaxed max-w-2xl">
+          <p className="text-text-secondary text-[16px] leading-relaxed max-w-2xl">
             Everything you need to integrate, configure, and optimize with Zyra.
           </p>
         </div>
 
         {/* Quick Start Code Block */}
-        <div className="mb-16 bg-brand-surface border border-white/[0.06] rounded-xl p-6 overflow-x-auto">
-          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-4">QUICK START</div>
-          <pre className="font-mono text-[13px] text-gray-300 leading-loose"><code>{`npm install zyra-sdk
+        <div className="mb-16 bg-bg-elevated border border-border rounded-xl p-6 overflow-x-auto">
+          <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-[0.2em] mb-4">QUICK START</div>
+          <pre className="font-mono text-[13px] text-text-secondary leading-loose"><code>{`npm install zyra-sdk
 
 import Zyra from "zyra-sdk";
 
@@ -76,49 +76,49 @@ const res = await client.chat.completions.create({
         <div className="space-y-16">
           {SECTIONS.map((section, i) => (
             <div key={i}>
-              <h2 className="text-xl font-bold tracking-tight mb-6 text-gray-100">{section.title}</h2>
+              <h2 className="text-xl font-bold tracking-tight mb-6 text-text">{section.title}</h2>
               <div className="space-y-3">
                 {section.items.map((item, j) => (
                   <div key={j} className="group">
                     {item.link ? (
-                      <Link href={item.link} className="block p-5 bg-brand-surface border border-white/[0.06] rounded-xl hover:border-brand-accent/20 transition-all">
+                      <Link href={item.link} className="block p-5 bg-bg-elevated border border-border rounded-xl hover:border-accent/20 transition-all">
                         <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="text-[14px] font-bold text-gray-200 group-hover:text-brand-accent transition-colors">{item.label}</h4>
-                            <p className="text-gray-500 text-[13px] mt-1">{item.desc}</p>
+                            <h4 className="text-[14px] font-bold text-text group-hover:text-accent transition-colors">{item.label}</h4>
+                            <p className="text-text-tertiary text-[13px] mt-1">{item.desc}</p>
                           </div>
-                          <span className="text-gray-600 text-[13px]">→</span>
+                          <span className="text-text-tertiary text-[13px]">→</span>
                         </div>
                       </Link>
                     ) : (
-                      <div className="p-5 bg-brand-surface border border-white/[0.06] rounded-xl">
-                        <h4 className="text-[14px] font-bold text-gray-200">{item.label}</h4>
-                        <p className="text-gray-500 text-[13px] mt-1">{item.desc}</p>
+                      <div className="p-5 bg-bg-elevated border border-border rounded-xl">
+                        <h4 className="text-[14px] font-bold text-text">{item.label}</h4>
+                        <p className="text-text-tertiary text-[13px] mt-1">{item.desc}</p>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
-              {i < SECTIONS.length - 1 && <div className="mt-12 h-[1px] bg-white/[0.04]" />}
+              {i < SECTIONS.length - 1 && <div className="mt-12 h-[1px] bg-bg-subtle" />}
             </div>
           ))}
         </div>
 
-        <div className="mt-20 p-8 bg-brand-surface border border-white/[0.06] rounded-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="mt-20 p-8 bg-bg-elevated border border-border rounded-xl flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
             <h3 className="font-bold text-[15px] mb-1">Need help?</h3>
-            <p className="text-gray-400 text-[13px]">Reach out to us at <a href="mailto:support@zyra.dev" className="text-brand-accent hover:underline">support@zyra.dev</a></p>
+            <p className="text-text-secondary text-[13px]">Reach out to us at <a href="mailto:support@zyra.dev" className="text-accent hover:underline">support@zyra.dev</a></p>
           </div>
-          <Link href="/register" className="bg-brand-accent text-black px-6 py-3 rounded-lg text-[13px] font-bold hover:bg-white transition-all shrink-0">Get Started →</Link>
+          <Link href="/register" className="bg-accent text-white px-6 py-3 rounded-lg text-[13px] font-bold hover:bg-[var(--color-accent-hover)] transition-all shrink-0">Get Started →</Link>
         </div>
       </main>
 
-      <footer className="border-t border-white/[0.04] py-8 px-6">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-600 font-mono">
+      <footer className="border-t border-border py-8 px-6">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between text-[11px] text-text-tertiary font-mono">
           <div>© 2026 ZYRA INC. ALL RIGHTS RESERVED.</div>
           <div className="flex gap-6 mt-3 sm:mt-0">
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+            <Link href="/privacy" className="hover:text-text transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-text transition-colors">Terms</Link>
           </div>
         </div>
       </footer>

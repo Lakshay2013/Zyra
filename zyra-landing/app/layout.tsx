@@ -1,16 +1,19 @@
 import type { Metadata } from 'next'
+import { JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'react-hot-toast'
 
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-jbmono', display: 'swap' })
+
 export const metadata: Metadata = {
-  title: 'Zyra AI Proxy (Beta) — Cut AI Costs with Smart Routing',
-  description: 'Zyra intelligently routes your AI requests across providers to cut costs, improve reliability, and give you full control — without changing your code. Currently in Beta.',
+  title: 'Zyra — Route every LLM request to the cheapest model that can handle it',
+  description: 'An OpenAI-compatible gateway that routes each request to the cheapest capable model across OpenAI, Anthropic, Groq, and Gemini. Change one line: model: "auto".',
   keywords: ['AI cost optimization', 'LLM proxy', 'reduce OpenAI costs', 'AI routing infrastructure', 'AI cost reduction'],
   openGraph: {
-    title: 'Zyra AI Proxy (Beta) — Cut AI Costs with Smart Routing',
-    description: 'Zyra intelligently routes your AI requests across providers to cut costs, improve reliability, and give you full control — without changing your code. Currently in Beta.',
+    title: 'Zyra — Route every LLM request to the cheapest model that can handle it',
+    description: 'An OpenAI-compatible gateway that routes each request to the cheapest capable model across OpenAI, Anthropic, Groq, and Gemini. Change one line: model: "auto".',
     type: 'website',
   },
 }
@@ -23,23 +26,17 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-      </head>
+    <html lang="en" className={jetbrainsMono.variable}>
       <body>
         {googleClientId ? (
           <GoogleOAuthProvider clientId={googleClientId}>
             {children}
-            <Toaster position="bottom-right" toastOptions={{ style: { background: '#1c1b1c', color: '#e5e2e3', border: '1px solid rgba(83,67,65,0.2)', fontSize: '13px', fontFamily: '\'JetBrains Mono\', monospace' } }} />
+            <Toaster position="bottom-right" toastOptions={{ style: { background: '#16161A', color: '#FAF9F6', border: '1px solid rgba(255,255,255,0.08)', fontSize: '13px', fontFamily: 'var(--font-sans)', borderRadius: '10px' } }} />
           </GoogleOAuthProvider>
         ) : (
           <>
             {children}
-            <Toaster position="bottom-right" toastOptions={{ style: { background: '#1c1b1c', color: '#e5e2e3', border: '1px solid rgba(83,67,65,0.2)', fontSize: '13px', fontFamily: '\'JetBrains Mono\', monospace' } }} />
+            <Toaster position="bottom-right" toastOptions={{ style: { background: '#16161A', color: '#FAF9F6', border: '1px solid rgba(255,255,255,0.08)', fontSize: '13px', fontFamily: 'var(--font-sans)', borderRadius: '10px' } }} />
           </>
         )}
       </body>

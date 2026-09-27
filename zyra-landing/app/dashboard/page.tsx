@@ -1,335 +1,238 @@
 'use client'
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import api from "@/lib/api"
-import toast from 'react-hot-toast'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { Download, RefreshCw, TrendingDown, BarChart3, ArrowUpRight } from 'lucide-react'
+import api from '@/lib/api'
+import { PageHeader } from '@/components/ui/page-header'
+import { Card } from '@/components/ui/card'
+import { Metric } from '@/components/ui/metric'
+import { LoadingScreen } from '@/components/ui/empty-state'
+import { Button } from '@/components/ui/button'
 
 export default function DashboardOverview() {
   const [stats, setStats] = useState<any>(null)
   const [usage, setUsage] = useState<any[]>([])
   const [costBreakdown, setCostBreakdown] = useState<any>(null)
-  const [highRisk, setHighRisk] = useState<any[]>([])
   const [recentLogs, setRecentLogs] = useState<any[]>([])
-  const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleRefresh = async () => {
-    if (isRefreshing) return;
-    setIsRefreshing(true);
+    if (isRefreshing) return
+    setIsRefreshing(true)
     try {
       const [overviewRes, usageRes, highRiskRes, costRes, recentRes] = await Promise.all([
         api.get('/api/analytics/overview'),
         api.get('/api/analytics/usage?period=30d'),
         api.get('/api/analytics/high-risk'),
         api.get('/api/analytics/cost-breakdown'),
-        api.get('/api/analytics/recent')
-      ]);
-      setStats(overviewRes.data);
-      setUsage(usageRes.data.usage || []);
-      setHighRisk(highRiskRes.data.highRisk || []);
-      setCostBreakdown(costRes.data);
-      setRecentLogs(recentRes.data.recent || []);
+        api.get('/api/analytics/recent'),
+      ])
+      setStats(overviewRes.data)
+      setUsage(usageRes.data.usage || [])
+      setCostBreakdown(costRes.data)
+      setRecentLogs(recentRes.data.recent || [])
+      void highRiskRes
     } catch (err) {
-      console.error("Failed to load analytics", err);
+      console.error('Failed to load analytics', err)
     } finally {
-      setIsRefreshing(false);
+      setIsRefreshing(false)
     }
-  };
-
-  const handleExportLogs = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ stats, usage, recentLogs }, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "zyra_dashboard_export.json");
-    document.body.appendChild(downloadAnchorNode); // required for firefox
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-  };
-
-  useEffect(() => {
-    const initFetch = async () => {
-      await handleRefresh();
-      setLoading(false);
-    };
-    initFetch();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex gap-3 items-center justify-center min-h-[50vh]" style={{ color: '#ffa69e' }}>
-        <span className="material-symbols-outlined animate-pulse">terminal</span>
-        <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 700, textTransform: 'uppercase' }}>Initializing System Overview...</span>
-      </div>
-    )
   }
 
-  const maxLogs = usage.length > 0 ? Math.max(...usage.map(u => u.totalLogs), 1) : 1
-  
+  const handleExportLogs = () => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify({ stats, usage, recentLogs }, null, 2))
+    const a = document.createElement('a')
+    a.setAttribute('href', dataStr)
+    a.setAttribute('download', 'zyra_dashboard_export.json')
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
+  useEffect(() => {
+    handleRefresh().finally(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  if (loading) return <LoadingScreen label="Loading overview" />
+
+  const maxLogs = usage.length > 0 ? Math.max(...usage.map((u) => u.totalLogs), 1) : 1
   const chartData = Array.from({ length: 30 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (29 - i));
-    const dateStr = d.toISOString().split('T')[0];
-    const u = usage.find((x: any) => x._id === dateStr);
-    
+    const d = new Date()
+    d.setDate(d.getDate() - (29 - i))
+    const dateStr = d.toISOString().split('T')[0]
+    const u = usage.find((x: any) => x._id === dateStr)
     return {
       height: u ? (u.totalLogs / maxLogs) * 100 : 0,
       date: d,
       value: u ? u.totalLogs : 0,
-      cost: u ? (u.totalCost || 0) : 0,
-      savings: u ? (u.savings || 0) : 0
-    };
+      cost: u ? u.totalCost || 0 : 0,
+      savings: u ? u.savings || 0 : 0,
+    }
   })
 
-  // Real metrics from /api/analytics/overview
-  const metrics = [
-    { label: 'Total Tokens', value: `${((stats?.totalTokens || 0) / 1000).toFixed(1)} kT`, mono: true },
-    { label: 'Total Cost', value: `$${(stats?.totalCost || 0).toFixed(2)}`, mono: true },
-    { label: 'Models Used', value: `${costBreakdown?.byModel?.length || 0}`, mono: true },
-    { label: 'High-risk %', value: `${stats?.totalLogs > 0 ? ((stats?.flaggedCount || 0) / stats.totalLogs * 100).toFixed(1) : '0.0'}%`, mono: true, error: true },
-    { label: 'Saved', value: `$${(stats?.totalSavings || 0).toFixed(2)}`, mono: true },
-  ]
+  const totalCost = stats?.totalCost || 0
+  const totalSavings = stats?.totalSavings || 0
+  const reduction = totalCost + totalSavings > 0 ? (totalSavings / (totalCost + totalSavings)) * 100 : 0
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const highRiskPct = stats?.totalLogs > 0 ? ((stats?.flaggedCount || 0) / stats.totalLogs) * 100 : 0
 
   return (
-    <div>
-      {/* ── HERO HEADER ── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6" style={{ borderBottom: '1px solid rgba(83,67,65,0.1)' }}>
-        <div>
-          <h1 style={{ fontSize: 48, fontWeight: 900, letterSpacing: '-0.03em', textTransform: 'uppercase', color: '#e5e2e3', lineHeight: 1 }}>
-            SYSTEM_OVERVIEW
-          </h1>
-          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: '#71717a', marginTop: 8 }}>
-            LAST 30 DAYS {'//'} <span style={{ color: '#9be8cb' }}>{stats?.totalLogs?.toLocaleString() || 0}</span> INTERACTIONS
-            {stats?.simulatedCount > 0 ? <> {'//'} <span style={{ color: '#ffa69e' }}>DEMO MODE</span></> : null}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={handleExportLogs}
-            className="hover:bg-[#353436] transition-colors"
-            style={{
-              background: '#2a2a2b', padding: '8px 16px', borderRadius: 12,
-              fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
-              color: '#e5e2e3', border: '1px solid rgba(83,67,65,0.15)',
-              cursor: 'pointer'
-          }}>Export Logs</button>
-          <button 
-            onClick={handleRefresh}
-            className={`transition-opacity flex items-center justify-center min-w-[120px] ${isRefreshing ? 'opacity-80 cursor-not-allowed' : 'hover:opacity-80 cursor-pointer'}`}
-            disabled={isRefreshing}
-            style={{
-              background: '#ffa69e', padding: '8px 16px', borderRadius: 12,
-              fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
-              color: '#3b0908'
-          }}>{isRefreshing ? 'Refreshing...' : 'Refresh Core'}</button>
-        </div>
-      </div>
-
-      {/* ── METRIC MARQUEE ── */}
-      <div className="flex items-center gap-12 overflow-x-auto mt-6 p-4" style={{ background: '#1c1b1c', borderRadius: 12 }}>
-        {metrics.map((m, i) => (
-          <div key={i} className="flex flex-col shrink-0">
-            <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', marginBottom: 4 }}>{m.label}</span>
-            <span style={{
-              fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 700,
-              color: m.error ? '#ffb4ab' : '#e5e2e3'
-            }}>{m.value}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* ── BENTO GRID ── */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-6">
-
-        {/* ── THROUGHPUT CHART (8 cols) ── */}
-        <div className="md:col-span-8 p-6 relative overflow-hidden" style={{
-          background: '#201f20', borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)'
-        }}>
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase' }}>Interactions</span>
-              <h2 style={{ fontSize: 24, fontWeight: 900, color: '#e5e2e3', marginTop: 4 }}>Daily Throughput</h2>
-            </div>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#71717a', textTransform: 'uppercase' }}>30-day daily</span>
-          </div>
-
-          {/* Bar Chart */}
-          <div className="flex items-end gap-1 px-2" style={{ height: 256 }}>
-            {chartData.length > 0 ? (
-              chartData.map((d, i) => {
-                const isPeach = d.height > 50
-                return (
-                  <div key={i} className="relative flex-1 h-full flex items-end group">
-                    <div className="w-full rounded-t-sm transition-all group-hover:opacity-80 absolute bottom-0" style={{
-                      height: `${Math.max(d.height, 4)}%`,
-                      background: isPeach ? `rgba(255,166,158,${0.3 + d.height / 200})` : '#353436',
-                    }} />
-                    {/* Tooltip */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-[#2a2a2b] border border-[#534341] rounded shadow-xl text-xs text-[#e5e2e3] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap flex flex-col gap-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                      <div className="text-[#9be8cb] font-bold border-b border-[#534341] pb-1 mb-1">{d.date.toLocaleDateString()}</div>
-                      <div className="flex justify-between gap-4"><span>Reqs:</span> <span>{d.value}</span></div>
-                      <div className="flex justify-between gap-4"><span>Cost:</span> <span>${(d.cost || 0).toFixed(4)}</span></div>
-                      <div className="flex justify-between gap-4"><span>Saved:</span> <span className="text-[#9be8cb]">${(d.savings || 0).toFixed(4)}</span></div>
-                    </div>
-                  </div>
-                )
-              })
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-4">
-                <span className="material-symbols-outlined" style={{ fontSize: 48, color: '#353436' }}>insert_chart</span>
-                <p style={{ fontSize: 13, color: '#534341', textAlign: 'center', maxWidth: 260, lineHeight: 1.5 }}>
-                  No traffic data yet. Connect your SDK to start seeing throughput metrics.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Bottom stats */}
-          <div className="flex justify-between mt-4 pt-4" style={{ borderTop: '1px solid rgba(83,67,65,0.1)' }}>
-            <div className="flex gap-8">
-              <div>
-                <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 700 }}>Peak / day</div>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, color: '#e5e2e3' }}>
-                  {chartData.some(d => d.value) ? `${Math.max(...chartData.map(d => d.value))} req` : '—'}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 700 }}>Active days</div>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, color: '#e5e2e3' }}>
-                  {chartData.filter(d => d.value > 0).length || '—'}
-                </div>
-              </div>
-            </div>
-            <button onClick={handleExportLogs} style={{ color: '#ffcdc9', fontSize: 10, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.15em' }}>Full Report</button>
-          </div>
-        </div>
-
-        {/* ── RIGHT COLUMN: 3 METRIC CARDS (4 cols) ── */}
-        <div className="md:col-span-4 flex flex-col gap-6">
-
-          {/* CPU Usage → Total Cost */}
-          <div className="p-6" style={{ background: '#2a2a2b', borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)' }}>
-            <div className="flex justify-between mb-4">
-              <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase' }}>Total Cost</span>
-              <span className="material-symbols-outlined" style={{ color: '#71717a', fontSize: 18 }}>payments</span>
-            </div>
-            <div className="flex items-baseline gap-2 mb-2">
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 36, fontWeight: 900, color: '#e5e2e3' }}>
-                ${(stats?.totalCost || 0).toFixed(2)}
-              </span>
-            </div>
-            <div className="w-full overflow-hidden" style={{ background: '#131314', height: 6, borderRadius: 99 }}>
-              <div style={{
-                background: 'linear-gradient(to right, #ffa69e, #ffcdc9)',
-                height: '100%',
-                width: `${Math.min((stats?.totalCost || 0) / 10 * 100, 100)}%`,
-                borderRadius: 99,
-              }} />
-            </div>
-          </div>
-
-          {/* Latency → Savings */}
-          <div className="p-6" style={{ background: '#2a2a2b', borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)' }}>
-            <div className="flex justify-between mb-4">
-              <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase' }}>Total Savings</span>
-              <span className="material-symbols-outlined" style={{ color: '#71717a', fontSize: 18 }}>savings</span>
-            </div>
-            <div className="flex items-baseline gap-2 mb-2">
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 36, fontWeight: 900, color: '#9be8cb' }}>
-                ${(stats?.totalSavings || 0).toFixed(2)}
-              </span>
-            </div>
-            <div className="flex gap-1 mt-2">
-              {[1,1,1,0.2,0.2].map((o, i) => (
-                <div key={i} className="flex-1" style={{ height: 4, background: `rgba(155,232,203,${o})` }} />
-              ))}
-            </div>
-          </div>
-
-          {/* Requests/sec → Total Requests */}
-          <div className="p-6" style={{ background: '#2a2a2b', borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)' }}>
-            <div className="flex justify-between mb-4">
-              <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase' }}>Total Requests</span>
-              <span className="material-symbols-outlined" style={{ color: '#71717a', fontSize: 18 }}>hub</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 36, fontWeight: 900, color: '#e5e2e3' }}>
-                {(stats?.totalLogs || 0).toLocaleString()}
-              </span>
-            </div>
-            {stats?.totalSavings > 0 && (
-              <div className="mt-2 flex items-center gap-1" style={{ fontSize: 10, color: '#9be8cb', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>trending_up</span>
-                {((stats.totalSavings / Math.max(stats.totalCost + stats.totalSavings, 0.01)) * 100).toFixed(1)}% cost reduction
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── RECENT EVENTS (full width) ── */}
-        <div className="md:col-span-12 overflow-hidden" style={{ background: '#1c1b1c', borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)' }}>
-          <div className="px-6 py-4 flex justify-between items-center" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)', background: '#201f20' }}>
-            <h3 style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#e5e2e3', textTransform: 'uppercase' }}>Recent_System_Events</h3>
-            <Link href="/dashboard/logs" style={{ fontSize: 10, textTransform: 'uppercase', fontWeight: 700, color: '#ffcdc9', letterSpacing: '0.15em' }}>View History</Link>
-          </div>
-            {recentLogs.length > 0 ? (
-              recentLogs.slice(0, 5).map((log: any, i: number) => {
-                const isHighRisk = log.riskScore > 50;
-                
-                let text = "API Interaction Processed"
-                let sub = `Routed to ${log.model} via ${log.optimizer?.wasOptimized ? 'Optimizer' : 'Direct'}`
-                let dotColor = '#9be8cb' // green
-
-                if (isHighRisk) {
-                  text = "Security Alert Triggered"
-                  sub = `Risk score ${log.riskScore} — ${log.flags?.join(', ') || 'unknown'}`
-                  dotColor = '#ffb4ab' // red
-                } else if (log.optimizer?.wasOptimized) {
-                  text = "Routing Optimization Delivered"
-                  sub = `Shifted from ${log.optimizer.originalModel} to ${log.optimizer.optimizedModel}`
-                  dotColor = '#ffa69e' // peach/orange
-                }
-
-                return (
-                  <div key={log._id || i} className="px-6 py-4 flex items-center justify-between transition-colors hover:bg-[#2a2a2b]" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>
-                    <div className="flex items-center gap-4">
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor }} />
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: isHighRisk ? '#ffb4ab' : '#e5e2e3' }}>
-                          {text} <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, opacity: 0.6, marginLeft: 8 }}>USER_{log.userId?.slice(0, 8)}</span>
-                        </div>
-                        <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '-0.02em', marginTop: 2 }}>
-                          {sub}
-                        </div>
-                        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#534341', marginTop: 4, fontStyle: 'italic', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          "{log.prompt}"
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#71717a' }}>
-                        {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC
-                      </span>
-                      {log.cost > 0 && <span style={{ fontSize: 10, color: '#9be8cb', fontWeight: 600 }}>${log.cost.toFixed(6)}</span>}
-                    </div>
-                  </div>
-                )
-              })
-            ) : (
-              <div className="px-6 py-8 text-center" style={{ color: '#71717a', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                No recent activity detected. Connect your SDK to begin.
-              </div>
-            )}
-        </div>
-      </div>
-
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
+    <div className="space-y-8">
+      <PageHeader
+        title={`${greeting}.`}
+        subtitle={
+          <>
+            Your AI infrastructure at a glance — last 30 days, {(stats?.totalLogs || 0).toLocaleString()} interactions
+            {stats?.simulatedCount > 0 ? ' (demo mode)' : ''}.
+          </>
         }
-      `}</style>
+        right={
+          <>
+            <Button variant="outline" size="sm" onClick={handleExportLogs}>
+              <Download size={14} className="mr-1.5" /> Export
+            </Button>
+            <Button size="sm" onClick={handleRefresh} disabled={isRefreshing}>
+              <RefreshCw size={14} className={`mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`} /> Refresh
+            </Button>
+          </>
+        }
+      />
+
+      {/* ── PRIMARY KPI ── */}
+      <div className="flex flex-wrap items-end justify-between gap-6 border-b border-border pb-8">
+        <div>
+          <div className="type-meta text-text-tertiary">Total spend</div>
+          <div className="mt-2 font-mono text-[3rem] font-semibold leading-none tracking-tight text-text">
+            ${totalCost.toFixed(2)}
+          </div>
+          {totalSavings > 0 && (
+            <div className="mt-2 flex items-center gap-1.5 text-[13px] font-medium text-success">
+              <TrendingDown size={15} /> {reduction.toFixed(1)}% lower than without routing
+            </div>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-x-10 gap-y-4 sm:grid-cols-4">
+          <Metric label="Requests" value={(stats?.totalLogs || 0).toLocaleString()} />
+          <Metric label="Tokens" value={`${((stats?.totalTokens || 0) / 1000).toFixed(1)}k`} />
+          <Metric label="Models used" value={costBreakdown?.byModel?.length || 0} />
+          <Metric label="High-risk" value={`${highRiskPct.toFixed(1)}%`} tone={highRiskPct > 5 ? 'danger' : 'default'} />
+        </div>
+      </div>
+
+      {/* ── THROUGHPUT + SAVINGS ── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2" padding="lg">
+          <div className="mb-6 flex items-start justify-between">
+            <div>
+              <h2 className="type-h2 text-text">Daily throughput</h2>
+              <p className="mt-1 text-[13px] text-text-secondary">Requests over the last 30 days</p>
+            </div>
+            <Link href="/dashboard/logs" className="flex items-center gap-1 text-[13px] font-medium text-accent">
+              View requests <ArrowUpRight size={14} />
+            </Link>
+          </div>
+
+          {chartData.some((d) => d.value > 0) ? (
+            <>
+              <div className="flex items-end gap-1" style={{ height: 180 }}>
+                {chartData.map((d, i) => (
+                  <div key={i} className="group relative flex h-full flex-1 items-end">
+                    <div
+                      className="absolute bottom-0 w-full rounded-t-[3px] bg-accent transition-opacity group-hover:opacity-70"
+                      style={{ height: `${Math.max(d.height, 2)}%`, opacity: 0.35 + (d.height / 100) * 0.65 }}
+                    />
+                    <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] bg-bg-inverse px-3 py-2 text-[11px] text-white group-hover:block">
+                      <div className="font-semibold">{d.date.toLocaleDateString()}</div>
+                      <div className="mt-1 text-white/70">{d.value} requests · ${d.cost.toFixed(4)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 flex justify-between border-t border-border pt-4 text-[13px]">
+                <div className="flex gap-8">
+                  <div>
+                    <div className="type-meta text-text-tertiary">Peak / day</div>
+                    <div className="mt-1 font-mono text-text">{Math.max(...chartData.map((d) => d.value))} req</div>
+                  </div>
+                  <div>
+                    <div className="type-meta text-text-tertiary">Active days</div>
+                    <div className="mt-1 font-mono text-text">{chartData.filter((d) => d.value > 0).length}</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+              <BarChart3 size={28} className="text-text-tertiary" strokeWidth={1.5} />
+              <p className="max-w-xs text-[13px] text-text-tertiary">No traffic yet. Connect your SDK or send a Playground request to see throughput.</p>
+            </div>
+          )}
+        </Card>
+
+        <div className="flex flex-col gap-6">
+          <Card padding="lg">
+            <Metric label="Total savings" value={`$${totalSavings.toFixed(2)}`} tone="success" size="lg" />
+          </Card>
+          <Card padding="lg">
+            <Metric
+              label="Cost reduction"
+              value={`${reduction.toFixed(1)}%`}
+              tone="accent"
+              size="lg"
+              hint={reduction > 0 ? 'vs. baseline model for every request' : undefined}
+            />
+          </Card>
+        </div>
+      </div>
+
+      {/* ── RECENT ACTIVITY ── */}
+      <Card padding="none">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h3 className="type-h3 text-text">Recent activity</h3>
+          <Link href="/dashboard/logs" className="text-[13px] font-medium text-accent">View all</Link>
+        </div>
+        {recentLogs.length > 0 ? (
+          recentLogs.slice(0, 5).map((log: any, i: number) => {
+            const isHighRisk = log.riskScore > 50
+            let text = 'Request processed'
+            let sub = `Routed to ${log.model}${log.optimizer?.wasOptimized ? ' via optimizer' : ''}`
+            let tone: 'success' | 'danger' | 'accent' = 'success'
+            if (isHighRisk) {
+              text = 'Security alert'
+              sub = `Risk score ${log.riskScore} — ${log.flags?.join(', ') || 'unknown'}`
+              tone = 'danger'
+            } else if (log.optimizer?.wasOptimized) {
+              text = 'Routing optimized'
+              sub = `${log.optimizer.originalModel} → ${log.optimizer.optimizedModel}`
+              tone = 'accent'
+            }
+            const dotClass = { success: 'bg-success', danger: 'bg-danger', accent: 'bg-accent' }[tone]
+            return (
+              <div key={log._id || i} className="flex items-center justify-between border-b border-border px-6 py-4 last:border-0">
+                <div className="flex items-center gap-3.5">
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`} />
+                  <div>
+                    <div className={`text-[14px] font-medium ${isHighRisk ? 'text-danger' : 'text-text'}`}>{text}</div>
+                    <div className="mt-0.5 text-[12px] text-text-secondary">{sub}</div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-0.5 text-right">
+                  <span className="text-[12px] text-text-tertiary">
+                    {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  {log.cost > 0 && <span className="font-mono text-[12px] text-success">${log.cost.toFixed(6)}</span>}
+                </div>
+              </div>
+            )
+          })
+        ) : (
+          <div className="px-6 py-10 text-center text-[13px] text-text-tertiary">No recent activity. Connect your SDK to begin.</div>
+        )}
+      </Card>
     </div>
   )
 }

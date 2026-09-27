@@ -70,8 +70,10 @@ test('different keys → provider called for each', async (t) => {
   const { apiKey } = await createOrgWithKey({ providerKeys: fakeProviderKeys(['openai']) })
   nock(OPENAI).post('/v1/chat/completions').twice().reply(200, body('x'))
 
-  const r1 = await send(apiKey, 'key-D1')
-  const r2 = await send(apiKey, 'key-D2')
+  // Distinct prompts so the (org-scoped) response cache doesn't short-circuit
+  // the second call — this test is about Idempotency-Key uniqueness, not cache.
+  const r1 = await send(apiKey, 'key-D1', 'different keys prompt one')
+  const r2 = await send(apiKey, 'key-D2', 'different keys prompt two')
   assert.equal(r1.status, 200)
   assert.equal(r2.status, 200)
   assert.equal(nock.pendingMocks().length, 0)

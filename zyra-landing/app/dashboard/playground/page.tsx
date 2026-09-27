@@ -3,11 +3,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Play, Copy, ArrowRight } from 'lucide-react'
 import api from '@/lib/api'
-import { C } from '@/components/dashboard/kit'
+import { PageHeader } from '@/components/ui/page-header'
+import { Card } from '@/components/ui/card'
+import { Textarea, Select } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Chip, Badge } from '@/components/ui/badge'
 
 const MODELS = [
-  { value: 'auto', label: 'AUTO — Zyra picks the cheapest capable model' },
+  { value: 'auto', label: 'Auto — Zyra picks the cheapest capable model' },
   { value: 'gpt-4o', label: 'gpt-4o' },
   { value: 'gpt-4o-mini', label: 'gpt-4o-mini' },
   { value: 'claude-sonnet-4-6', label: 'claude-sonnet-4-6' },
@@ -37,13 +43,13 @@ type Info = {
 export default function PlaygroundPage() {
   const [model, setModel] = useState('auto')
   const [prompt, setPrompt] = useState(PRESETS[0].prompt)
+  const [activePreset, setActivePreset] = useState(0)
   const [response, setResponse] = useState('')
   const [info, setInfo] = useState<Info | null>(null)
   const [loading, setLoading] = useState(false)
   const [apiKey, setApiKey] = useState<string | null>(null)
   const [keyErr, setKeyErr] = useState(false)
 
-  // Ensure the playground has a Zyra API key (mint one on first use).
   useEffect(() => {
     const existing = localStorage.getItem('zyra_api_key')
     if (existing) { setApiKey(existing); return }
@@ -103,106 +109,129 @@ export default function PlaygroundPage() {
     } finally { setLoading(false) }
   }, [prompt, model, loading, apiKey])
 
-  const secColor = info?.security === 'BLOCKED' ? C.red : info?.security === 'SAFE' ? C.green : C.dim
+  const statusLabel = loading ? 'Processing' : keyErr ? 'Key error' : apiKey ? 'Ready' : 'Minting key…'
+  const statusTone = loading ? 'text-accent' : keyErr ? 'text-danger' : 'text-success'
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6" style={{ borderBottom: '1px solid rgba(83,67,65,0.1)' }}>
-        <div>
-          <h1 style={{ fontSize: 44, fontWeight: 900, letterSpacing: '-0.03em', textTransform: 'uppercase', color: C.text, lineHeight: 1 }}>PLAYGROUND</h1>
-          <p style={{ fontFamily: C.mono, fontSize: 12, color: C.dim, marginTop: 8 }}>
-            PROMPT → SECURITY → ROUTING → PROVIDER → RESPONSE {'//'} every request is logged &amp; risk-scored
-          </p>
-        </div>
-        <span style={{ fontFamily: C.mono, fontSize: 10, color: loading ? C.accent : C.green, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-          {loading ? '● processing' : keyErr ? '● key error' : apiKey ? '● ready' : '● minting key…'}
-        </span>
-      </div>
+      <PageHeader
+        title="Playground"
+        subtitle="Prompt → security → routing → provider → response. Every request is logged and risk-scored."
+        right={<span className={`type-meta ${statusTone}`}>● {statusLabel}</span>}
+      />
 
-      {/* presets */}
-      <div className="flex flex-wrap gap-2 mt-6">
-        {PRESETS.map((p) => (
-          <button key={p.label} onClick={() => setPrompt(p.prompt)} style={{
-            fontFamily: C.mono, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-            padding: '6px 12px', borderRadius: 8, cursor: 'pointer', color: C.dim, background: C.card, border: `1px solid ${C.border}`,
-          }}>{p.label}</button>
+      <div className="mb-5 flex flex-wrap gap-2">
+        {PRESETS.map((p, i) => (
+          <Chip key={p.label} active={activePreset === i} onClick={() => { setPrompt(p.prompt); setActivePreset(i) }}>
+            {p.label}
+          </Chip>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
-        {/* INPUT */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* ── LEFT: input ── */}
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3 p-3" style={{ background: C.panel2, borderRadius: 10 }}>
-            <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: C.dim, textTransform: 'uppercase' }}>Model</span>
-            <select value={model} onChange={(e) => setModel(e.target.value)} style={{ background: '#0e0e0f', border: 'none', color: C.text, fontFamily: C.mono, fontSize: 12, padding: '8px 12px', borderRadius: 8, outline: 'none', flex: 1 }}>
+          <div>
+            <label className="mb-1.5 block text-[13px] font-medium text-text">Model</label>
+            <Select value={model} onChange={(e) => setModel(e.target.value)}>
               {MODELS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-            </select>
+            </Select>
           </div>
-          <div style={{ background: C.panel, borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)' }}>
-            <div className="px-5 py-3 flex justify-between" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>
-              <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: C.dim, textTransform: 'uppercase' }}>Prompt</span>
-              <span style={{ fontFamily: C.mono, fontSize: 10, color: C.dim }}>{prompt.length} chars</span>
+
+          <Card padding="none">
+            <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+              <span className="type-meta text-text-tertiary">Prompt</span>
+              <span className="text-[12px] text-text-tertiary">{prompt.length} chars</span>
             </div>
-            <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
+            <Textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) run() }}
               placeholder="Enter your prompt…"
-              style={{ background: 'transparent', color: C.text, border: 'none', outline: 'none', fontFamily: 'Inter, sans-serif', fontSize: 14, padding: 20, resize: 'vertical', minHeight: 220, width: '100%', lineHeight: 1.6 }} />
-          </div>
-          <button onClick={run} disabled={loading || !prompt.trim() || !apiKey} style={{
-            background: loading ? C.dim : C.accent, color: C.accentInk, padding: '14px 0', borderRadius: 12,
-            fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
-            opacity: loading || !prompt.trim() || !apiKey ? 0.6 : 1, cursor: loading ? 'wait' : 'pointer',
-          }}>{loading ? 'Executing…' : 'Execute'}</button>
-          {keyErr && <p style={{ fontSize: 11, color: C.red }}>Could not mint an API key — you may not have permission. Create one under API Keys.</p>}
+              className="min-h-[220px] border-0 focus:ring-0"
+            />
+          </Card>
+
+          <Button onClick={run} disabled={loading || !prompt.trim() || !apiKey} size="lg" className="w-full">
+            <Play size={15} className="mr-2" /> {loading ? 'Executing…' : 'Execute'}
+          </Button>
+          {keyErr && <p className="text-[12px] text-danger">Could not mint an API key — create one under API Keys.</p>}
         </div>
 
-        {/* OUTPUT */}
+        {/* ── RIGHT: output ── */}
         <div className="flex flex-col gap-4">
-          {/* security + routing summary */}
-          {info && (
-            <div style={{ background: C.panel, borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)', padding: 18 }}>
-              <div className="flex items-center justify-between">
-                <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 700, color: secColor, textTransform: 'uppercase' }}>
-                  Security: {info.security}{info.blockType ? ` · ${info.blockType}` : ''}
-                </span>
-                {info.simulated && <span style={{ fontFamily: C.mono, fontSize: 9, fontWeight: 700, color: C.accentInk, background: C.accent, padding: '2px 7px', borderRadius: 5 }}>SIMULATED</span>}
-              </div>
-              {info.blockMatches && info.blockMatches.length > 0 && (
-                <div style={{ fontFamily: C.mono, fontSize: 11, color: C.red, marginTop: 6 }}>matched: {info.blockMatches.join(', ')}</div>
+          <AnimatePresence mode="wait">
+            {info && (
+              <motion.div
+                key={info.security + info.selectedModel}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
+              >
+                <Card padding="md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${info.security === 'BLOCKED' ? 'bg-danger' : 'bg-success'}`} />
+                      <span className={`type-meta ${info.security === 'BLOCKED' ? 'text-danger' : 'text-success'}`}>
+                        Security: {info.security}{info.blockType ? ` · ${info.blockType}` : ''}
+                      </span>
+                    </div>
+                    {info.simulated && <Badge tone="accent">Simulated</Badge>}
+                  </div>
+
+                  {info.blockMatches && info.blockMatches.length > 0 && (
+                    <div className="mt-2 font-mono text-[12px] text-danger">matched: {info.blockMatches.join(', ')}</div>
+                  )}
+
+                  {info.security !== 'BLOCKED' && (
+                    <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2.5 text-[13px]">
+                      <Row k="Requested" v={info.requestedModel} />
+                      <Row k="Selected" v={info.selectedModel} accent />
+                      <Row k="Provider" v={info.provider} />
+                      <Row k="Complexity" v={info.complexity} />
+                      <Row k="Baseline cost" v={`$${info.baselineCost.toFixed(6)}`} />
+                      <Row k="Optimized cost" v={`$${info.cost.toFixed(6)}`} />
+                      <Row k="Savings" v={`$${info.savings.toFixed(6)}`} good />
+                      <Row k="Latency" v={`${info.latency} ms`} />
+                      <Row k="Tokens" v={`${info.tokensIn} in / ${info.tokensOut} out`} />
+                      <Row k="Fallback" v={info.fallback || 'none'} />
+                      {info.qualityRetry && <Row k="Quality guard" v="retried ↑ tier" />}
+                    </div>
+                  )}
+
+                  <div className="mt-4 border-t border-border pt-3 text-[12px] leading-relaxed text-text-tertiary">
+                    Risk score (R = 0.35·I + 0.30·J + 0.20·P + 0.15·A) is computed asynchronously —{' '}
+                    <Link href="/dashboard/security" className="inline-flex items-center gap-0.5 font-medium text-accent">
+                      open Security &amp; Risk <ArrowRight size={11} />
+                    </Link>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <Card padding="none" className="flex-1">
+            <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+              <span className="type-meta text-text-tertiary">Response</span>
+              {response && (
+                <button
+                  onClick={() => { navigator.clipboard.writeText(response); toast.success('Copied') }}
+                  className="flex items-center gap-1 text-[12px] font-medium text-accent"
+                >
+                  <Copy size={12} /> Copy
+                </button>
               )}
-              {info.security !== 'BLOCKED' && (
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-3" style={{ fontFamily: C.mono, fontSize: 12 }}>
-                  <Row k="requested" v={info.requestedModel} />
-                  <Row k="selected" v={info.selectedModel} accent />
-                  <Row k="provider" v={info.provider} />
-                  <Row k="complexity" v={info.complexity} />
-                  <Row k="baseline cost" v={`$${info.baselineCost.toFixed(6)}`} />
-                  <Row k="optimized cost" v={`$${info.cost.toFixed(6)}`} />
-                  <Row k="savings" v={`$${info.savings.toFixed(6)}`} good />
-                  <Row k="latency" v={`${info.latency} ms`} />
-                  <Row k="tokens" v={`${info.tokensIn} in / ${info.tokensOut} out`} />
-                  <Row k="fallback" v={info.fallback || 'none'} />
-                  {info.qualityRetry && <Row k="quality guard" v="retried ↑ tier" />}
-                </div>
+            </div>
+            <div className="min-h-[160px] max-h-[360px] overflow-y-auto p-4">
+              {response ? (
+                <p className={`whitespace-pre-wrap text-[14px] leading-relaxed ${info?.security === 'BLOCKED' ? 'text-danger' : 'text-text'}`}>
+                  {response}
+                </p>
+              ) : (
+                <p className="text-[13px] italic text-text-tertiary">Awaiting response…</p>
               )}
-              <div style={{ fontSize: 10, color: C.faint, marginTop: 12, lineHeight: 1.5 }}>
-                Risk score (R = 0.35·I + 0.30·J + 0.20·P + 0.15·A) is computed asynchronously —{' '}
-                <Link href="/dashboard/security" style={{ color: C.accent }}>open Security &amp; Risk</Link>.
-              </div>
             </div>
-          )}
-          {/* response */}
-          <div style={{ background: C.panel, borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)' }}>
-            <div className="px-5 py-3 flex justify-between" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>
-              <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: C.dim, textTransform: 'uppercase' }}>Response</span>
-              {response && <button onClick={() => { navigator.clipboard.writeText(response); toast.success('Copied') }} style={{ fontSize: 10, color: C.accent, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>Copy</button>}
-            </div>
-            <div className="p-5 overflow-y-auto" style={{ minHeight: 160, maxHeight: 360 }}>
-              {response
-                ? <p style={{ fontSize: 14, lineHeight: 1.7, color: info?.security === 'BLOCKED' ? C.red : C.text, whiteSpace: 'pre-wrap' }}>{response}</p>
-                : <p style={{ fontSize: 13, color: C.faint, fontStyle: 'italic' }}>Awaiting response…</p>}
-            </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>
@@ -212,8 +241,8 @@ export default function PlaygroundPage() {
 function Row({ k, v, accent, good }: { k: string; v: string; accent?: boolean; good?: boolean }) {
   return (
     <div className="flex justify-between gap-3">
-      <span style={{ color: C.dim }}>{k}</span>
-      <span style={{ color: good ? C.green : accent ? C.accent : C.text, textAlign: 'right' }}>{v}</span>
+      <span className="text-text-tertiary">{k}</span>
+      <span className={`text-right font-mono ${good ? 'text-success' : accent ? 'text-accent' : 'text-text'}`}>{v}</span>
     </div>
   )
 }

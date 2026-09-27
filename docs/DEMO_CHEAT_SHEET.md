@@ -59,7 +59,7 @@ R > 80  →  admin dashboard notification (the bell)
 
 ```bash
 cd backend
-npm test                       # 131 backend tests (providers mocked)
+npm test                       # 133 backend tests (providers mocked)
 npm run eval:security          # precision/recall vs the paper's numbers
 npm run test:cost-accuracy     # cost formula = 0.0000% deviation
 BENCH_N=2000 npm run benchmark:logging   # logging success rate + latency

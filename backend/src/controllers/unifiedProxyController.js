@@ -677,7 +677,7 @@ exports.chatCompletions = async (req, res) => {
   const cacheTTL = org.cache?.ttlSeconds || 300
 
   if (cacheEnabled && !isStream) {
-    const cacheKey = buildCacheKey(model, requestBody.messages, {
+    const cacheKey = buildCacheKey(org._id.toString(), model, requestBody.messages, {
       temperature: requestBody.temperature,
       max_tokens: requestBody.max_tokens
     })
@@ -936,10 +936,13 @@ exports.chatCompletions = async (req, res) => {
   }
 
   // ── Step 9: Cache store ──
+  // Must hash the same values the Step 4 lookup used (post max_tokens-clamp
+  // `requestBody`, not the raw `req.body`) or the write key never matches the
+  // read key and the cache silently never hits.
   if (cacheEnabled && statusCode >= 200 && statusCode < 400) {
-    const cacheKey = buildCacheKey(finalModel, req.body.messages, {
-      temperature: req.body.temperature,
-      max_tokens: req.body.max_tokens
+    const cacheKey = buildCacheKey(org._id.toString(), finalModel, requestBody.messages, {
+      temperature: requestBody.temperature,
+      max_tokens: requestBody.max_tokens
     })
     setInCache(cacheKey, responseBody, cacheTTL).catch(() => {})
   }

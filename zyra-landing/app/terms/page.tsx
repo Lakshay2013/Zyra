@@ -141,14 +141,14 @@ const sections: Section[] = [
 
 export default function TermsOfServicePage() {
   return (
-    <div className="bg-brand-bg text-white min-h-screen font-sans">
+    <div className="bg-bg text-text min-h-screen font-sans">
       {/* Nav */}
-      <header className="fixed top-0 left-0 w-full z-50 backdrop-blur-xl bg-brand-bg/80 border-b border-white/[0.05]">
+      <header className="fixed top-0 left-0 w-full z-50 backdrop-blur-xl bg-bg/80 border-b border-border">
         <div className="max-w-4xl mx-auto flex items-center justify-between px-6 py-4">
-          <Link href="/" className="font-black text-xl tracking-tight text-brand-accent hover:opacity-80 transition-opacity">
+          <Link href="/" className="font-black text-xl tracking-tight text-accent hover:opacity-80 transition-opacity">
             ZYRA
           </Link>
-          <Link href="/" className="flex items-center gap-2 text-[13px] text-gray-400 hover:text-white transition-colors">
+          <Link href="/" className="flex items-center gap-2 text-[13px] text-text-secondary hover:text-text transition-colors">
             <ArrowLeft size={14} /> Back to Home
           </Link>
         </div>
@@ -157,18 +157,18 @@ export default function TermsOfServicePage() {
       <main className="max-w-4xl mx-auto px-6 pt-32 pb-24">
         {/* Header */}
         <div className="mb-16">
-          <div className="border border-white/10 text-gray-400 text-[10px] font-semibold uppercase tracking-[0.2em] px-4 py-1.5 rounded-full mb-8 inline-flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-brand-accent rounded-full" />
+          <div className="border border-border text-text-secondary text-[10px] font-semibold uppercase tracking-[0.2em] px-4 py-1.5 rounded-full mb-8 inline-flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-accent rounded-full" />
             LEGAL
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-[-0.03em] leading-tight mb-6">
             Terms of Service
           </h1>
-          <p className="text-gray-400 text-[15px] leading-relaxed max-w-2xl">
+          <p className="text-text-secondary text-[15px] leading-relaxed max-w-2xl">
             These terms govern your use of the Zyra AI cost optimization platform.
             Please read them carefully before using our service.
           </p>
-          <div className="mt-6 text-[11px] font-mono text-gray-500 uppercase tracking-[0.15em]">
+          <div className="mt-6 text-[11px] font-mono text-text-tertiary uppercase tracking-[0.15em]">
             Last Updated: {LAST_UPDATED} &nbsp;•&nbsp; Effective Immediately
           </div>
         </div>
@@ -177,44 +177,44 @@ export default function TermsOfServicePage() {
         <div className="space-y-12">
           {sections.map((section, i) => (
             <section key={i} className="group">
-              <h2 className="text-xl font-bold tracking-tight mb-6 text-gray-100 group-hover:text-brand-accent transition-colors">
+              <h2 className="text-xl font-bold tracking-tight mb-6 text-text group-hover:text-accent transition-colors">
                 {section.title}
               </h2>
               <div className="space-y-5 pl-1">
                 {section.content.map((block, j) => (
                   <div key={j}>
                     {block.subtitle && (
-                      <h3 className="text-[14px] font-semibold text-gray-300 mb-2">
+                      <h3 className="text-[14px] font-semibold text-text-secondary mb-2">
                         {block.subtitle}
                       </h3>
                     )}
-                    <p className="text-gray-400 text-[14px] leading-[1.8] whitespace-pre-line">
+                    <p className="text-text-secondary text-[14px] leading-[1.8] whitespace-pre-line">
                       {block.text}
                     </p>
                   </div>
                 ))}
               </div>
               {i < sections.length - 1 && (
-                <div className="mt-12 h-[1px] bg-white/[0.04]" />
+                <div className="mt-12 h-[1px] bg-bg-subtle" />
               )}
             </section>
           ))}
         </div>
 
         {/* Bottom CTAs */}
-        <div className="mt-20 p-8 bg-brand-surface border border-white/[0.06] rounded-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="mt-20 p-8 bg-bg-elevated border border-border rounded-xl flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
             <h3 className="font-bold text-[15px] mb-1">Need more information?</h3>
-            <p className="text-gray-400 text-[13px]">
+            <p className="text-text-secondary text-[13px]">
               Contact our legal team at{' '}
-              <a href="mailto:legal@zyra.dev" className="text-brand-accent hover:underline">
+              <a href="mailto:legal@zyra.dev" className="text-accent hover:underline">
                 legal@zyra.dev
               </a>
             </p>
           </div>
           <Link
             href="/privacy"
-            className="bg-white/5 border border-white/10 text-white px-6 py-3 rounded-lg text-[13px] font-medium hover:bg-white/10 transition-all shrink-0"
+            className="bg-bg-subtle border border-border text-text px-6 py-3 rounded-lg text-[13px] font-medium hover:bg-bg-subtle transition-all shrink-0"
           >
             View Privacy Policy →
           </Link>
@@ -222,12 +222,12 @@ export default function TermsOfServicePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/[0.04] py-8 px-6">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between text-[11px] text-gray-600 font-mono">
+      <footer className="border-t border-border py-8 px-6">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between text-[11px] text-text-tertiary font-mono">
           <div>© 2026 ZYRA INC. ALL RIGHTS RESERVED.</div>
           <div className="flex gap-6 mt-3 sm:mt-0">
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/terms" className="text-brand-accent">Terms</Link>
+            <Link href="/privacy" className="hover:text-text transition-colors">Privacy</Link>
+            <Link href="/terms" className="text-accent">Terms</Link>
           </div>
         </div>
       </footer>

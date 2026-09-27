@@ -2,17 +2,16 @@ import React from 'react'
 
 export function Logo({ className = '', withText = true }: { className?: string; withText?: boolean }) {
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <svg 
-        width="1em" 
-        height="1em" 
-        viewBox="0 0 32 32" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="3" 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        className="text-[#FF6B6B]"
+    <div className={`flex items-center gap-2.5 ${className}`}>
+      <svg
+        width="1em"
+        height="1em"
+        viewBox="0 0 32 32"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       >
         <path d="M 8 8 L 24 8" />
         <path d="M 8 24 L 24 24" />
@@ -24,7 +23,7 @@ export function Logo({ className = '', withText = true }: { className?: string; 
         <circle cx="24" cy="24" r="3" fill="currentColor" stroke="none" />
       </svg>
       {withText && (
-        <span className="text-current text-xl font-bold tracking-tight lowercase font-sans">
+        <span className="text-current text-lg font-semibold tracking-[-0.01em] lowercase font-sans">
           zyra
         </span>
       )}

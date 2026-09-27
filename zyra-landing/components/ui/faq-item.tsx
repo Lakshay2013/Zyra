@@ -1,22 +1,33 @@
-import React from 'react'
+'use client'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronDown } from '@/components/ui/icons'
 
-/**
- * FAQItem provides an accessible accordion item for Q&A sections.
- * @param {string} q - The question text.
- * @param {string} a - The answer text.
- * @param {boolean} open - Whether the accordion is currently expanded.
- * @param {function} onClick - Callback when the accordion header is clicked.
- */
 export function FAQItem({ q, a, open, onClick }: { q: string; a: string; open: boolean; onClick: () => void }) {
   return (
-    <div className={`border border-white/[0.06] rounded-xl overflow-hidden transition-colors ${open ? 'bg-brand-surface faq-open' : 'bg-transparent hover:bg-white/[0.02]'}`}>
-      <button onClick={onClick} className="w-full flex items-center justify-between px-6 py-5 text-left">
-        <span className="text-[15px] font-semibold text-white">{q}</span>
-        <span className="faq-chevron text-gray-500 text-lg ml-4">▾</span>
+    <div className={`rounded-[var(--radius-md)] border transition-colors ${open ? 'border-border-strong bg-bg-elevated' : 'border-border hover:bg-bg-subtle'}`}>
+      <button onClick={onClick} className="flex w-full items-center justify-between px-6 py-5 text-left">
+        <span className="type-h3 text-text">{q}</span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.35 }}
+          className="ml-4 shrink-0 text-text-tertiary"
+        >
+          <ChevronDown size={18} />
+        </motion.span>
       </button>
-      <div className="faq-content" style={{ maxHeight: open ? '200px' : '0px', opacity: open ? 1 : 0 }}>
-        <p className="px-6 pb-5 text-[14px] text-gray-400 leading-relaxed">{a}</p>
-      </div>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: 'spring', bounce: 0, duration: 0.35 }}
+            className="overflow-hidden"
+          >
+            <p className="px-6 pb-5 text-[14px] leading-relaxed text-text-secondary">{a}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

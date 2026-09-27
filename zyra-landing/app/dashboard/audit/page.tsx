@@ -1,12 +1,17 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { Fragment, useState, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Lock, History, ChevronRight } from 'lucide-react'
 import api from '@/lib/api'
-import { C, PageHeader, Card, EmptyState, Loading } from '@/components/dashboard/kit'
+import { PageHeader } from '@/components/ui/page-header'
+import { Card } from '@/components/ui/card'
+import { Chip, Badge } from '@/components/ui/badge'
+import { EmptyState, LoadingScreen } from '@/components/ui/empty-state'
+import { Table, THead, TH, TBody, TR, TD } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
 
-const CAT_COLOR: Record<string, string> = {
-  auth: C.green, api_key: C.accent, organization: '#c9b8ff', provider: '#8fd3ff', policy: C.amber, billing: '#ffd6a5', security: C.red,
-}
+const CATEGORIES = ['', 'auth', 'api_key', 'policy', 'provider', 'organization', 'security']
 
 export default function AuditPage() {
   const [logs, setLogs] = useState<any[]>([])
@@ -15,6 +20,7 @@ export default function AuditPage() {
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
   const [forbidden, setForbidden] = useState(false)
+  const [expanded, setExpanded] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -29,76 +35,88 @@ export default function AuditPage() {
 
   useEffect(() => { load() }, [load])
 
-  if (loading) return <Loading label="Loading audit trail…" />
+  if (loading) return <LoadingScreen label="Loading audit trail" />
   if (forbidden) return (
     <div>
-      <PageHeader title="AUDIT_LOG" />
-      <Card className="mt-6"><EmptyState icon="lock" title="Admin only" sub="The audit trail is restricted to organisation administrators." /></Card>
+      <PageHeader title="Audit Log" />
+      <Card padding="lg"><EmptyState icon={Lock} title="Admin only" sub="The audit trail is restricted to organization administrators." /></Card>
     </div>
   )
 
   return (
     <div>
       <PageHeader
-        title="AUDIT_LOG"
-        subtitle={<>CONTROL-PLANE EVENTS {'//'} AUTH · API KEYS · POLICY · PROVIDER CONFIG</>}
-        right={
-          <div className="flex gap-2">
-            {['', 'auth', 'api_key', 'policy', 'provider', 'organization', 'security'].map((c) => (
-              <button key={c || 'all'} onClick={() => { setCat(c); setPage(1) }} style={{
-                fontFamily: C.mono, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                padding: '4px 8px', borderRadius: 6, cursor: 'pointer',
-                color: cat === c ? C.accentInk : C.dim, background: cat === c ? C.accent : 'transparent',
-              }}>{c ? c.replace('_', ' ') : 'all'}</button>
-            ))}
-          </div>
-        }
+        title="Audit Log"
+        subtitle="Control-plane events — authentication, API keys, policy, provider configuration"
       />
 
-      <Card className="mt-6" pad={0} style={{ overflow: 'hidden' }}>
+      <div className="mb-5 flex flex-wrap gap-1.5">
+        {CATEGORIES.map((c) => (
+          <Chip key={c || 'all'} active={cat === c} onClick={() => { setCat(c); setPage(1) }}>
+            {c ? c.replace('_', ' ') : 'All'}
+          </Chip>
+        ))}
+      </div>
+
+      <Card padding="none" className="overflow-hidden">
         {logs.length === 0 ? (
-          <EmptyState icon="history" title="No audit events" sub="Log in, create an API key, or change a policy to generate events." />
+          <EmptyState icon={History} title="No audit events" sub="Log in, create an API key, or change a policy to generate events." />
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: C.mono, fontSize: 12 }}>
-              <thead>
-                <tr style={{ color: C.dim, textAlign: 'left' }}>
-                  {['Time', 'Actor', 'Category', 'Action', 'Outcome', 'Target', 'IP'].map((h) => (
-                    <th key={h} style={{ padding: '10px 14px', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((l) => (
-                  <tr key={l.id} style={{ borderTop: '1px solid rgba(83,67,65,0.06)' }}>
-                    <td style={{ padding: '10px 14px', color: C.dim, whiteSpace: 'nowrap' }}>{new Date(l.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
-                    <td style={{ padding: '10px 14px', color: C.text }}>{l.actor}{l.actorRole ? <span style={{ color: C.faint }}> · {l.actorRole}</span> : null}</td>
-                    <td style={{ padding: '10px 14px' }}><span style={{ color: CAT_COLOR[l.category] || C.dim, textTransform: 'uppercase', fontSize: 10, fontWeight: 700 }}>{l.category}</span></td>
-                    <td style={{ padding: '10px 14px', color: C.text }}>{l.action}</td>
-                    <td style={{ padding: '10px 14px', color: l.outcome === 'success' ? C.green : C.red }}>{l.outcome}</td>
-                    <td style={{ padding: '10px 14px', color: C.dim }}>{l.target || '—'}</td>
-                    <td style={{ padding: '10px 14px', color: C.faint }}>{l.ip || '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <THead>
+              <tr><TH>Time</TH><TH>Actor</TH><TH>Category</TH><TH>Action</TH><TH>Outcome</TH><TH>Target</TH><TH /></tr>
+            </THead>
+            <TBody>
+              {logs.map((l) => (
+                <Fragment key={l.id}>
+                  <TR onClick={() => setExpanded(expanded === l.id ? null : l.id)}>
+                    <TD className="text-text-tertiary">{new Date(l.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</TD>
+                    <TD>{l.actor}{l.actorRole ? <span className="text-text-tertiary"> · {l.actorRole}</span> : null}</TD>
+                    <TD><Badge tone="neutral">{l.category}</Badge></TD>
+                    <TD>{l.action}</TD>
+                    <TD className={l.outcome === 'success' ? 'text-success' : 'text-danger'}>{l.outcome}</TD>
+                    <TD className="text-text-tertiary">{l.target || '—'}</TD>
+                    <TD align="right">
+                      <motion.span animate={{ rotate: expanded === l.id ? 90 : 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.25 }} className="inline-block text-text-tertiary">
+                        <ChevronRight size={15} />
+                      </motion.span>
+                    </TD>
+                  </TR>
+                  <AnimatePresence>
+                    {expanded === l.id && (
+                      <tr>
+                        <td colSpan={7} className="p-0">
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
+                            className="overflow-hidden bg-bg-subtle"
+                          >
+                            <div className="grid grid-cols-2 gap-3 px-4 py-3 text-[12px] md:grid-cols-3">
+                              <div><span className="text-text-tertiary">IP: </span><span className="font-mono text-text">{l.ip || '—'}</span></div>
+                              <div><span className="text-text-tertiary">Target type: </span><span className="font-mono text-text">{l.target?.split(':')[0] || '—'}</span></div>
+                              <div className="md:col-span-1"><span className="text-text-tertiary">Meta: </span><span className="font-mono text-text">{l.meta && Object.keys(l.meta).length ? JSON.stringify(l.meta) : '—'}</span></div>
+                            </div>
+                          </motion.div>
+                        </td>
+                      </tr>
+                    )}
+                  </AnimatePresence>
+                </Fragment>
+              ))}
+            </TBody>
+          </Table>
         )}
       </Card>
 
       {pages > 1 && (
-        <div className="flex items-center gap-3 mt-4" style={{ fontFamily: C.mono, fontSize: 11, color: C.dim }}>
-          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} style={pgBtn(page <= 1)}>Prev</button>
-          <span>{page} / {pages}</span>
-          <button onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page >= pages} style={pgBtn(page >= pages)}>Next</button>
+        <div className="mt-4 flex items-center gap-3">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
+          <span className="text-[13px] text-text-tertiary">{page} / {pages}</span>
+          <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => setPage((p) => Math.min(pages, p + 1))}>Next</Button>
         </div>
       )}
     </div>
   )
 }
-
-const pgBtn = (disabled: boolean): React.CSSProperties => ({
-  fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-  color: disabled ? C.faint : C.accent, background: 'rgba(255,166,158,0.1)', padding: '6px 14px', borderRadius: 8,
-  border: '1px solid rgba(255,166,158,0.2)', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1,
-})

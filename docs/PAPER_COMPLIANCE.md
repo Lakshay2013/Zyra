@@ -94,6 +94,8 @@ Classification legend:
 - Worker MongoDB connection was opened in three places → owned by `workers/index.js` only.
 - Test BullMQ queue shared the Redis keyspace with the running docker worker → `BULLMQ_PREFIX`.
 - Compose services `ai-shield-mongo/redis` + DB `ai-shield` → `zyra-*` / `zyra`.
+- **(2026-09-19 demo-readiness pass)** Redis response cache was not tenant-scoped (`buildCacheKey` had no `orgId`) — two orgs with an identical prompt+model could receive each other's cached response. Fixed: `orgId` now folded into the cache key.
+- **(2026-09-19)** Cache write key never matched the read key (write hashed raw `req.body.max_tokens`, read hashed the post-clamp `requestBody.max_tokens`) — the cache silently never hit for any caller that didn't set `max_tokens` explicitly. Fixed: both paths now hash the same post-clamp values. See `docs/DEMO_FEATURE_MATRIX.md` for detail; 2 regression tests added (`tests/integration/cache.test.js`).
 
 ### Already working (verified, not rebuilt)
 Multi-tenancy · auth + roles · API-key hashing · proxy pipeline · token/latency/cost capture ·
@@ -112,7 +114,7 @@ Gemini translation layer · idempotency · atomic monthly limit · response cach
 ## Test inventory
 | Suite | Count | Command |
 |---|---|---|
-| Backend (providers mocked) | 131 | `cd backend && npm test` |
+| Backend (providers mocked) | 133 | `cd backend && npm test` |
 | Node SDK | 12 | `cd sdk && npm test` |
 | Python SDK | 7 | `cd sdk-python && python -m unittest discover -s tests` |
 | Live end-to-end | 17 checks | `cd backend && node scripts/demo-e2e.js` |
