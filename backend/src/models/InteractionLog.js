@@ -49,15 +49,27 @@ const interactionLogSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
+  severity: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'critical'],
+    default: 'low'
+  },
   flags: [{
     type: String,
-    enum: ['pii', 'injection', 'abuse']
+    enum: ['pii', 'injection', 'jailbreak', 'abuse', 'sensitive_keyword']
   }],
   riskDetails: {
-    piiScore: { type: Number, default: 0 },
+    // Component scores that feed R = 0.35·I + 0.30·J + 0.20·P + 0.15·A
     injectionScore: { type: Number, default: 0 },
+    jailbreakScore: { type: Number, default: 0 },
+    piiScore: { type: Number, default: 0 },
     abuseScore: { type: Number, default: 0 },
-    piiTypes: [String]
+    sensitiveScore: { type: Number, default: 0 },
+    piiTypes: [String],
+    injectionMatches: [String],
+    jailbreakMatches: [String],
+    abuseIssues: [String],
+    sensitiveKeywords: [String]
   },
   analyzed: {
     type: Boolean,
@@ -82,6 +94,11 @@ const interactionLogSchema = new mongoose.Schema({
   },
   // Response status
   statusCode: { type: Number, default: 200 },
+  // Set when the request was stopped by a pre-flight policy (never reached a provider)
+  blocked: { type: Boolean, default: false },
+  blockReason: { type: String, enum: ['injection', 'jailbreak', 'pii', null], default: null },
+  // Response came from the built-in demo simulator, not a real provider
+  simulated: { type: Boolean, default: false },
   // Universal log fields (set by non-proxy integrations)
   sdk_language: { type: String, default: null },        // 'python' | 'node' | 'go' | 'proxy' | etc.
   model_requested: { type: String, default: null }       // Original model before Zyra routing

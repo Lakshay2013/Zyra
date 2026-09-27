@@ -105,6 +105,38 @@ test('provider errors from the gateway surface as OpenAI SDK errors', async () =
   server.close()
 })
 
+test('zyra.log() posts an explicit interaction to /v1/log', async () => {
+  const { server, received, port } = await startMockGateway((req, res) => {
+    res.writeHead(202, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ accepted: true }))
+  })
+  const client = new Zyra({ apiKey: 'sk-live-log', baseURL: `http://127.0.0.1:${port}/v1` })
+
+  await client.log({
+    userId: 'USR001',
+    prompt: 'Hello',
+    response: 'Hi there',
+    model: 'gpt-4o',
+    promptTokens: 2,
+    completionTokens: 2,
+  })
+
+  const call = received[0]
+  assert.equal(call.method, 'POST')
+  assert.equal(call.url, '/v1/log')
+  assert.equal(call.headers['x-zyra-api-key'], 'sk-live-log')
+  assert.equal(call.body.userId, 'USR001')
+  assert.equal(call.body.prompt, 'Hello')
+  assert.equal(call.body.model, 'gpt-4o')
+  assert.equal(call.body.promptTokens, 2)
+  server.close()
+})
+
+test('zyra.log() never throws on network failure', async () => {
+  const client = new Zyra({ apiKey: 'k', baseURL: 'http://127.0.0.1:1/v1' })
+  await client.log({ prompt: 'x', response: 'y', model: 'gpt-4o' }) // must resolve, not reject
+})
+
 test('streaming yields chunks', async () => {
   const { server, port } = await startMockGateway((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/event-stream' })

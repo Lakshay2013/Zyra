@@ -3,107 +3,92 @@
  *
  * POST /v1/log
  *
- * Accepts the canonical Zyra logging payload from any language SDK.
- * Always returns 202 immediately. Logging is queued asynchronously.
+ * Accepts a logging payload from any language SDK. Always returns 202
+ * immediately — logging is queued asynchronously and never blocks the caller.
  *
- * Payload:
- *   {
- *     timestamp,       // ISO8601 string
- *     sdk_language,    // 'python' | 'node' | 'go' | 'ruby' | 'java' | 'php' | 'proxy'
- *     provider,        // 'openai' | 'anthropic' | 'groq' | 'gemini' | ...
- *     model_requested, // model the user specified (e.g. 'gpt-4o', 'auto')
- *     model_routed_to, // model actually used (may differ after cost routing)
- *     prompt_tokens,
- *     completion_tokens,
- *     latency_ms,
- *     cost_usd,        // optional — Zyra will recalculate if missing
- *     status,          // 'success' | 'error'
- *     error_message    // null or string
- *   }
+ * Two payload shapes are accepted:
+ *
+ *  A) Canonical proxy/telemetry payload (auto-patch SDKs, curl, etc.):
+ *     { timestamp, sdk_language, provider, model_requested, model_routed_to,
+ *       prompt_tokens, completion_tokens, latency_ms, cost_usd, status,
+ *       error_message }
+ *
+ *  B) Explicit SDK .log() payload (paper §SDK Integration):
+ *     { userId, prompt, response, model, promptTokens, completionTokens,
+ *       provider?, latencyMs? }
+ *
+ * When `prompt` / `response` are present they are run through the security
+ * analyzer (masked before storage, detectors feed the risk score) exactly like
+ * a proxied request.  `ZYRA_DISABLE=true` short-circuits everything.
  */
 
 const { getLogQueue } = require('../config/queue')
-const { calculateCost } = require('../utils/costCalculator')
+const { calculateCost, getProvider } = require('../utils/costCalculator')
 const { reserveMonthlyLog } = require('../services/usageLimiter')
 
 const VALID_LANGUAGES = new Set(['python', 'node', 'go', 'ruby', 'java', 'php', 'proxy', 'curl', 'other'])
 const VALID_STATUSES = new Set(['success', 'error'])
 
 exports.universalLog = async (req, res) => {
-  // Always ACK immediately — never block the caller
   res.status(202).json({ accepted: true })
 
   try {
     const org = req.org
     if (!org) return
-
-    // Check kill switch
     if (process.env.ZYRA_DISABLE === 'true') return
 
-    // Atomically reserve a usage unit; silently drop if over the limit
     const reservation = await reserveMonthlyLog(org._id.toString())
     if (!reservation.ok) return
 
-    const {
-      timestamp,
-      sdk_language,
-      provider,
-      model_requested,
-      model_routed_to,
-      prompt_tokens,
-      completion_tokens,
-      latency_ms,
-      cost_usd,
-      status,
-      error_message
-    } = req.body
+    const b = req.body || {}
 
-    // Basic type coercion and defaults
-    const promptTokens = Number(prompt_tokens) || 0
-    const completionTokens = Number(completion_tokens) || 0
+    // ── shape B: explicit .log() ──
+    const hasExplicit = b.prompt !== undefined || b.response !== undefined || b.promptTokens !== undefined
+
+    const sdkLanguage = VALID_LANGUAGES.has(b.sdk_language) ? b.sdk_language : (hasExplicit ? 'node' : 'other')
+    const modelRequested = b.model || b.model_requested || 'unknown'
+    const modelRouted = b.model_routed_to || modelRequested
+    const provider = b.provider || getProvider(modelRouted) || 'unknown'
+
+    const promptTokens = Number(b.promptTokens ?? b.prompt_tokens) || 0
+    const completionTokens = Number(b.completionTokens ?? b.completion_tokens) || 0
     const totalTokens = promptTokens + completionTokens
-    const latency = Number(latency_ms) || 0
-    const finalModel = model_routed_to || model_requested || 'unknown'
-    const finalProvider = provider || 'unknown'
-    const finalStatus = VALID_STATUSES.has(status) ? status : 'success'
-    const finalLanguage = VALID_LANGUAGES.has(sdk_language) ? sdk_language : 'other'
+    const latency = Number(b.latencyMs ?? b.latency_ms) || 0
+    const status = VALID_STATUSES.has(b.status) ? b.status : 'success'
 
-    // Recalculate cost if not provided or zero
-    const cost = (cost_usd !== undefined && cost_usd !== null)
-      ? Number(cost_usd)
-      : calculateCost(finalModel, promptTokens, completionTokens)
+    const cost = (b.cost_usd !== undefined && b.cost_usd !== null)
+      ? Number(b.cost_usd)
+      : calculateCost(modelRouted, promptTokens, completionTokens)
 
-    const logQueue = getLogQueue()
-    await logQueue.add('log-interaction', {
+    const jobData = {
       orgId: org._id.toString(),
-      userId: req.headers['x-user-id'] || 'sdk-anonymous',
-      model: finalModel,
-      provider: finalProvider,
-      prompt: `[SDK log — ${finalLanguage}]`,   // Prompt not captured by external SDKs
-      response: error_message || '',
+      userId: b.userId || req.headers['x-user-id'] || 'sdk-anonymous',
+      model: modelRouted,
+      provider,
+      prompt: hasExplicit ? String(b.prompt || '') : `[SDK telemetry — ${sdkLanguage}]`,
+      response: hasExplicit ? String(b.response || '') : (b.error_message || ''),
       tokens: { prompt: promptTokens, completion: completionTokens, total: totalTokens },
       cost,
       latency,
-      statusCode: finalStatus === 'success' ? 200 : 500,
+      statusCode: status === 'success' ? 200 : 500,
       cached: false,
-      // Universal log fields
-      sdk_language: finalLanguage,
-      model_requested: model_requested || finalModel,
+      sdk_language: sdkLanguage,
+      model_requested: modelRequested,
       optimizer: {
-        originalModel: model_requested || null,
-        optimizedModel: model_routed_to || null,
+        originalModel: modelRequested,
+        optimizedModel: modelRouted !== modelRequested ? modelRouted : null,
         originalCost: 0,
         savings: 0,
-        wasOptimized: !!(model_requested && model_routed_to && model_requested !== model_routed_to),
+        wasOptimized: !!(modelRequested && modelRouted && modelRequested !== modelRouted),
         complexity: null,
         qualityRetried: false,
-        qualityFailReason: null
+        qualityFailReason: null,
       },
-      reliability: { retryCount: 0, fallbackUsed: false, fallbackProvider: null }
-    })
+      reliability: { retryCount: 0, fallbackUsed: false, fallbackProvider: null },
+    }
 
+    await getLogQueue().add('log-interaction', jobData)
   } catch (err) {
-    // Silently swallow — never crash the caller
     if (process.env.NODE_ENV !== 'production') {
       console.error('[UniversalLog] Error:', err.message)
     }

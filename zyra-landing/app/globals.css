@@ -1,44 +1,66 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", var(--font-jbmono), Menlo, monospace;
 
-  /* PRD Palette */
-  --color-brand-bg: #0B0B0C;
-  --color-brand-surface: #121214;
-  --color-brand-surface-high: #18181A;
-  --color-brand-surface-highest: #1E1E20;
-  --color-brand-text: #FFFFFF;
-  --color-brand-muted: #A1A1AA;
-  --color-brand-dim: #71717A;
-  --color-brand-subtle: #52525B;
-  --color-brand-accent: #FFA69E;
-  --color-brand-accent-glow: rgba(255, 166, 158, 0.12);
-  --color-brand-accent-dim: rgba(255, 166, 158, 0.5);
-  --color-brand-border: rgba(255, 255, 255, 0.06);
-  --color-brand-border-accent: rgba(255, 166, 158, 0.3);
-  --color-brand-green: #4ade80;
+  /* ── Surfaces (warm near-white, not black) ── */
+  --color-bg: #FAF9F6;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-subtle: #F2F0EC;
+  --color-bg-inverse: #16161A;
 
-  /* shadcn/ui Design Tokens — mapped to Zyra dark theme */
-  --color-background: #0B0B0C;
-  --color-foreground: #FFFFFF;
-  --color-primary: #FFA69E;
-  --color-primary-foreground: #0B0B0C;
-  --color-secondary: #18181A;
-  --color-secondary-foreground: #FFFFFF;
-  --color-muted: #18181A;
-  --color-muted-foreground: #A1A1AA;
-  --color-accent: #1E1E20;
-  --color-accent-foreground: #FFFFFF;
-  --color-destructive: #ef4444;
+  /* ── Borders ── */
+  --color-border: rgba(20,20,18,0.08);
+  --color-border-strong: rgba(20,20,18,0.14);
+
+  /* ── Text ── */
+  --color-text: #16161A;
+  --color-text-secondary: #63636A;
+  --color-text-tertiary: #9A9AA1;
+  --color-text-on-accent: #FFFFFF;
+
+  /* ── Accent (restrained indigo/blue) ── */
+  --color-accent: #4453E8;
+  --color-accent-hover: #333FD1;
+  --color-accent-subtle: rgba(68,83,232,0.08);
+
+  /* ── Semantic ── */
+  --color-success: #1F9254;
+  --color-success-subtle: rgba(31,146,84,0.09);
+  --color-danger: #D6392E;
+  --color-danger-subtle: rgba(214,57,46,0.08);
+  --color-warning: #AD6B08;
+  --color-warning-subtle: rgba(173,107,8,0.1);
+  --color-neutral: #63636A;
+  --color-neutral-subtle: rgba(99,99,106,0.08);
+
+  /* ── shadcn/ui token mapping — kept for components/ui/button.tsx compatibility ── */
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --color-primary: var(--color-accent);
+  --color-primary-foreground: var(--color-text-on-accent);
+  --color-secondary: var(--color-bg-subtle);
+  --color-secondary-foreground: var(--color-text);
+  --color-muted: var(--color-bg-subtle);
+  --color-muted-foreground: var(--color-text-secondary);
+  --color-accent-foreground: var(--color-text);
+  --color-destructive: var(--color-danger);
   --color-destructive-foreground: #FFFFFF;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-input: rgba(255, 255, 255, 0.08);
-  --color-ring: #FFA69E;
-  --radius: 0.625rem;
+  --color-input: var(--color-border-strong);
+  --color-ring: var(--color-accent);
+
+  /* ── Radii ── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius: 12px;
+
+  /* ── Elevation (subtle, rare) ── */
+  --shadow-xs: 0 1px 2px rgba(20,20,18,0.05);
+  --shadow-sm: 0 2px 8px rgba(20,20,18,0.06);
+  --shadow-md: 0 8px 24px rgba(20,20,18,0.08);
+  --shadow-lg: 0 20px 48px rgba(20,20,18,0.12);
 }
 
 @layer base {
@@ -46,478 +68,205 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-brand-bg text-brand-text font-sans antialiased;
-    selection {
-      @apply bg-brand-accent text-black;
-    }
+    @apply bg-bg text-text font-sans antialiased;
   }
   ::selection {
-    background: #FFA69E;
-    color: #000;
+    background: var(--color-accent);
+    color: #fff;
+  }
+  * {
+    @apply border-border;
   }
 }
 
 /* ================================================
-   SCROLL PROGRESS BAR (#1)
+   TYPOGRAPHY — size-specific tracking/leading.
+   Never one letter-spacing value for every size.
    ================================================ */
-#scroll-progress {
-  position: fixed; top: 0; left: 0; height: 2px;
-  background: linear-gradient(90deg, #FFA69E, #ff7b6e);
-  z-index: 99999; width: 0%;
-  transition: width 0.08s linear;
-  pointer-events: none;
+.type-display {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+.type-h1 {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+.type-h2 {
+  font-size: 1.375rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+.type-h3 {
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+  font-weight: 600;
+}
+.type-meta {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  font-weight: 500;
 }
 
 /* ================================================
-   NAVBAR SHRINK + BLUR (#7)
+   MOTION PRIMITIVES
+   Springs (via Framer Motion in components) are the default for anything
+   triggered by a user action. These CSS-only helpers cover press feedback and
+   simple non-spatial fades where a component isn't already using motion/react.
    ================================================ */
-.nav-bar {
-  position: fixed; top: 0; left: 0; width: 100%;
-  z-index: 1000;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  background: transparent;
-  border-bottom: 1px solid transparent;
+.press-feedback {
+  transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.nav-bar.scrolled {
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  background: rgba(11, 11, 12, 0.85);
-  border-bottom-color: rgba(255, 255, 255, 0.05);
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
+.press-feedback:active {
+  transform: scale(0.98);
+}
+
+.fade-standard {
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ================================================
-   CUSTOM DUAL-LAYER CURSOR (#8, #9, #10)
+   TRANSLUCENT MATERIAL — exactly two surfaces use this:
+   the dashboard top bar and the notification popover.
    ================================================ */
-@media (pointer: fine) {
-  body.custom-cursor, body.custom-cursor * {
-    cursor: none !important;
-  }
-}
-#cursor-dot {
-  position: fixed; top: 0; left: 0;
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #FFA69E; pointer-events: none;
-  z-index: 999999;
-  transition: transform 0.05s linear;
-  box-shadow: 0 0 8px rgba(255, 166, 158, 0.7);
-}
-#cursor-ring {
-  position: fixed; top: 0; left: 0;
-  width: 36px; height: 36px; border-radius: 50%;
-  border: 1.5px solid rgba(255, 166, 158, 0.4);
-  pointer-events: none; z-index: 999998;
-  transition: width 0.3s ease, height 0.3s ease, border-color 0.3s ease;
-}
-#cursor-ring.hovering {
-  width: 52px; height: 52px;
-  border-color: rgba(255, 166, 158, 0.8);
-}
-.cursor-trail {
-  position: fixed; pointer-events: none;
-  width: 4px; height: 4px; border-radius: 50%;
-  background: rgba(255, 166, 158, 0.3);
-  z-index: 999997;
-  transition: opacity 0.4s ease;
+.material-surface {
+  background: rgba(250, 249, 246, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 /* ================================================
-   SCROLL FADE REVEALS (#2, #30)
-   ================================================ */
-.reveal {
-  opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-.reveal-stagger { transition-delay: var(--stagger, 0ms); }
-
-/* ================================================
-   SCROLL SKEW (#3)
-   ================================================ */
-.skew-on-scroll {
-  transition: transform 0.3s ease-out;
-  will-change: transform;
-}
-
-/* ================================================
-   PARALLAX DRIFT (#4)
-   ================================================ */
-.parallax-slow {
-  will-change: transform;
-  transition: transform 0.1s linear;
-}
-
-/* ================================================
-   3D CARD TILT + GLARE (#13)
-   ================================================ */
-.tilt-card {
-  transform-style: preserve-3d;
-  transition: transform 0.15s ease-out;
-  perspective: 1000px;
-}
-.tilt-card .tilt-glare {
-  position: absolute; inset: 0;
-  background: radial-gradient(
-    600px circle at var(--glare-x, 50%) var(--glare-y, 50%),
-    rgba(255, 255, 255, 0.06),
-    transparent 40%
-  );
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: inherit;
-  z-index: 2;
-}
-.tilt-card:hover .tilt-glare { opacity: 1; }
-
-/* ================================================
-   SPOTLIGHT GLOW (#14)
-   ================================================ */
-.spotlight-card {
-  position: relative; overflow: hidden;
-}
-.spotlight-card::before {
-  content: ""; position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: radial-gradient(
-    500px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(255, 166, 158, 0.07),
-    transparent 40%
-  );
-  pointer-events: none; z-index: 1;
-  opacity: 0; transition: opacity 0.4s ease;
-  border-radius: inherit;
-}
-.spotlight-card:hover::before { opacity: 1; }
-
-/* ================================================
-   SHIMMER SWEEP CTA (#16)
-   ================================================ */
-.shimmer-btn {
-  position: relative; overflow: hidden;
-}
-.shimmer-btn::after {
-  content: ""; position: absolute;
-  top: 0; left: -150%; width: 50%; height: 100%;
-  background: linear-gradient(
-    to right, transparent, rgba(255,255,255,0.25), transparent
-  );
-  transform: skewX(-20deg);
-  transition: left 0.7s ease;
-}
-.shimmer-btn:hover::after { left: 150%; }
-
-/* ================================================
-   GRADIENT ANIMATED TEXT (#20)
-   ================================================ */
-.gradient-text {
-  background: linear-gradient(90deg, #fff, #FFA69E, #fff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  background-size: 200% auto;
-  animation: gradient-shine 4s linear infinite;
-}
-@keyframes gradient-shine {
-  to { background-position: 200% center; }
-}
-
-/* ================================================
-   ANIMATED AURORA MESH (#23)
-   ================================================ */
-.aurora-mesh {
-  position: absolute; inset: 0; z-index: 0;
-  overflow: hidden; pointer-events: none;
-}
-.aurora-mesh::before,
-.aurora-mesh::after {
-  content: ""; position: absolute;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.12;
-  animation: aurora-drift 18s infinite alternate ease-in-out;
-}
-.aurora-mesh::before {
-  top: -20%; left: -15%;
-  width: 600px; height: 600px;
-  background: #FFA69E;
-}
-.aurora-mesh::after {
-  bottom: -10%; right: -10%;
-  width: 500px; height: 500px;
-  background: #8b5cf6;
-  animation-delay: -8s;
-  animation-duration: 22s;
-}
-@keyframes aurora-drift {
-  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-  50% { transform: translate(60px, 40px) scale(1.1) rotate(5deg); }
-  100% { transform: translate(-30px, 70px) scale(1.05) rotate(-3deg); }
-}
-
-/* ================================================
-   BLOB DRIFT (#24)
-   ================================================ */
-.bg-blob {
-  position: absolute; border-radius: 50%;
-  filter: blur(100px); z-index: -1; opacity: 0.12;
-  animation: blob-drift 20s infinite alternate ease-in-out;
-  pointer-events: none;
-}
-@keyframes blob-drift {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(80px, 60px) scale(1.15); }
-}
-
-/* ================================================
-   NOISE OVERLAY (#26)
-   ================================================ */
-#noise-overlay {
-  position: fixed; inset: 0;
-  pointer-events: none; z-index: 9998;
-  background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="4" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E');
-  opacity: 0.025;
-}
-
-/* ================================================
-   PAGE LOAD CURTAIN (#28)
-   ================================================ */
-#page-curtain {
-  position: fixed; inset: 0; z-index: 100000;
-  background: #0B0B0C;
-  display: flex; align-items: center; justify-content: center;
-  transition: opacity 0.6s ease, visibility 0.6s ease;
-}
-#page-curtain.hidden {
-  opacity: 0; visibility: hidden; pointer-events: none;
-}
-#page-curtain .curtain-logo {
-  font-size: 2.5rem; font-weight: 800;
-  letter-spacing: -0.04em; color: white;
-  animation: curtain-pulse 1s ease-in-out;
-}
-@keyframes curtain-pulse {
-  0% { opacity: 0; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.02); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-/* ================================================
-   BACK TO TOP (#38)
-   ================================================ */
-#back-to-top {
-  position: fixed; bottom: 32px; right: 32px;
-  width: 44px; height: 44px; border-radius: 12px;
-  background: #18181A;
-  border: 1px solid rgba(255,255,255,0.08);
-  color: #A1A1AA; font-size: 18px;
-  display: flex; align-items: center; justify-content: center;
-  z-index: 99999;
-  opacity: 0; visibility: hidden;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
-}
-#back-to-top.visible { opacity: 1; visibility: visible; }
-#back-to-top:hover {
-  background: #FFA69E; color: #000;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(255, 166, 158, 0.3);
-}
-
-/* ================================================
-   FOOTER FILL UNDERLINE (#36)
-   ================================================ */
-.fill-underline {
-  position: relative;
-  background-image: linear-gradient(#FFA69E, #FFA69E);
-  background-size: 0% 1px;
-  background-position: 0% 100%;
-  background-repeat: no-repeat;
-  transition: background-size 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.fill-underline:hover {
-  background-size: 100% 1px;
-  color: white !important;
-}
-
-/* ================================================
-   LOGO GLITCH (#37)
-   ================================================ */
-.logo-glitch {
-  position: relative; display: inline-block;
-}
-.logo-glitch:hover {
-  animation: glitch 0.3s ease forwards;
-}
-@keyframes glitch {
-  0% { transform: translate(0); }
-  20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); }
-  40% { transform: translate(2px, -1px); filter: hue-rotate(180deg); }
-  60% { transform: translate(-1px, 2px); filter: hue-rotate(270deg); }
-  80% { transform: translate(1px, -2px); filter: hue-rotate(0deg); }
-  100% { transform: translate(0); filter: hue-rotate(0deg); }
-}
-
-/* ================================================
-   SPRING FAQ ACCORDION (#34)
-   ================================================ */
-.faq-content {
-  overflow: hidden;
-  transition: max-height 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-              opacity 0.4s ease;
-}
-.faq-chevron {
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.faq-open .faq-chevron { transform: rotate(180deg); }
-
-/* ================================================
-   COPY CHECKMARK (#33)
-   ================================================ */
-.copy-btn .check-icon { display: none; }
-.copy-btn.copied .copy-icon { display: none; }
-.copy-btn.copied .check-icon { display: inline; }
-
-/* ================================================
-   PRICING TOGGLE (#32)
-   ================================================ */
-.toggle-track {
-  width: 48px; height: 26px; border-radius: 99px;
-  background: #27272A;
-  position: relative;
-  transition: background 0.3s ease;
-  cursor: pointer;
-}
-.toggle-track.active { background: #FFA69E; }
-.toggle-thumb {
-  width: 20px; height: 20px; border-radius: 50%;
-  background: white; position: absolute;
-  top: 3px; left: 3px;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-}
-.toggle-track.active .toggle-thumb { transform: translateX(22px); }
-
-/* ================================================
-   AVATAR GRADIENT BORDER (#35)
-   ================================================ */
-.avatar-gradient {
-  position: relative;
-  display: inline-block;
-  padding: 2px;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, #FFA69E, #8b5cf6, #06b6d4, #FFA69E);
-  animation: avatar-spin 4s linear infinite;
-}
-.avatar-gradient > * {
-  border-radius: 50%;
-  display: block;
-}
-@keyframes avatar-spin {
-  to { background: conic-gradient(from 360deg, #FFA69E, #8b5cf6, #06b6d4, #FFA69E); }
-}
-
-/* ================================================
-   INPUT GLOW (#31)
-   ================================================ */
-input:focus, textarea:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(255, 166, 158, 0.4);
-  animation: input-pulse 2.5s infinite;
-}
-@keyframes input-pulse {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(255, 166, 158, 0.4); }
-  50% { box-shadow: 0 0 0 4px rgba(255, 166, 158, 0.15); }
-}
-
-/* ================================================
-   SOUND MUTE TOGGLE (#40)
-   ================================================ */
-#mute-toggle {
-  position: fixed; bottom: 32px; left: 32px;
-  width: 40px; height: 40px; border-radius: 10px;
-  background: #18181A;
-  border: 1px solid rgba(255,255,255,0.06);
-  color: #71717A; font-size: 16px;
-  display: flex; align-items: center; justify-content: center;
-  z-index: 99999;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-#mute-toggle:hover { color: #FFA69E; border-color: rgba(255,166,158,0.3); }
-
-/* ================================================
-   CANVAS STARFIELD (#25)
-   ================================================ */
-#canvas-network {
-  position: fixed; inset: 0;
-  z-index: 0; pointer-events: none;
-  opacity: 0.4;
-}
-
-/* ================================================
-   INTERACTIVE RIPPLE (#27)
-   ================================================ */
-.ripple-effect {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,166,158,0.08), transparent 70%);
-  pointer-events: none;
-  transform: scale(0);
-  animation: ripple-expand 0.8s ease-out forwards;
-}
-@keyframes ripple-expand {
-  to { transform: scale(4); opacity: 0; }
-}
-
-/* ================================================
-   WORD STAGGER REVEAL (#19)
-   ================================================ */
-.word-reveal > span {
-  display: inline-block;
-  opacity: 0;
-  transform: translateY(20px);
-  animation: word-pop 0.6s forwards;
-  animation-delay: var(--word-delay, 0ms);
-}
-@keyframes word-pop {
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ================================================
-   LETTER SCRAMBLE (#18)
-   ================================================ */
-.scramble-text {
-  display: inline;
-}
-
-/* ================================================
-   REDUCED MOTION FALLBACK
+   ACCESSIBILITY — reduced motion / transparency / contrast
    ================================================ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 120ms !important;
   }
-  .reveal { opacity: 1; transform: none; }
-  #cursor-dot, #cursor-ring, .cursor-trail { display: none; }
-  body.custom-cursor, body.custom-cursor * { cursor: auto !important; }
-  #page-curtain { display: none; }
+  .press-feedback:active {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .material-surface {
+    background: var(--color-bg-elevated);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .material-surface {
+    background: var(--color-bg-elevated);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 1px solid var(--color-border-strong);
+  }
+  :root {
+    --shadow-xs: none;
+    --shadow-sm: none;
+    --shadow-md: none;
+  }
 }
 
 /* ================================================
-   SCROLLBAR
+   SCROLLBAR — quiet, matches the light surface
    ================================================ */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0B0B0C; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #27272A; border-radius: 3px;
+  background: var(--color-border-strong);
+  border-radius: 99px;
 }
-::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); }
+
+/* ================================================
+   LANDING PAGE — scoped token overrides.
+   Reuses the same variable names (--color-bg, --color-accent, etc.) so every
+   existing bg, text and border utility, plus shared components (Button,
+   Badge, FAQItem, CopyButton, Logo), just work inside this subtree — the
+   rest of the app (dashboard, auth) never sees these values and keeps its
+   own tokens. Warm-neutral light is the designed default; dark is a full,
+   deliberate alternate reached via the nav's theme toggle.
+   ================================================ */
+.zyra-landing {
+  --color-bg: #F7F7F6;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-subtle: #EDEDEA;
+  --color-border: rgba(15,17,21,0.10);
+  --color-border-strong: rgba(15,17,21,0.16);
+  --color-text: #0F1115;
+  --color-text-secondary: #55585F;
+  --color-text-tertiary: #8A8D94;
+  --color-text-on-accent: #FFFFFF;
+  --color-accent: #6A48F0;
+  --color-accent-hover: #5636D8;
+  --color-accent-subtle: rgba(106,72,240,0.08);
+  --color-success: #1F9254;
+  --color-success-subtle: rgba(31,146,84,0.09);
+  --color-danger: #D6392E;
+  --color-danger-subtle: rgba(214,57,46,0.08);
+  --color-warning: #AD6B08;
+  --color-warning-subtle: rgba(173,107,8,0.1);
+  --color-primary: var(--color-accent);
+  --color-primary-foreground: var(--color-text-on-accent);
+  --color-secondary: var(--color-bg-subtle);
+  --color-secondary-foreground: var(--color-text);
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --color-destructive: var(--color-danger);
+  --color-ring: var(--color-accent);
+  color-scheme: light;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.zyra-landing[data-theme="dark"] {
+  --color-bg: #0B0D12;
+  --color-bg-elevated: #12151C;
+  --color-bg-subtle: #171B24;
+  --color-border: rgba(255,255,255,0.08);
+  --color-border-strong: rgba(255,255,255,0.16);
+  --color-text: #F2F3F5;
+  --color-text-secondary: #9CA0AA;
+  --color-text-tertiary: #6B6F79;
+  --color-accent: #8B7BFF;
+  --color-accent-hover: #A393FF;
+  --color-accent-subtle: rgba(139,123,255,0.14);
+  --color-success: #34C777;
+  --color-success-subtle: rgba(52,199,119,0.12);
+  --color-danger: #F0554A;
+  --color-danger-subtle: rgba(240,85,74,0.12);
+  --color-warning: #E0A030;
+  --color-warning-subtle: rgba(224,160,48,0.12);
+  color-scheme: dark;
+}
+
+.zyra-landing .type-mono {
+  font-family: var(--font-mono);
+}
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.zyra-landing .marquee-track {
+  animation: marquee-scroll 28s linear infinite;
+}
+.zyra-landing .marquee-track:hover,
+.zyra-landing .marquee-paused .marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .zyra-landing .marquee-track {
+    animation: none;
+  }
+}

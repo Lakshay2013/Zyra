@@ -1,5 +1,14 @@
 # ZYRA MVP RECOVERY — PROGRESS LOG
 
+> **Superseded (2026-09-09) by the paper-compliance effort on branch
+> `demo-prep-paper-compliance`.** For current status see:
+> `docs/PAPER_COMPLIANCE.md` (matrix + what changed + limitations),
+> `docs/FACULTY_DEMO_GUIDE.md`, `docs/DEMO_CHEAT_SHEET.md`, `docs/TEACHER_QA.md`.
+> The log below is the earlier MVP-recovery pass and is kept for history.
+
+---
+
+
 2026-08-30. Windows 11, Node 22, Docker Desktop.
 
 ## Runtime

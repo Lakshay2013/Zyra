@@ -1,5 +1,6 @@
 const ApiKey = require('../models/ApiKey')
 const crypto = require('crypto')
+const { recordAudit } = require('../services/audit')
 
 const generateKey = () => {
   const raw = `sk-live-${crypto.randomBytes(24).toString('hex')}`
@@ -26,6 +27,8 @@ exports.createKey = async (req, res) => {
       keyHash: hash,
       createdBy: req.user.userId
     })
+
+    recordAudit({ req, orgId: req.user.orgId, userId: req.user.userId, actorRole: req.user.role, category: 'api_key', action: 'api_key.created', targetType: 'ApiKey', targetId: String(apiKey._id), meta: { name, prefix } })
 
     res.status(201).json({
       message: 'API key created. Copy it now — it will not be shown again.',
@@ -69,6 +72,8 @@ exports.revokeKey = async (req, res) => {
 
     key.isActive = false
     await key.save()
+
+    recordAudit({ req, orgId: req.user.orgId, userId: req.user.userId, actorRole: req.user.role, category: 'api_key', action: 'api_key.revoked', targetType: 'ApiKey', targetId: String(key._id), meta: { name: key.name, prefix: key.prefix } })
 
     res.json({ message: 'Key revoked successfully' })
   } catch (err) {

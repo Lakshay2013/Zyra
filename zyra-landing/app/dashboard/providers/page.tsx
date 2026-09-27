@@ -1,28 +1,34 @@
 'use client'
 
-import { useState, useEffect, useCallback } from "react"
-import api from "@/lib/api"
-import toast from "react-hot-toast"
+import { useState, useEffect, useCallback } from 'react'
+import toast from 'react-hot-toast'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Bot, Brain, Zap, Sparkles, ArrowUp, ArrowDown } from 'lucide-react'
+import api from '@/lib/api'
+import { PageHeader } from '@/components/ui/page-header'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 
 type TestResult = { provider: string; ok: boolean; status: number | null; latencyMs: number; error: string | null }
 
 const PROVIDER_META = [
-  { id: 'openai', name: 'openai', model: 'GPT-4O / GPT-4O-MINI', icon: 'smart_toy' },
-  { id: 'anthropic', name: 'anthropic', model: 'CLAUDE-SONNET-4-6 / HAIKU-4-5', icon: 'psychology' },
-  { id: 'groq', name: 'groq', model: 'LLAMA-3.3-70B / LLAMA-3.1-8B', icon: 'bolt' },
-  { id: 'gemini', name: 'google-gemini', model: 'GEMINI-2.0-FLASH / 1.5-PRO', icon: 'auto_awesome' },
+  { id: 'openai', name: 'OpenAI', model: 'GPT-4o / GPT-4o-mini', icon: Bot },
+  { id: 'anthropic', name: 'Anthropic', model: 'Claude Sonnet 4.6 / Haiku 4.5', icon: Brain },
+  { id: 'groq', name: 'Groq', model: 'Llama 3.3 70B / 3.1 8B', icon: Zap },
+  { id: 'gemini', name: 'Google Gemini', model: 'Gemini 2.0 Flash / 1.5 Pro', icon: Sparkles },
 ]
-const PROVIDER_IDS = ['openai', 'anthropic', 'groq', 'gemini']
+const PROVIDER_IDS = PROVIDER_META.map((p) => p.id)
 
 export default function ProvidersPage() {
   const [configured, setConfigured] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
   const [showKeyModal, setShowKeyModal] = useState<string | null>(null)
   const [keyInput, setKeyInput] = useState('')
-
   const [testing, setTesting] = useState(false)
   const [results, setResults] = useState<Record<string, TestResult>>({})
-
   const [fallbackOrder, setFallbackOrder] = useState<string[]>([])
   const [fallbackDirty, setFallbackDirty] = useState(false)
   const [savingOrder, setSavingOrder] = useState(false)
@@ -35,14 +41,11 @@ export default function ProvidersPage() {
       ])
       setConfigured(prov.data.configured || {})
       const savedOrder: string[] = rel.data.reliability?.fallbackOrder || []
-      // Ensure every provider appears exactly once: saved order first, then the rest.
       const merged = [...savedOrder.filter((p) => PROVIDER_IDS.includes(p)), ...PROVIDER_IDS.filter((p) => !savedOrder.includes(p))]
       setFallbackOrder(merged)
     } catch (err) {
       console.error('Failed to load providers', err)
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }, [])
 
   useEffect(() => { load() }, [load])
@@ -51,10 +54,9 @@ export default function ProvidersPage() {
     const toastId = toast.loading('Saving key securely...')
     try {
       await api.put('/api/org/providers', { [provider]: keyInput })
-      setShowKeyModal(null)
-      setKeyInput('')
+      setShowKeyModal(null); setKeyInput('')
       await load()
-      toast.success('Key connected. Run "Test All" to verify it works.', { id: toastId })
+      toast.success('Key connected. Run "Test all" to verify it works.', { id: toastId })
     } catch (err) {
       console.error('Failed to save provider key', err)
       toast.error('Save failed', { id: toastId })
@@ -65,8 +67,7 @@ export default function ProvidersPage() {
     const toastId = toast.loading('Removing key...')
     try {
       await api.put('/api/org/providers', { [provider]: '' })
-      setShowKeyModal(null)
-      setKeyInput('')
+      setShowKeyModal(null); setKeyInput('')
       setResults((r) => { const n = { ...r }; delete n[provider]; return n })
       await load()
       toast.success('Key removed', { id: toastId })
@@ -77,8 +78,7 @@ export default function ProvidersPage() {
 
   const runTests = async () => {
     if (testing) return
-    setTesting(true)
-    setResults({})
+    setTesting(true); setResults({})
     const toastId = toast.loading('Testing configured providers...')
     try {
       const res = await api.post('/api/org/providers/test')
@@ -92,9 +92,7 @@ export default function ProvidersPage() {
     } catch (err) {
       console.error(err)
       toast.error('Provider test failed', { id: toastId })
-    } finally {
-      setTesting(false)
-    }
+    } finally { setTesting(false) }
   }
 
   const moveFallback = (index: number, dir: -1 | 1) => {
@@ -116,190 +114,120 @@ export default function ProvidersPage() {
       toast.success('Fallback order saved')
     } catch {
       toast.error('Failed to save fallback order')
-    } finally {
-      setSavingOrder(false)
-    }
+    } finally { setSavingOrder(false) }
   }
 
   if (loading) {
-    return (
-      <div className="flex gap-3 items-center justify-center min-h-[50vh]" style={{ color: '#ffa69e' }}>
-        <span className="material-symbols-outlined animate-pulse">dns</span>
-        <span style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 700, textTransform: 'uppercase' }}>Loading Provider Mesh...</span>
-      </div>
-    )
+    return <div className="flex min-h-[50vh] items-center justify-center text-text-tertiary"><span className="type-meta">Loading providers…</span></div>
   }
 
   const providerList = PROVIDER_META.map((p) => ({ ...p, configured: !!configured[p.id] }))
   const configuredCount = providerList.filter((p) => p.configured).length
 
-  const statusLabel = (p: { id: string; configured: boolean }) => {
-    if (!p.configured) return { text: 'NOT CONFIGURED', color: '#71717a', dot: '#534341' }
+  const statusOf = (p: { id: string; configured: boolean }) => {
+    if (!p.configured) return { text: 'Not configured', tone: 'neutral' as const }
     const r = results[p.id]
-    if (!r) return { text: 'CONFIGURED', color: '#a1a1aa', dot: '#a1a1aa' }
-    if (r.ok) return { text: `CONNECTED · ${r.latencyMs}MS`, color: '#9be8cb', dot: '#9be8cb' }
-    return { text: 'FAILED', color: '#ffb4ab', dot: '#ffb4ab' }
+    if (!r) return { text: 'Configured', tone: 'neutral' as const }
+    if (r.ok) return { text: `Connected · ${r.latencyMs}ms`, tone: 'success' as const }
+    return { text: 'Failed', tone: 'danger' as const }
   }
 
   return (
     <div>
-      {/* ── HEADER ── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6" style={{ borderBottom: '1px solid rgba(83,67,65,0.1)' }}>
-        <div>
-          <h1 style={{ fontSize: 48, fontWeight: 900, letterSpacing: '-0.03em', textTransform: 'uppercase', color: '#e5e2e3', lineHeight: 1 }}>
-            INFRASTRUCTURE
-          </h1>
-          <div className="flex items-center gap-3 mt-3 flex-wrap">
-            <span className="flex items-center gap-2 px-3 py-1" style={{ background: 'rgba(155,232,203,0.1)', borderRadius: 99, border: '1px solid rgba(155,232,203,0.2)' }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#9be8cb' }} />
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#9be8cb' }}>
-                {configuredCount > 0 ? `${configuredCount} Provider${configuredCount > 1 ? 's' : ''} Configured` : 'No Providers Yet'}
-              </span>
-            </span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#71717a' }}>
-              PROVIDERS: {configuredCount}/{providerList.length} {'//'} FALLBACK_CHAIN: {fallbackOrder.filter((p) => configured[p]).length} DEEP
-            </span>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={runTests}
-            disabled={testing || configuredCount === 0}
-            style={{
-              background: '#ffa69e', padding: '8px 16px', borderRadius: 12,
-              cursor: testing || configuredCount === 0 ? 'not-allowed' : 'pointer', opacity: testing || configuredCount === 0 ? 0.5 : 1,
-              fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#3b0908',
-            }}
-          >{testing ? 'Testing…' : 'Test All'}</button>
-        </div>
-      </div>
+      <PageHeader
+        title="Providers"
+        subtitle={`${configuredCount}/${providerList.length} configured · fallback chain ${fallbackOrder.filter((p) => configured[p]).length} deep`}
+        right={
+          <Button onClick={runTests} disabled={testing || configuredCount === 0}>
+            {testing ? 'Testing…' : 'Test all'}
+          </Button>
+        }
+      />
 
-      {/* ── PROVIDER TABLE ── */}
-      <div className="mt-6 overflow-hidden" style={{ background: '#1c1b1c', borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)' }}>
-        <div className="grid grid-cols-12 gap-4 px-6 py-3" style={{ borderBottom: '1px solid rgba(83,67,65,0.1)' }}>
-          {['Service', 'Model Range', 'Status', ''].map((h, i) => (
-            <div key={h} className={i === 0 ? 'col-span-3' : i === 1 ? 'col-span-4' : i === 2 ? 'col-span-3' : 'col-span-2'} style={{
-              fontSize: 10, letterSpacing: '0.15em', fontWeight: 600, color: '#71717a', textTransform: 'uppercase'
-            }}>{h}</div>
-          ))}
-        </div>
-
+      <Card padding="none" className="overflow-hidden">
         {providerList.map((p) => {
-          const s = statusLabel(p)
+          const s = statusOf(p)
           const r = results[p.id]
+          const Icon = p.icon
           return (
-            <div key={p.id} className="px-6 py-5" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>
-              <div className="grid grid-cols-12 gap-4 items-center">
-                <div className="col-span-3 flex items-center gap-3">
-                  <span className="material-symbols-outlined" style={{ fontSize: 18, color: p.configured ? '#ffa69e' : '#534341' }}>{p.icon}</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 600, color: '#e5e2e3' }}>{p.name}</span>
+            <div key={p.id} className="border-b border-border px-6 py-4 last:border-0">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Icon size={18} className={p.configured ? 'text-accent' : 'text-text-tertiary'} strokeWidth={1.75} />
+                  <div>
+                    <div className="text-[14px] font-medium text-text">{p.name}</div>
+                    <div className="text-[12px] text-text-tertiary">{p.model}</div>
+                  </div>
                 </div>
-                <div className="col-span-4" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#a1a1aa' }}>{p.model}</div>
-                <div className="col-span-3 flex items-center gap-2">
-                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: s.color }}>{s.text}</span>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot }} />
-                </div>
-                <div className="col-span-2 flex justify-end">
-                  <button
-                    onClick={() => { setShowKeyModal(p.id); setKeyInput('') }}
-                    style={{
-                      fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-                      color: '#ffa69e', background: 'rgba(255,166,158,0.1)', padding: '6px 12px', borderRadius: 8,
-                      border: '1px solid rgba(255,166,158,0.2)'
-                    }}
-                  >{p.configured ? 'Update' : 'Configure'}</button>
+                <div className="flex items-center gap-3">
+                  <Badge tone={s.tone}>{s.text}</Badge>
+                  <Button variant="outline" size="sm" onClick={() => { setShowKeyModal(p.id); setKeyInput('') }}>
+                    {p.configured ? 'Update' : 'Configure'}
+                  </Button>
                 </div>
               </div>
               {r && !r.ok && r.error && r.error !== 'not configured' && (
-                <div className="mt-2" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#ffb4ab', paddingLeft: 30 }}>
-                  ↳ {r.error}
-                </div>
+                <div className="mt-2 pl-8 font-mono text-[12px] text-danger">↳ {r.error}</div>
               )}
             </div>
           )
         })}
-      </div>
+      </Card>
 
       {/* ── FALLBACK ORDER ── */}
-      <div className="mt-6" style={{ background: '#201f20', borderRadius: 12, border: '1px solid rgba(83,67,65,0.05)' }}>
-        <div className="px-6 py-4 flex justify-between items-center" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)' }}>
-          <h3 style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 600, color: '#e5e2e3', textTransform: 'uppercase' }}>Fallback_Order</h3>
-          <button
-            onClick={saveFallbackOrder}
-            disabled={!fallbackDirty || savingOrder}
-            style={{
-              fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase',
-              color: fallbackDirty ? '#3b0908' : '#71717a', background: fallbackDirty ? '#ffa69e' : '#2a2a2b',
-              padding: '6px 14px', borderRadius: 8, cursor: fallbackDirty ? 'pointer' : 'default',
-            }}
-          >{savingOrder ? 'Saving…' : 'Save Order'}</button>
+      <Card padding="none" className="mt-6 overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h3 className="type-h3 text-text">Fallback order</h3>
+          <Button size="sm" disabled={!fallbackDirty || savingOrder} onClick={saveFallbackOrder}>
+            {savingOrder ? 'Saving…' : 'Save order'}
+          </Button>
         </div>
         {fallbackOrder.map((pid, i) => {
           const meta = PROVIDER_META.find((m) => m.id === pid)!
           const isConfigured = !!configured[pid]
           return (
-            <div key={pid} className="px-6 py-4 flex items-center gap-4" style={{ borderBottom: '1px solid rgba(83,67,65,0.05)', opacity: isConfigured ? 1 : 0.45 }}>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 20, fontWeight: 900, color: '#353436', width: 32 }}>
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 600, color: '#e5e2e3', flex: 1 }}>{meta.name}</span>
-              <span style={{
-                fontSize: 9, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '4px 8px', borderRadius: 6,
-                background: !isConfigured ? '#2a2a2b' : i === 0 ? 'rgba(255,166,158,0.15)' : '#353436',
-                color: !isConfigured ? '#71717a' : i === 0 ? '#ffa69e' : '#71717a',
-              }}>
-                {!isConfigured ? 'NO KEY' : i === 0 ? 'PRIMARY' : 'FALLBACK'}
-              </span>
+            <div key={pid} className="flex items-center gap-4 border-b border-border px-6 py-3.5 last:border-0" style={{ opacity: isConfigured ? 1 : 0.45 }}>
+              <span className="w-7 font-mono text-[13px] font-semibold text-text-tertiary">{String(i + 1).padStart(2, '0')}</span>
+              <span className="flex-1 text-[13px] font-medium text-text">{meta.name}</span>
+              <Badge tone={!isConfigured ? 'neutral' : i === 0 ? 'accent' : 'neutral'}>
+                {!isConfigured ? 'No key' : i === 0 ? 'Primary' : 'Fallback'}
+              </Badge>
               <div className="flex gap-1">
-                <button onClick={() => moveFallback(i, -1)} disabled={i === 0} className="p-1" style={{ color: i === 0 ? '#3f3f46' : '#a1a1aa', cursor: i === 0 ? 'default' : 'pointer' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_upward</span>
-                </button>
-                <button onClick={() => moveFallback(i, 1)} disabled={i === fallbackOrder.length - 1} className="p-1" style={{ color: i === fallbackOrder.length - 1 ? '#3f3f46' : '#a1a1aa', cursor: i === fallbackOrder.length - 1 ? 'default' : 'pointer' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_downward</span>
-                </button>
+                <IconButton onClick={() => moveFallback(i, -1)} disabled={i === 0} aria-label="Move up"><ArrowUp size={15} /></IconButton>
+                <IconButton onClick={() => moveFallback(i, 1)} disabled={i === fallbackOrder.length - 1} aria-label="Move down"><ArrowDown size={15} /></IconButton>
               </div>
             </div>
           )
         })}
-        <div className="px-6 py-3" style={{ fontSize: 11, color: '#71717a' }}>
+        <div className="px-6 py-3 text-[12px] text-text-tertiary">
           When a provider fails after its retries, Zyra tries the next configured provider in this order.
         </div>
-      </div>
+      </Card>
 
-      {/* ── KEY MODAL ── */}
-      {showKeyModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-md p-6" style={{ background: '#201f20', borderRadius: 16, border: '1px solid rgba(83,67,65,0.2)' }}>
-            <h3 style={{ fontSize: 10, letterSpacing: '0.2em', fontWeight: 700, color: '#ffa69e', textTransform: 'uppercase', marginBottom: 16 }}>
-              Configure {showKeyModal}
-            </h3>
-            <input
-              type="password"
-              value={keyInput}
-              onChange={(e) => setKeyInput(e.target.value)}
-              placeholder="Paste your API key..."
-              style={{
-                width: '100%', background: '#0e0e0f', border: 'none', outline: 'none',
-                color: '#e5e2e3', fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
-                padding: '12px 16px', borderRadius: 8, marginBottom: 16,
-              }}
-            />
-            <div className="flex gap-3 justify-between">
-              {configured[showKeyModal] ? (
-                <button onClick={() => handleRemoveKey(showKeyModal)} style={{ fontSize: 10, fontWeight: 700, color: '#ffb4ab', padding: '8px 12px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Remove</button>
-              ) : <span />}
-              <div className="flex gap-3">
-                <button onClick={() => { setShowKeyModal(null); setKeyInput('') }} style={{ fontSize: 10, fontWeight: 700, color: '#71717a', padding: '8px 16px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Cancel</button>
-                <button
-                  onClick={() => handleSaveKey(showKeyModal)}
-                  disabled={!keyInput.trim()}
-                  style={{ background: '#ffa69e', color: '#3b0908', padding: '8px 20px', borderRadius: 8, fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', opacity: keyInput.trim() ? 1 : 0.5 }}
-                >Save Key</button>
+      <AnimatePresence>
+        {showKeyModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/50" onClick={() => setShowKeyModal(null)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
+              className="relative w-full max-w-md rounded-[var(--radius-lg)] border border-border bg-bg-elevated p-6 shadow-[var(--shadow-lg)]"
+            >
+              <h3 className="type-h2 mb-4 text-text">Configure {PROVIDER_META.find((p) => p.id === showKeyModal)?.name}</h3>
+              <Input type="password" value={keyInput} onChange={(e) => setKeyInput(e.target.value)} placeholder="Paste your API key…" className="mb-4" autoFocus />
+              <div className="flex items-center justify-between">
+                {configured[showKeyModal] ? (
+                  <Button variant="ghost" className="text-danger hover:bg-[var(--color-danger-subtle)]" onClick={() => handleRemoveKey(showKeyModal)}>Remove</Button>
+                ) : <span />}
+                <div className="flex gap-2">
+                  <Button variant="ghost" onClick={() => { setShowKeyModal(null); setKeyInput('') }}>Cancel</Button>
+                  <Button disabled={!keyInput.trim()} onClick={() => handleSaveKey(showKeyModal)}>Save key</Button>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   )
 }

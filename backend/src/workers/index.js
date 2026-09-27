@@ -2,18 +2,20 @@ require('dotenv').config()
 const http = require('http')
 const mongoose = require('mongoose')
 
-// Initialize DB connection once for all workers
+// Initialize the DB connection once for all workers.
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Multi-worker MongoDB connected'))
   .catch(err => console.error('❌ Multi-worker MongoDB error:', err.message))
 
-const { riskWorker } = require('./riskWorker')
-const { logWorker } = require('./logWorker')
+const logWorkerMod = require('./logWorker')
+const riskWorkerMod = require('./riskWorker')
+
+const logWorker = logWorkerMod.start()
+const riskWorker = riskWorkerMod.start()
 
 console.log('🚀 All background workers running')
 
 // ── Health endpoint for container orchestration ──
-// BullMQ workers have no HTTP surface of their own, so expose a tiny one.
 const HEALTH_PORT = process.env.WORKER_HEALTH_PORT || 5001
 http.createServer((req, res) => {
   if (req.url !== '/health') {

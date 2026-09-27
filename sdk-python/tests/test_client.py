@@ -48,6 +48,11 @@ class TestZyraClient(unittest.TestCase):
             latency_ms=5, status="success",
         )
 
+    def test_explicit_log_never_raises(self):
+        from zyra import log
+        log(zyra_key="k", user_id="USR001", prompt="hi", response="hello",
+            model="gpt-4o", prompt_tokens=1, completion_tokens=1)
+
 
 if __name__ == "__main__":
     unittest.main()

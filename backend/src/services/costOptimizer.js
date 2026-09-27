@@ -150,11 +150,11 @@ const optimizeRequest = (org, currentModel, currentProvider, promptText) => {
   // Get all models in the target tier, sorted cheapest first
   const alternatives = getCheapestInTier(targetTier, estimatedPromptTokens)
 
-  // Filter to only models the org has provider keys configured for
-  const availableAlternatives = alternatives.filter(alt => {
-    const provider = alt.provider
-    return org.providerKeys?.[provider]
-  })
+  // Filter to only models the org has provider keys configured for.
+  // In demo mode the built-in simulator can emulate any provider, so all
+  // candidates are considered available.
+  const demoMode = org.demoMode === true
+  const availableAlternatives = alternatives.filter(alt => demoMode || org.providerKeys?.[alt.provider])
 
   result.originalCost = estimateCost(currentModel, estimatedPromptTokens)
 

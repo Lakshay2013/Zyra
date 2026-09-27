@@ -43,11 +43,20 @@ const getValueReport = async (orgId, days = 30) => {
         injectionCount: {
           $sum: { $cond: [{ $in: ['injection', { $ifNull: ['$flags', []] }] }, 1, 0] }
         },
+        jailbreakCount: {
+          $sum: { $cond: [{ $in: ['jailbreak', { $ifNull: ['$flags', []] }] }, 1, 0] }
+        },
         piiCount: {
           $sum: { $cond: [{ $in: ['pii', { $ifNull: ['$flags', []] }] }, 1, 0] }
         },
+        sensitiveKeywordCount: {
+          $sum: { $cond: [{ $in: ['sensitive_keyword', { $ifNull: ['$flags', []] }] }, 1, 0] }
+        },
         abuseCount: {
           $sum: { $cond: [{ $in: ['abuse', { $ifNull: ['$flags', []] }] }, 1, 0] }
+        },
+        blockedCount: {
+          $sum: { $cond: [{ $eq: ['$blocked', true] }, 1, 0] }
         },
         avgLatency: { $avg: '$latency' }
       }
@@ -78,8 +87,11 @@ const getValueReport = async (orgId, days = 30) => {
     },
     attacksBlocked: {
       injections: s.injectionCount || 0,
+      jailbreaks: s.jailbreakCount || 0,
       pii: s.piiCount || 0,
+      sensitiveKeywords: s.sensitiveKeywordCount || 0,
       abuse: s.abuseCount || 0,
+      blockedPreflight: s.blockedCount || 0,
       total: s.flaggedCount || 0
     }
   }
@@ -157,7 +169,18 @@ const getCostComparison = async (orgId, days = 30) => {
         _id: null,
         totalRequests: { $sum: 1 },
         actualCost: { $sum: '$cost' },
-        wouldHaveCost: { $sum: { $ifNull: ['$optimizer.originalCost', '$cost'] } },
+        // "without Zyra" = original-model cost for optimised requests, actual
+        // cost otherwise. originalCost defaults to 0 in the schema, so $ifNull
+        // would wrongly treat 0 as "present" — use an explicit $cond.
+        wouldHaveCost: {
+          $sum: {
+            $cond: [
+              { $and: [{ $eq: ['$optimizer.wasOptimized', true] }, { $gt: [{ $ifNull: ['$optimizer.originalCost', 0] }, 0] }] },
+              '$optimizer.originalCost',
+              '$cost',
+            ],
+          },
+        },
         totalSavings: { $sum: { $ifNull: ['$optimizer.savings', 0] } },
         optimizedCount: {
           $sum: { $cond: [{ $eq: ['$optimizer.wasOptimized', true] }, 1, 0] }

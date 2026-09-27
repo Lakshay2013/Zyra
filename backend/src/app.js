@@ -17,6 +17,8 @@ const logsRoutes = require('./routes/logs')
 const analyticsRoutes = require('./routes/analytics')
 const orgRoutes = require('./routes/org')
 const paymentsRoutes = require('./routes/payments')
+const securityRoutes = require('./routes/security')
+const auditRoutes = require('./routes/audit')
 
 const VERSION = '0.1.0-beta'
 
@@ -42,7 +44,7 @@ app.use(cors({
   exposedHeaders: [
     'x-zyra-model', 'x-zyra-provider', 'x-zyra-cost', 'x-zyra-savings',
     'x-zyra-complexity', 'x-zyra-cached', 'x-zyra-fallback', 'x-zyra-quality-retry',
-    'x-zyra-idempotent-replay',
+    'x-zyra-idempotent-replay', 'x-zyra-simulated',
   ],
 }))
 
@@ -71,6 +73,8 @@ app.use('/api/logs', logsRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/org', orgRoutes)
 app.use('/api/payments', paymentsRoutes)
+app.use('/api/security', securityRoutes)
+app.use('/api/audit', auditRoutes)
 
 // Health check
 app.get('/health', async (req, res) => {

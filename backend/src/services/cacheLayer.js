@@ -66,10 +66,11 @@ const pingRedis = async () => {
 }
 
 /**
- * Build a deterministic cache key from model + messages.
- * SHA-256 of the canonical JSON.
+ * Build a deterministic cache key from org + model + messages.
+ * SHA-256 of the canonical JSON. Namespaced by orgId so two tenants sending
+ * byte-identical prompts never share a cached response.
  */
-const buildCacheKey = (model, messages, extraParams = {}) => {
+const buildCacheKey = (orgId, model, messages, extraParams = {}) => {
   const payload = JSON.stringify({
     model,
     messages,
@@ -77,7 +78,7 @@ const buildCacheKey = (model, messages, extraParams = {}) => {
     max_tokens: extraParams.max_tokens
   })
   const hash = crypto.createHash('sha256').update(payload).digest('hex')
-  return `zyra:cache:${hash}`
+  return `zyra:cache:${orgId}:${hash}`
 }
 
 /**

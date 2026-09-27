@@ -2,6 +2,12 @@ const Organization = require('../models/Organization')
 const User = require('../models/User')
 const { encrypt } = require('../utils/crypto')
 const { testAll } = require('../services/providerTester')
+const { recordAudit } = require('../services/audit')
+
+const auditOrg = (req, action, category, meta) => recordAudit({
+  req, orgId: req.user.orgId, userId: req.user.userId, actorRole: req.user.role,
+  category, action, targetType: 'Organization', targetId: String(req.user.orgId), meta,
+})
 
 // GET /api/org/settings — get org profile for configuration page
 exports.getSettings = async (req, res) => {
@@ -15,6 +21,8 @@ exports.getSettings = async (req, res) => {
       email: user?.email || '',
       bio: org.bio || '',
       plan: org.plan || 'free',
+      demoMode: !!org.demoMode,
+      isDemo: !!org.isDemo,
     })
   } catch (err) {
     console.error('getSettings error:', err)
@@ -33,6 +41,9 @@ exports.updateSettings = async (req, res) => {
     if (typeof bio === 'string' && bio.length <= 500) {
       update.bio = bio.trim()
     }
+    if (typeof req.body.demoMode === 'boolean') {
+      update.demoMode = req.body.demoMode
+    }
     
     const org = await Organization.findByIdAndUpdate(
       req.user.orgId,
@@ -45,6 +56,7 @@ exports.updateSettings = async (req, res) => {
       await User.findByIdAndUpdate(req.user.userId, { email: email.trim() })
     }
 
+    auditOrg(req, 'organization.settings_updated', 'organization', { fields: Object.keys(update) })
     res.json({ message: 'Settings updated successfully', org })
   } catch (err) {
     console.error('updateSettings error:', err)
@@ -81,6 +93,10 @@ exports.updateProviders = async (req, res) => {
     if (groq !== undefined) org.providerKeys.groq = groq ? encrypt(groq) : null
 
     await org.save()
+    const changed = ['openai', 'anthropic', 'gemini', 'groq'].filter((p) => req.body[p] !== undefined)
+    auditOrg(req, 'provider.keys_updated', 'provider', {
+      set: changed.filter((p) => req.body[p]), cleared: changed.filter((p) => !req.body[p]),
+    })
     res.json({ message: 'Providers updated successfully' })
   } catch (err) {
     console.error('updateProviders error:', err)
@@ -97,6 +113,7 @@ exports.testProviders = async (req, res) => {
       tested: results.filter(r => r.error !== 'not configured').length,
       passed: results.filter(r => r.ok).length,
     }
+    auditOrg(req, 'provider.tested', 'provider', summary)
     res.json({ results, summary, testedAt: new Date().toISOString() })
   } catch (err) {
     console.error('testProviders error:', err)
@@ -120,8 +137,15 @@ exports.updatePolicies = async (req, res) => {
     const allowed = {}
     if (typeof req.body.blockPII === 'boolean') allowed['policies.blockPII'] = req.body.blockPII
     if (typeof req.body.blockInjection === 'boolean') allowed['policies.blockInjection'] = req.body.blockInjection
+    if (typeof req.body.blockJailbreak === 'boolean') allowed['policies.blockJailbreak'] = req.body.blockJailbreak
     if (typeof req.body.maxTokensPerRequest === 'number' && req.body.maxTokensPerRequest > 0) {
       allowed['policies.maxTokensPerRequest'] = Math.min(req.body.maxTokensPerRequest, 32000)
+    }
+    if (Array.isArray(req.body.sensitiveKeywords)) {
+      allowed['policies.sensitiveKeywords'] = req.body.sensitiveKeywords
+        .filter((k) => typeof k === 'string' && k.trim().length > 0 && k.length <= 60)
+        .map((k) => k.trim().toLowerCase())
+        .slice(0, 100)
     }
 
     const org = await Organization.findByIdAndUpdate(
@@ -129,6 +153,7 @@ exports.updatePolicies = async (req, res) => {
       { $set: allowed },
       { new: true }
     )
+    auditOrg(req, 'policy.updated', 'policy', { fields: Object.keys(allowed) })
     res.json({ policies: org.policies })
   } catch (err) {
     console.error('updatePolicies error:', err)
@@ -181,6 +206,7 @@ exports.updateOptimizer = async (req, res) => {
       { $set: update },
       { new: true }
     )
+    auditOrg(req, 'policy.optimizer_updated', 'policy', update)
     res.json({ optimizer: org.optimizer })
   } catch (err) {
     console.error('updateOptimizer error:', err)
@@ -213,6 +239,7 @@ exports.updateReliability = async (req, res) => {
       { $set: update },
       { new: true }
     )
+    auditOrg(req, 'policy.reliability_updated', 'policy', update)
     res.json({ reliability: org.reliability })
   } catch (err) {
     console.error('updateReliability error:', err)

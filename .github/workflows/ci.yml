@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: ["master", "demo-prep-paper-compliance"]
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports: ["27018:27017"]
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\").ok'"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6380:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+      - name: Backend test suite (providers mocked)
+        working-directory: backend
+        run: npm test
+      - name: Security detection eval
+        working-directory: backend
+        run: npm run eval:security
+      - name: Cost formula check
+        working-directory: backend
+        run: npm run test:cost-accuracy
+
+  sdk-node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Node SDK deps
+        working-directory: sdk
+        run: npm ci
+      - name: Node SDK tests
+        working-directory: sdk
+        run: npm test
+
+  sdk-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python SDK tests
+        working-directory: sdk-python
+        run: python -m unittest discover -s tests
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Frontend deps
+        working-directory: zyra-landing
+        run: npm ci
+      - name: Lint
+        working-directory: zyra-landing
+        run: npm run lint
+      - name: Build
+        working-directory: zyra-landing
+        run: npm run build
