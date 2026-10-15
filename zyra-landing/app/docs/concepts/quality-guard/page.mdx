@@ -1,0 +1,27 @@
+# Quality Guard
+
+Cheaper models are only useful if responses stay correct for your users. **Quality Guard** is Zyra’s layer that decides when a downgrade is safe—and when to keep or upgrade tier.
+
+## Principles
+
+- **No silent surprises** — if a task looks like multi-step reasoning, tool-heavy workflow, or strict compliance text, Zyra biases toward capable models.
+- **Equivalence-minded downgrades** — for rote transformations, extraction, or short Q&A, the system may route to smaller/faster models when signals align.
+- **Feedback loop** — production traffic and outcomes inform future routing; the proxy is designed to improve over static “model X only” setups.
+
+## Interaction with the cost engine
+
+The cost engine proposes candidates; Quality Guard applies **safety and quality constraints** before a final choice is locked in. That means optimization is always bounded by an acceptable quality bar rather than “cheapest always wins.”
+
+## Failure and fallback
+
+If a provider errors, rate-limits, or returns an invalid payload, Zyra can fail over per your configured chain. Quality Guard still applies on the replacement hop so you do not accidentally cascade into an ill-suited model under stress.
+
+## Operational tips
+
+- Watch the dashboard for sudden shifts in model tier—often a sign of prompt or traffic mix changes.
+- Keep system prompts explicit; ambiguous instructions increase conservative routing (higher cost, higher quality).
+
+## Related
+
+- [Cost optimization](/docs/concepts/cost-optimization)
+- [Chat completions](/docs/api/chat-completions)

@@ -3,12 +3,12 @@ import React from 'react'
 
 /**
  * CopyButton provides a click-to-copy interface for code snippets.
- * @param {string} text - The text content to be copied.
  */
-export function CopyButton({ text }: { text: string }) {
+export function CopyButton({ text }: { text: string | (() => string) }) {
   const handleCopy = async (e: React.MouseEvent) => {
     const btn = e.currentTarget as HTMLElement
-    await navigator.clipboard.writeText(text)
+    const payload = typeof text === 'function' ? text() : text
+    await navigator.clipboard.writeText(payload)
     btn.classList.add('copied')
     setTimeout(() => btn.classList.remove('copied'), 2000)
   }

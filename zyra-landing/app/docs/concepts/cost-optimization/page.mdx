@@ -1,0 +1,33 @@
+# Cost optimization
+
+Zyra sits between your application and LLM providers. Every request passes through a **cost engine** that estimates task complexity and selects the most cost-effective model that can still complete the job reliably.
+
+## Goals
+
+- **Reduce spend** by avoiding premium models for simple prompts, summaries, and classification-style work.
+- **Preserve capability** by upgrading or maintaining tier when the task needs reasoning, long context, or strict instruction following.
+- **Stay transparent**—your integration surface remains OpenAI-compatible; routing happens inside the proxy.
+
+## How routing works (conceptual)
+
+1. **Inspect** the request—messages, tools, modalities, and safety-relevant signals.
+2. **Score** complexity using heuristics and learned patterns (not a hard-coded “if short then cheap” rule).
+3. **Match** to a model catalog with price, latency, and capability metadata.
+4. **Execute** on the chosen provider; record cost, tokens, and outcome for observability.
+
+Downgrades are never blind: they are gated by the [Quality Guard](/docs/concepts/quality-guard) so users do not see silent quality collapse.
+
+## What you configure
+
+- **Providers and keys** in the dashboard so Zyra can reach OpenAI, Anthropic, Groq, Gemini, and others.
+- **Policies** (where available) such as allowed model families, max spend per request, or org-level constraints.
+- **Fallback chains** so rate limits or outages automatically try the next best option.
+
+## Observability
+
+The dashboard surfaces per-request routes, estimated savings, and provider mix. Use this to validate that cheaper models are handling the workload you expect without support tickets spiking.
+
+## Related
+
+- [Quality Guard](/docs/concepts/quality-guard) — guardrails when selecting cheaper models.
+- [Chat completions API](/docs/api/chat-completions) — request shape the engine optimizes over.
